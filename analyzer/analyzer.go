@@ -9,8 +9,15 @@ var Analyzer = &analysis.Analyzer{
 }
 
 func run(p *analysis.Pass) (any, error) {
-	for _, file := range p.Files {
-		p.Reportf(file.Pos(), "testolint: file analyzed")
+	tests := findTestMethods(p)
+
+	for _, test := range tests {
+		p.Reportf(
+			test.Name.Pos(),
+			"testolint: found new test method %s",
+			test.Name.Name,
+		)
 	}
+
 	return nil, nil
 }
