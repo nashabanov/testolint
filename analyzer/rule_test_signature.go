@@ -1,0 +1,50 @@
+package analyzer
+
+import (
+	"go/types"
+
+	"golang.org/x/tools/go/analysis"
+)
+
+func checkTestSignature(p *analysis.Pass, suite *Suite) {
+	for _, test := range suite.Tests {
+		sig, ok := test.Func.Type().(*types.Signature)
+		if !ok {
+			continue
+		}
+
+		params := sig.Params()
+
+		if params.Len() != 1 && params.Len() != 2 {
+			p.Reportf(
+				test.Decl.Name.Pos(),
+				"TESTO001: invalid test signature: expected func(T) or func(T, struct{...})",
+			)
+			continue
+		}
+
+		if params.Len() == 1 {
+			if !types.Identical(params.At(0).Type(), suite.TType) {
+				p.Reportf(
+					test.Decl.Name.Pos(),
+					"TESTO001: invalid test signature: first parameter must match suite T",
+				)
+			}
+		}
+
+		if params.Len() == 2 {
+			if !isStructType(params.At(1).Type()) {
+				p.Reportf(
+					test.Decl.Name.Pos(),
+					"TESTO001: invalid test signature: second parameter must be a struct",
+				)
+			}
+
+		}
+	}
+}
+
+func isStructType(t types.Type) bool {
+	_, ok := t.Underlying().(*types.Struct)
+	return ok
+}

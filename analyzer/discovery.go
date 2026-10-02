@@ -28,7 +28,8 @@ func discoverSuites(p *analysis.Pass) []*Suite {
 			suite, ok := byType[recv]
 			if !ok {
 				suite = &Suite{
-					Type: recv,
+					Type:  recv,
+					TType: testoTType(recv),
 				}
 				byType[recv] = suite
 			}
@@ -165,4 +166,48 @@ func isHookMethod(fn *ast.FuncDecl) bool {
 	default:
 		return false
 	}
+}
+
+func testoTType(named *types.Named) types.Type {
+	st, ok := named.Underlying().(*types.Struct)
+	if !ok {
+		return nil
+	}
+
+	for i := 0; i < st.NumFields(); i++ {
+		field := st.Field(i)
+		if !field.Embedded() {
+			continue
+		}
+
+		t := field.Type()
+
+		if ptr, ok := t.(*types.Pointer); ok {
+			t = ptr.Elem()
+		}
+
+		testoSuite, ok := t.(*types.Named)
+		if !ok {
+			continue
+		}
+
+		obj := testoSuite.Obj()
+		if obj == nil || obj.Pkg() == nil {
+			continue
+		}
+
+		if obj.Pkg().Path() != testoImportPath ||
+			obj.Name() != "Suite" {
+			continue
+		}
+
+		args := testoSuite.TypeArgs()
+		if args.Len() != 1 {
+			return nil
+		}
+
+		return args.At(0)
+	}
+
+	return nil
 }

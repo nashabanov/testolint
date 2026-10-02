@@ -11,7 +11,8 @@ type Method struct {
 }
 
 type Suite struct {
-	Type *types.Named
+	Type  *types.Named
+	TType types.Type
 
 	Tests []*Method
 	Cases []*Method
