@@ -23,3 +23,11 @@ func (Suite) TestMissingT() {} // want "TESTO001"
 func (Suite) TestTooMany(t T, p struct{}, extra int) {} // want "TESTO001"
 
 func (Suite) TestWrongParams(t T, p string) {} // want "TESTO001"
+
+type WrongT struct{ *testo.T }
+
+func (Suite) TestWrongT( // want "TESTO001"
+	t WrongT,
+	p struct{},
+) {
+}

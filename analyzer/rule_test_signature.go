@@ -23,23 +23,19 @@ func checkTestSignature(p *analysis.Pass, suite *Suite) {
 			continue
 		}
 
-		if params.Len() == 1 {
-			if !types.Identical(params.At(0).Type(), suite.TType) {
-				p.Reportf(
-					test.Decl.Name.Pos(),
-					"TESTO001: invalid test signature: first parameter must match suite T",
-				)
-			}
+		if !types.Identical(params.At(0).Type(), suite.TType) {
+			p.Reportf(
+				test.Decl.Name.Pos(),
+				"TESTO001: invalid test signature: first parameter must match suite T",
+			)
+			continue
 		}
 
-		if params.Len() == 2 {
-			if !isStructType(params.At(1).Type()) {
-				p.Reportf(
-					test.Decl.Name.Pos(),
-					"TESTO001: invalid test signature: second parameter must be a struct",
-				)
-			}
-
+		if params.Len() == 2 && !isStructType(params.At(1).Type()) {
+			p.Reportf(
+				test.Decl.Name.Pos(),
+				"TESTO001: invalid test signature: second parameter must be a struct",
+			)
 		}
 	}
 }
