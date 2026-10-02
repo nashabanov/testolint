@@ -7,4 +7,5 @@ type Rule func(*analysis.Pass, *Suite)
 var rules = []Rule{
 	checkTestSignature,
 	checkHookSignature,
+	checkCasesSignature,
 }
