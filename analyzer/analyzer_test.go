@@ -10,6 +10,7 @@ func TestAnalyzer(t *testing.T) {
 	tests := []string{
 		"wrongpackage",
 		"test_signature",
+		"hook_signature",
 	}
 
 	for _, tt := range tests {
