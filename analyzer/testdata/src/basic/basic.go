@@ -1,11 +1,46 @@
 package basic
 
-type Suite struct{}
+import "github.com/ozontech/testo"
 
-func (Suite) TestFoo() {} // want "testolint: found new test method TestFoo"
+type T struct{}
 
-func (*Suite) TestBar() {} // want "testolint: found new test method TestBar"
+// Валидный Testo suite.
+type FirstSuite struct {
+	testo.Suite[T]
+}
 
-func (Suite) Foo() {}
+func (FirstSuite) TestFoo() {} // want "suite FirstSuite: found test TestFoo"
 
-func TestBaz() {}
+func (*FirstSuite) TestBar() {} // want "suite FirstSuite: found test TestBar"
+
+func (FirstSuite) CasesFoo() []int {
+	return nil
+}
+
+func (*FirstSuite) BeforeEach() {}
+
+func (FirstSuite) AfterAll() {}
+
+func (FirstSuite) Helper() {}
+
+// Обычный тип — не должен считаться suite.
+type NotTesto struct{}
+
+func (NotTesto) TestShouldBeIgnored() {}
+
+// Обычная package-level test function — тоже игнорируем.
+func TestRegular() {}
+
+// Testo suite без TestXxx.
+type EmptySuite struct {
+	testo.Suite[T]
+}
+
+func (EmptySuite) Helper() {}
+
+// Ещё один Testo suite, чтобы проверить группировку типов.
+type SecondSuite struct {
+	testo.Suite[T]
+}
+
+func (SecondSuite) TestBaz() {} // want "suite SecondSuite: found test TestBaz"
