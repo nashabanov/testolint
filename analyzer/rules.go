@@ -11,4 +11,6 @@ var rules = []Rule{
 	checkCaseTypeMismatch,
 	checkCasesSignature,
 	checkOrphanCasesProvider,
+	checkMalformedTestName,
+	checkMalformedCasesName,
 }
