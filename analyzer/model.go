@@ -2,19 +2,39 @@ package analyzer
 
 import (
 	"go/ast"
+	"go/token"
 	"go/types"
 )
+
+type Suite struct {
+	Type  *types.Named
+	TType types.Type
+
+	Tests []*Test
+	Cases []*Method
+	Hooks []*Method
+}
 
 type Method struct {
 	Decl *ast.FuncDecl
 	Func *types.Func
 }
 
-type Suite struct {
-	Type  *types.Named
-	TType types.Type
+type Param struct {
+	Name string
+	Type types.Type
+	Pos  token.Pos
+}
 
-	Tests []*Method
-	Cases []*Method
-	Hooks []*Method
+type Test struct {
+	Method *Method
+	Param  []Param
+}
+
+func (t *Test) Decl() *ast.FuncDecl {
+	return t.Method.Decl
+}
+
+func (t *Test) Func() *types.Func {
+	return t.Method.Func
 }

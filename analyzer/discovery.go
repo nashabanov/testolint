@@ -41,7 +41,7 @@ func discoverSuites(p *analysis.Pass) []*Suite {
 
 			switch {
 			case isTestMethod(fn):
-				suite.Tests = append(suite.Tests, method)
+				suite.Tests = append(suite.Tests, testFromMethod(method))
 
 			case isCasesMethod(fn):
 				suite.Cases = append(suite.Cases, method)
@@ -63,6 +63,40 @@ func discoverSuites(p *analysis.Pass) []*Suite {
 	}
 
 	return result
+}
+
+func testFromMethod(method *Method) *Test {
+	test := &Test{
+		Method: method,
+	}
+
+	sig, ok := method.Func.Type().(*types.Signature)
+	if !ok {
+		return test
+	}
+
+	params := sig.Params()
+
+	if params.Len() < 2 {
+		return test
+	}
+
+	paramStruct, ok := params.At(1).Type().Underlying().(*types.Struct)
+	if !ok {
+		return test
+	}
+
+	for i := 0; i < paramStruct.NumFields(); i++ {
+		field := paramStruct.Field(i)
+
+		test.Param = append(test.Param, Param{
+			Name: field.Name(),
+			Type: field.Type(),
+			Pos:  field.Pos(),
+		})
+	}
+
+	return test
 }
 
 func isTestoSuite(named *types.Named) bool {
