@@ -29,7 +29,7 @@ func checkCaseTypeMismatch(p *analysis.Pass, suite *Suite) {
 				continue // TESTO005
 			}
 
-			if types.Identical(slice.Elem(), param.Type) {
+			if types.AssignableTo(slice.Elem(), param.Type) {
 				continue
 			}
 

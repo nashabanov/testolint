@@ -47,3 +47,11 @@ func (Suite) CasesAge() []string { // want "TESTO004"
 func (Suite) CasesUnused() []bool { // want "TESTO006"
 	return nil
 }
+
+// A concrete element type is assignable to an interface field, but not identical.
+func (Suite) TestAssignable(t T, p struct{ Value any }) {}
+func (Suite) CasesValue() []int                         { return nil }
+
+// The reverse direction is not assignable: any cannot be assigned to int.
+func (Suite) TestNotAssignable(t T, p struct{ Count int }) {}
+func (Suite) CasesCount() []any                            { return nil } // want "TESTO004"

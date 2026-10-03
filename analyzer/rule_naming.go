@@ -1,7 +1,9 @@
 package analyzer
 
 import (
+	"strings"
 	"unicode"
+	"unicode/utf8"
 
 	"golang.org/x/tools/go/analysis"
 )
@@ -16,7 +18,7 @@ func checkMalformedTestName(p *analysis.Pass, suite *Suite) {
 
 		p.Reportf(
 			test.Method.Decl.Name.Pos(),
-			"TESTO007: malformed test name %q: expected TestXxx",
+			"TESTO007: malformed test name %q: suffix must be empty or start with a non-lowercase rune",
 			name,
 		)
 	}
@@ -32,25 +34,21 @@ func checkMalformedCasesName(p *analysis.Pass, suite *Suite) {
 
 		p.Reportf(
 			provider.Decl.Name.Pos(),
-			"TESTO008: malformed cases provider name %q: expected CasesXxx",
+			"TESTO008: malformed cases provider name %q: suffix must be empty or start with a non-lowercase rune",
 			name,
 		)
 	}
 }
 
 func isValidPrefixedName(name, prefix string) bool {
-	if len(name) <= len(prefix) {
+	if !strings.HasPrefix(name, prefix) {
 		return false
 	}
 
-	if name[:len(prefix)] != prefix {
-		return false
+	if len(name) == len(prefix) {
+		return true
 	}
 
-	r := []rune(name[len(prefix):])
-	if len(r) == 0 {
-		return false
-	}
-
-	return unicode.IsUpper(r[0])
+	r, _ := utf8.DecodeRuneInString(name[len(prefix):])
+	return !unicode.IsLower(r)
 }

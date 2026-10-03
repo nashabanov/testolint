@@ -20,7 +20,24 @@ func (Suite) Casesinvalid() []int { // want "TESTO008"
 	return nil
 }
 
-// A provider without a suffix is reported only by the naming rule.
-func (Suite) Cases() []int { // want "TESTO008"
+// A valid provider without a matching parameter is an orphan.
+func (Suite) Cases() []int { // want "TESTO006"
 	return nil
 }
+
+func (Suite) Test(t T)     {}
+func (Suite) TestFoo(t T)  {}
+func (Suite) Test1(t T)    {}
+func (Suite) Test_Foo(t T) {}
+func (Suite) Testfoo(t T)  {} // want "TESTO007"
+func (Suite) TestÉ(t T)    {}
+func (Suite) Testé(t T)    {} // want "TESTO007"
+func (Suite) Test中(t T)    {}
+
+func (Suite) CasesFoo() []int  { return nil } // want "TESTO006"
+func (Suite) Cases1() []int    { return nil } // want "TESTO006"
+func (Suite) Cases_Foo() []int { return nil } // want "TESTO006"
+func (Suite) Casesfoo() []int  { return nil } // want "TESTO008"
+func (Suite) CasesÉ() []int    { return nil } // want "TESTO006"
+func (Suite) Casesé() []int    { return nil } // want "TESTO008"
+func (Suite) Cases中() []int    { return nil } // want "TESTO006"

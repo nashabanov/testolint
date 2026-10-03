@@ -85,11 +85,11 @@ source-level suppression are not currently implemented.
 | `TESTO001` | `invalid-test-signature` | Tests accept the suite's `T`, optionally followed by a struct, and return no values. |
 | `TESTO002` | `invalid-hook-signature` | Suite hooks accept exactly the suite's `T` and return no values. |
 | `TESTO003` | `missing-cases-provider` | Every field in a test's parameter struct has a matching `Cases<Field>` method. |
-| `TESTO004` | `cases-type-mismatch` | The provider's slice element type is identical to the parameter field type. |
+| `TESTO004` | `cases-type-mismatch` | The provider's slice element type is assignable to the parameter field type. |
 | `TESTO005` | `invalid-cases-signature` | Case providers accept no parameters and return exactly one slice. |
 | `TESTO006` | `orphan-cases-provider` | A provider with a valid name is referenced by at least one test parameter field in the suite. |
-| `TESTO007` | `malformed-test-name` | Methods starting with `Test` have a nonempty suffix beginning with an uppercase Unicode letter. |
-| `TESTO008` | `malformed-cases-name` | Methods starting with `Cases` have a nonempty suffix beginning with an uppercase Unicode letter. |
+| `TESTO007` | `malformed-test-name` | Methods starting with `Test` have an empty suffix or a first suffix rune that is not lowercase. |
+| `TESTO008` | `malformed-cases-name` | Methods starting with `Cases` have an empty suffix or a first suffix rune that is not lowercase. |
 
 ### Test and hook signatures
 
@@ -128,8 +128,9 @@ func (Suite) CasesUserID() []string { // TESTO004: expected []int
 }
 ```
 
-Type comparison uses identity, not assignability or conversion. Distinct named
-types therefore produce `TESTO004` even when their underlying types match.
+Type comparison uses assignability from the provider element to the parameter
+field, matching Testo runtime behavior. For example, an `int` element can populate
+an `any` field, but an `any` element cannot populate an `int` field.
 Named slice types are accepted as provider return types.
 
 ```go
@@ -148,20 +149,21 @@ on the same method, such as `TESTO005` and `TESTO006`.
 
 ### Naming
 
-The naming rules require an uppercase Unicode letter immediately after the
-prefix:
+The naming rules match Testo: the suffix may be empty; otherwise, its first
+Unicode rune must not be lowercase:
 
 ```go
 func (Suite) TestUser(t T) {}       // valid name
 func (Suite) Testuser(t T) {}       // TESTO007
-func (Suite) Test(t T) {}           // TESTO007
+func (Suite) Test(t T) {}           // valid name
 func (Suite) Casesuser() []int {    // TESTO008
     return nil
 }
 ```
 
-Digits and underscores immediately after the prefix are also rejected by these
-rules. Methods without the exact `Test` or `Cases` prefix, such as `testUser`,
+Digits and underscores immediately after the prefix are accepted, as are Unicode
+runes without lowercase status. `Cases` alone is also a valid provider name.
+Methods without the exact `Test` or `Cases` prefix, such as `testUser`,
 are not analyzed as tests or providers.
 
 ## Scope and limitations
