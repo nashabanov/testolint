@@ -13,6 +13,8 @@ type Suite struct {
 	Tests []*Test
 	Cases []*Method
 	Hooks []*Method
+
+	CasesByName map[string]*Method
 }
 
 type Method struct {
@@ -28,7 +30,7 @@ type Param struct {
 
 type Test struct {
 	Method *Method
-	Param  []Param
+	Params []Param
 }
 
 func (t *Test) Decl() *ast.FuncDecl {

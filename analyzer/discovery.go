@@ -28,8 +28,9 @@ func discoverSuites(p *analysis.Pass) []*Suite {
 			suite, ok := byType[recv]
 			if !ok {
 				suite = &Suite{
-					Type:  recv,
-					TType: testoTType(recv),
+					Type:        recv,
+					TType:       testoTType(recv),
+					CasesByName: make(map[string]*Method),
 				}
 				byType[recv] = suite
 			}
@@ -45,6 +46,7 @@ func discoverSuites(p *analysis.Pass) []*Suite {
 
 			case isCasesMethod(fn):
 				suite.Cases = append(suite.Cases, method)
+				suite.CasesByName[casesName(method)] = method
 
 			case isHookMethod(fn):
 				suite.Hooks = append(suite.Hooks, method)
@@ -89,7 +91,7 @@ func testFromMethod(method *Method) *Test {
 	for i := 0; i < paramStruct.NumFields(); i++ {
 		field := paramStruct.Field(i)
 
-		test.Param = append(test.Param, Param{
+		test.Params = append(test.Params, Param{
 			Name: field.Name(),
 			Type: field.Type(),
 			Pos:  field.Pos(),
@@ -244,4 +246,11 @@ func testoTType(named *types.Named) types.Type {
 	}
 
 	return nil
+}
+
+func casesName(method *Method) string {
+	return strings.TrimPrefix(
+		method.Decl.Name.Name,
+		"Cases",
+	)
 }

@@ -12,6 +12,7 @@ func TestAnalyzer(t *testing.T) {
 		"test_signature",
 		"hook_signature",
 		"cases_signature",
+		"parametrization",
 	}
 
 	for _, tt := range tests {

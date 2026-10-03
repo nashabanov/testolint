@@ -13,7 +13,7 @@ func (Suite) TestValid(t T) {}
 func (Suite) TestValidParams(
 	t T,
 	p struct {
-		ID int
+		ID int // want "TESTO003"
 	},
 ) {
 }
