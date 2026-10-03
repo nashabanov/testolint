@@ -44,6 +44,6 @@ func (Suite) CasesAge() []string { // want "TESTO004"
 }
 
 // TESTO006: orphan provider
-func (Suite) CasesUnused() []bool {
+func (Suite) CasesUnused() []bool { // want "TESTO006"
 	return nil
 }

@@ -12,11 +12,11 @@ func checkOrphanCasesProvider(p *analysis.Pass, suite *Suite) {
 	}
 
 	for _, provider := range suite.Cases {
-		name := casesName(provider)
-
-		if !isValidPrefixedName(name, "Cases") {
+		if !isValidPrefixedName(provider.Decl.Name.Name, "Cases") {
 			continue
 		}
+
+		name := casesName(provider)
 
 		if _, ok := used[name]; ok {
 			continue
