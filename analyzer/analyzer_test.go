@@ -14,6 +14,7 @@ func TestAnalyzer(t *testing.T) {
 		"cases_signature",
 		"parametrization",
 		"naming",
+		"param_visibility",
 	}
 
 	for _, tt := range tests {

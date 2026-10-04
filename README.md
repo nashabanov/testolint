@@ -77,7 +77,7 @@ This suite satisfies all currently implemented rules.
 
 ## Rules
 
-All eight rules run on every discovered suite. Individual rule selection and
+All nine rules run on every discovered suite. Individual rule selection and
 source-level suppression are not currently implemented.
 
 | ID | Rule | Checks |
@@ -90,6 +90,7 @@ source-level suppression are not currently implemented.
 | `TESTO006` | `orphan-cases-provider` | A provider with a valid name is referenced by at least one test parameter field in the suite. |
 | `TESTO007` | `malformed-test-name` | Methods starting with `Test` have an empty suffix or a first suffix rune that is not lowercase. |
 | `TESTO008` | `malformed-cases-name` | Methods starting with `Cases` have an empty suffix or a first suffix rune that is not lowercase. |
+| `TESTO009` | `unexported-param-field` | Every field in a test's parameter struct is exported so Testo can set it through reflection. |
 
 ### Test and hook signatures
 
@@ -116,6 +117,10 @@ func (Suite) AfterEach(t T) {}
 
 The analyzer binds providers by field name, rather than by test method name.
 A provider can be shared by multiple tests in the same suite.
+
+Parameter fields must be exported according to Go identifier semantics.
+Unexported fields receive `TESTO009` at the field and are excluded from
+`TESTO003` and `TESTO004` checks to avoid secondary provider diagnostics.
 
 ```go
 func (Suite) TestUser(t T, p struct {

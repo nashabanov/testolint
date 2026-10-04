@@ -1,6 +1,7 @@
 package analyzer
 
 import (
+	"go/ast"
 	"go/types"
 
 	"golang.org/x/tools/go/analysis"
@@ -9,6 +10,10 @@ import (
 func checkCaseTypeMismatch(p *analysis.Pass, suite *Suite) {
 	for _, test := range suite.Tests {
 		for _, param := range test.Params {
+			if !ast.IsExported(param.Name) {
+				continue // Not settable by Testo; reported by TESTO009.
+			}
+
 			provider := suite.CasesByName[param.Name]
 			if provider == nil {
 				continue // TESTO003

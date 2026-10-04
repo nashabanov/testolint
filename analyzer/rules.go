@@ -13,4 +13,5 @@ var rules = []Rule{
 	checkOrphanCasesProvider,
 	checkMalformedTestName,
 	checkMalformedCasesName,
+	checkUnexportedParamField,
 }
