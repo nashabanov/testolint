@@ -1,0 +1,7 @@
+version: v2.14.0
+name: golangci-lint
+destination: ./bin
+plugins:
+  - module: github.com/nashabanov/testolint
+    import: github.com/nashabanov/testolint/plugin/golangci
+    path: .

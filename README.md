@@ -9,13 +9,115 @@ parameters with their case providers.
 
 ## Installation
 
-The current module requires Go 1.27.1 or newer, as declared in [go.mod](go.mod).
+### Standalone
+
+The current module requires Go 1.27.1 or newer. Until a release tag is available,
+build from this checkout:
 
 ```sh
-go install github.com/nashabanov/testolint/cmd/testolint@latest
+mkdir -p bin
+go build -o bin/testolint ./cmd/testolint
+./bin/testolint ./...
 ```
 
-Make sure the directory containing Go-installed binaries is on your `PATH`.
+After a release, install a specific published tag (replace `vX.Y.Z` with that tag):
+
+```sh
+go install github.com/nashabanov/testolint/cmd/testolint@vX.Y.Z
+```
+
+Ensure the Go binary directory is on your `PATH`.
+
+### golangci-lint
+
+This integration uses the official [Module Plugin System](https://golangci-lint.run/docs/plugins/module-plugins/),
+which upstream recommends over the Go plugin system. The official `custom`
+command builds a separate golangci-lint binary containing testolint. Both
+frontends use the same `analyzer.Analyzer` and all nine rules.
+
+Prerequisites: Go 1.27.1 or newer, Git, and network access for the custom build.
+The commands below also use curl and sh to install the pinned upstream bootstrap
+binary, following the [official installation instructions](https://golangci-lint.run/docs/welcome/install/local/).
+
+From the root of a testolint checkout, install golangci-lint v2.14.0 and build:
+
+```sh
+curl -sSfL https://golangci-lint.run/install.sh | sh -s -- -b ./bin/bootstrap v2.14.0
+./bin/bootstrap/golangci-lint custom -v
+```
+
+The checked-in [.custom-gcl.yml](.custom-gcl.yml) uses local sources:
+
+```yaml
+version: v2.14.0
+name: golangci-lint
+destination: ./bin
+plugins:
+  - module: github.com/nashabanov/testolint
+    import: github.com/nashabanov/testolint/plugin/golangci
+    path: .
+```
+
+Run the build command from this repository's root. It creates `bin/golangci-lint`;
+the bootstrap and your system golangci-lint remain separate binaries. Put this
+custom binary's directory first on `PATH` to use the ordinary command:
+
+```sh
+export PATH="$(pwd)/bin:$PATH"
+```
+
+In the project you want to analyze, create `.golangci.yml` (or merge these entries
+into an existing v2 configuration):
+
+```yaml
+version: "2"
+linters:
+  default: standard
+  enable:
+    - testolint
+  settings:
+    custom:
+      testolint:
+        type: module
+        description: Check Testo suite usage.
+```
+
+Then run `golangci-lint run` in that project. Standard linters and testolint run
+together. A system binary built without the plugin cannot load it just from YAML.
+
+To verify with the included [example project](plugin/golangci/testdata/integration),
+run from this repository's root after exporting `PATH`:
+
+```sh
+cd plugin/golangci/testdata/integration
+go mod download
+golangci-lint run
+```
+
+The intentionally broken `TestBroken` method produces a diagnostic like:
+
+```text
+suite_test.go:8:14: TESTO001: invalid test signature: expected func(T) or func(T, struct{...}) (testolint)
+```
+
+The lint command exits with status 1 because the example contains a violation.
+
+For a released version, replace the local `path` entry in `.custom-gcl.yml` with
+`version` and run `golangci-lint custom` in your own project:
+
+```yaml
+version: v2.14.0
+name: golangci-lint
+destination: ./bin
+plugins:
+  - module: github.com/nashabanov/testolint
+    import: github.com/nashabanov/testolint/plugin/golangci
+    version: vX.Y.Z # Replace with an actual published testolint tag.
+```
+
+No testolint tag is required for the local setup above; no release is created by
+this integration. Rebuild the custom binary when changing the pinned versions
+or updating local plugin sources.
 
 ## Quick start
 
@@ -190,11 +292,11 @@ are not analyzed as tests or providers.
 Add installation and analysis to your existing Go CI job:
 
 ```sh
-go install github.com/nashabanov/testolint/cmd/testolint@latest
+go install github.com/nashabanov/testolint/cmd/testolint@vX.Y.Z
 testolint ./...
 ```
 
-For reproducible builds, replace `@latest` with a specific published revision.
+Replace `vX.Y.Z` with a specific published testolint tag.
 The command exits unsuccessfully when it reports diagnostics or cannot analyze
 the requested packages.
 
@@ -213,6 +315,17 @@ Run tests and lint checks:
 make test
 make lint
 ```
+
+After building the custom binary, run the opt-in end-to-end test from the
+repository root. It executes golangci-lint against the example project and checks
+both the diagnostic and the exit status:
+
+```sh
+TESTOLINT_GOLANGCI_BINARY="$PWD/bin/golangci-lint" go test ./plugin/golangci -run '^TestIntegration$' -count=1 -v
+```
+
+The default test run skips this external binary test; the adapter contract test
+always runs and verifies that it returns the existing analyzer with type loading.
 
 `make test` runs `go test ./...`. `make lint` requires `golangci-lint` v2 and uses
 the repository's [.golangci.yml](.golangci.yml) configuration.
