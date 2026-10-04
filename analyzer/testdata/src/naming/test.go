@@ -20,8 +20,8 @@ func (Suite) Casesinvalid() []int { // want "TESTO008"
 	return nil
 }
 
-// A valid provider without a matching parameter is an orphan.
-func (Suite) Cases() []int { // want "TESTO006"
+// Testo ignores the empty provider suffix.
+func (Suite) Cases() []int {
 	return nil
 }
 

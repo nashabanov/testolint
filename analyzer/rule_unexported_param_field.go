@@ -8,13 +8,20 @@ import (
 
 func checkUnexportedParamField(p *analysis.Pass, suite *Suite) {
 	for _, test := range suite.Tests {
+		if !test.validParams(suite) {
+			continue
+		}
 		for _, param := range test.Params {
 			if ast.IsExported(param.Name) {
 				continue
 			}
 
+			pos := param.Pos
+			if !pos.IsValid() {
+				pos = test.Decl().Name.Pos()
+			}
 			p.Reportf(
-				param.Pos,
+				pos,
 				"TESTO009: parameter field %q must be exported",
 				param.Name,
 			)

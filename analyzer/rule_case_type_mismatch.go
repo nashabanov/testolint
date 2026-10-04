@@ -9,6 +9,9 @@ import (
 
 func checkCaseTypeMismatch(p *analysis.Pass, suite *Suite) {
 	for _, test := range suite.Tests {
+		if !test.validParams(suite) {
+			continue
+		}
 		for _, param := range test.Params {
 			if !ast.IsExported(param.Name) {
 				continue // Not settable by Testo; reported by TESTO009.
@@ -20,8 +23,8 @@ func checkCaseTypeMismatch(p *analysis.Pass, suite *Suite) {
 			}
 
 			sig, ok := provider.Func.Type().(*types.Signature)
-			if !ok {
-				continue
+			if !ok || sig.Params().Len() != 0 {
+				continue // TESTO005
 			}
 
 			results := sig.Results()
@@ -40,9 +43,10 @@ func checkCaseTypeMismatch(p *analysis.Pass, suite *Suite) {
 
 			p.Reportf(
 				provider.Decl.Name.Pos(),
-				"TESTO004: Cases%s returns []%s, expected []%s",
+				"TESTO004: Cases%s provides %s, but parameter %q expects %s",
 				param.Name,
 				slice.Elem(),
+				param.Name,
 				param.Type,
 			)
 		}

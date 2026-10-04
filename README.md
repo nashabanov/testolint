@@ -1,52 +1,45 @@
 # testolint
 
-`testolint` is a static analyzer for Go tests written with the
-[Testo](https://github.com/ozontech/testo) framework. It checks suite method
-signatures, parameterized test providers, and method naming without running tests.
-
-The analyzer uses Go type information to recognize Testo suites and compare test
-parameters with their case providers.
+A small Go linter for tests written with [Testo](https://github.com/ozontech/testo).
+It checks suite signatures, parameter providers, and naming without running tests.
+Both the standalone CLI and golangci-lint integration run the same nine rules.
+Runtime semantics were checked against Testo v1.8.0.
 
 ## Installation
 
+Requires Go 1.27.1 or newer. The commands using `v0.1.0` below become available
+**after the release tag is published**.
+
 ### Standalone
 
-The current module requires Go 1.27.1 or newer. Until a release tag is available,
-build from this checkout:
+```sh
+go install github.com/nashabanov/testolint/cmd/testolint@v0.1.0
+```
+
+Add your Go binary directory (`go env GOBIN`, or `$(go env GOPATH)/bin` when
+GOBIN is empty) to `PATH`. Before the tag exists, build from this checkout:
 
 ```sh
-mkdir -p bin
 go build -o bin/testolint ./cmd/testolint
 ./bin/testolint ./...
 ```
 
-After a release, install a specific published tag (replace `vX.Y.Z` with that tag):
-
-```sh
-go install github.com/nashabanov/testolint/cmd/testolint@vX.Y.Z
-```
-
-Ensure the Go binary directory is on your `PATH`.
-
 ### golangci-lint
 
-This integration uses the official [Module Plugin System](https://golangci-lint.run/docs/plugins/module-plugins/),
-which upstream recommends over the Go plugin system. The official `custom`
-command builds a separate golangci-lint binary containing testolint. Both
-frontends use the same `analyzer.Analyzer` and all nine rules.
-
-Prerequisites: Go 1.27.1 or newer, Git, and network access for the custom build.
-The commands below also use curl and sh to install the pinned upstream bootstrap
-binary, following the [official installation instructions](https://golangci-lint.run/docs/welcome/install/local/).
-
-From the root of a testolint checkout, install golangci-lint v2.14.0 and build:
+Uses golangci-lint v2's official [Module Plugin System](https://golangci-lint.run/docs/plugins/module-plugins/).
+You need Go, Git, network access, curl and sh. From a testolint checkout:
 
 ```sh
 curl -sSfL https://golangci-lint.run/install.sh | sh -s -- -b ./bin/bootstrap v2.14.0
 ./bin/bootstrap/golangci-lint custom -v
+export PATH="$(pwd)/bin:$PATH"
 ```
 
-The checked-in [.custom-gcl.yml](.custom-gcl.yml) uses local sources:
+The checked-in `.custom-gcl.yml` builds local sources into `bin/golangci-lint`.
+This **custom binary** contains testolint; the bootstrap and your ordinary system
+binary do not. Rebuild it after updating the plugin or golangci-lint.
+
+After release, build in your own project using this `.custom-gcl.yml`:
 
 ```yaml
 version: v2.14.0
@@ -55,19 +48,11 @@ destination: ./bin
 plugins:
   - module: github.com/nashabanov/testolint
     import: github.com/nashabanov/testolint/plugin/golangci
-    path: .
+    version: v0.1.0
 ```
 
-Run the build command from this repository's root. It creates `bin/golangci-lint`;
-the bootstrap and your system golangci-lint remain separate binaries. Put this
-custom binary's directory first on `PATH` to use the ordinary command:
-
-```sh
-export PATH="$(pwd)/bin:$PATH"
-```
-
-In the project you want to analyze, create `.golangci.yml` (or merge these entries
-into an existing v2 configuration):
+Install the bootstrap and run `custom` using the commands above. In the project
+you want to analyze, create `.golangci.yml` (or merge into your v2 config):
 
 ```yaml
 version: "2"
@@ -82,11 +67,8 @@ linters:
         description: Check Testo suite usage.
 ```
 
-Then run `golangci-lint run` in that project. Standard linters and testolint run
-together. A system binary built without the plugin cannot load it just from YAML.
-
-To verify with the included [example project](plugin/golangci/testdata/integration),
-run from this repository's root after exporting `PATH`:
+Run `golangci-lint run` with the custom binary on `PATH`. YAML alone cannot add
+testolint to a stock binary. To verify the local build, from the checkout root:
 
 ```sh
 cd plugin/golangci/testdata/integration
@@ -94,256 +76,111 @@ go mod download
 golangci-lint run
 ```
 
-The intentionally broken `TestBroken` method produces a diagnostic like:
+This intentionally broken example exits with status 1 and includes:
 
 ```text
 suite_test.go:8:14: TESTO001: invalid test signature: expected func(T) or func(T, struct{...}) (testolint)
 ```
 
-The lint command exits with status 1 because the example contains a violation.
+## Usage
 
-For a released version, replace the local `path` entry in `.custom-gcl.yml` with
-`version` and run `golangci-lint custom` in your own project:
-
-```yaml
-version: v2.14.0
-name: golangci-lint
-destination: ./bin
-plugins:
-  - module: github.com/nashabanov/testolint
-    import: github.com/nashabanov/testolint/plugin/golangci
-    version: vX.Y.Z # Replace with an actual published testolint tag.
-```
-
-No testolint tag is required for the local setup above; no release is created by
-this integration. Rebuild the custom binary when changing the pinned versions
-or updating local plugin sources.
-
-## Quick start
-
-Run the analyzer from your Go project directory:
+From your Go project directory:
 
 ```sh
 testolint ./...
-```
-
-You can also check a specific package:
-
-```sh
 testolint ./internal/integration
 ```
 
-Test files are included by default. The analyzer reports diagnostics with a file
-location and a rule ID:
+Test files are included by default. Packages must load and type-check first.
+The standalone CLI exits with 0 for clean code, 3 for diagnostics, and a nonzero
+status for loading errors. `testolint -h` lists the standard go/analysis flags.
+The same installation and invocation commands work in CI.
 
-```text
-suite_test.go:18:3: TESTO003: parameter "Role" requires CasesRole
-```
+## Rules
 
-Packages must load and type-check successfully before they can be analyzed.
+| ID | Purpose |
+| --- | --- |
+| `TESTO001` | Tests accept exactly the suite's `T`, optionally a struct, and return no values. |
+| `TESTO002` | `BeforeAll`, `BeforeEach`, `AfterEach`, `AfterAll` accept exactly `T` and return no values. |
+| `TESTO003` | Exported parameter fields require a `Cases<Field>` method. |
+| `TESTO004` | Provider slice elements must be assignable to the parameter field type. |
+| `TESTO005` | Providers accept no arguments and return exactly one slice. |
+| `TESTO006` | Policy: providers should be referenced by a test parameter; Testo permits unused providers. |
+| `TESTO007` | After `Test`, the suffix is empty or begins with a non-lowercase Unicode rune. |
+| `TESTO008` | After `Cases`, the suffix is empty or begins with a non-lowercase Unicode rune. |
+| `TESTO009` | Parameter fields must be exported so reflection can set them. |
+
+For `testo.Suite[T]`, tests have the form `TestX(t T)` or
+`TestX(t T, p struct{ Age int })`. Named structs and named slice returns are
+accepted, as are aliases. Providers match **field names**, not test names, and
+can be shared. Assignability follows Go semantics: `[]int` can supply an `any`
+field, but `[]any` cannot supply an `int` field.
+
+`Test`, `Test1`, `Test_Foo`, and `TestÉ` are valid names; `Testfoo` is not.
+Testo ignores a method named exactly `Cases`, including its signature.
+Methods without the exact `Test` or `Cases` prefix are ignored, except hooks.
+
+Unexported fields receive only `TESTO009`, without missing/type provider
+messages. Invalid test signatures suppress dependent parameter checks; invalid
+provider signatures suppress type mismatch checks. Identical diagnostics at the
+same position are emitted once. Independent problems may still produce multiple
+messages. All rules are enabled; standalone rule selection and source-level
+suppression are not implemented.
 
 ## Example
-
-A parameterized test binds each field of its second argument to a provider named
-`Cases<FieldName>`. For example, the `UserID` field uses `CasesUserID`:
 
 ```go
 package integration
 
-import (
-    "testing"
+import "github.com/ozontech/testo"
 
-    "github.com/ozontech/testo"
-)
+type Suite struct{ testo.Suite[*testo.T] }
 
-type UserSuite struct {
-    testo.Suite[*testo.T]
-}
-
-func (UserSuite) CasesUserID() []int {
-    return []int{1, 2, 3}
-}
-
-func (UserSuite) TestUser(t *testo.T, p struct{ UserID int }) {
-    if p.UserID <= 0 {
-        t.Error("user ID must be positive")
-    }
-}
-
-func TestUsers(t *testing.T) {
-    testo.RunSuite(t, new(UserSuite))
-}
+func (Suite) TestAge(t *testo.T, p struct{ Age int }) {}
+func (Suite) CasesAge() []string { return []string{"18"} }
 ```
 
-This suite satisfies all currently implemented rules.
-
-## Rules
-
-All nine rules run on every discovered suite. Individual rule selection and
-source-level suppression are not currently implemented.
-
-| ID | Rule | Checks |
-| --- | --- | --- |
-| `TESTO001` | `invalid-test-signature` | Tests accept the suite's `T`, optionally followed by a struct, and return no values. |
-| `TESTO002` | `invalid-hook-signature` | Suite hooks accept exactly the suite's `T` and return no values. |
-| `TESTO003` | `missing-cases-provider` | Every field in a test's parameter struct has a matching `Cases<Field>` method. |
-| `TESTO004` | `cases-type-mismatch` | The provider's slice element type is assignable to the parameter field type. |
-| `TESTO005` | `invalid-cases-signature` | Case providers accept no parameters and return exactly one slice. |
-| `TESTO006` | `orphan-cases-provider` | A provider with a valid name is referenced by at least one test parameter field in the suite. |
-| `TESTO007` | `malformed-test-name` | Methods starting with `Test` have an empty suffix or a first suffix rune that is not lowercase. |
-| `TESTO008` | `malformed-cases-name` | Methods starting with `Cases` have an empty suffix or a first suffix rune that is not lowercase. |
-| `TESTO009` | `unexported-param-field` | Every field in a test's parameter struct is exported so Testo can set it through reflection. |
-
-### Test and hook signatures
-
-For a suite embedding `testo.Suite[T]`, the accepted test forms are:
-
-```go
-func (Suite) TestSimple(t T) {}
-func (Suite) TestParameterized(t T, p struct{ UserID int }) {}
+```text
+suite_test.go:8:14: TESTO004: CasesAge provides string, but parameter "Age" expects int
 ```
 
-The first argument must match the suite's type argument exactly. A named type
-whose underlying type is a struct is also accepted as the second argument.
-Returning a value, accepting extra arguments, or using a non-struct second
-argument produces `TESTO001`.
-
-`TESTO002` checks `BeforeAll`, `BeforeEach`, `AfterEach`, and `AfterAll`:
-
-```go
-func (Suite) BeforeEach(t T) {}
-func (Suite) AfterEach(t T) {}
-```
-
-### Parameterized tests
-
-The analyzer binds providers by field name, rather than by test method name.
-A provider can be shared by multiple tests in the same suite.
-
-Parameter fields must be exported according to Go identifier semantics.
-Unexported fields receive `TESTO009` at the field and are excluded from
-`TESTO003` and `TESTO004` checks to avoid secondary provider diagnostics.
-
-```go
-func (Suite) TestUser(t T, p struct {
-    UserID int
-    Role   string // TESTO003 if CasesRole is missing
-}) {}
-
-func (Suite) CasesUserID() []string { // TESTO004: expected []int
-    return []string{"admin"}
-}
-```
-
-Type comparison uses assignability from the provider element to the parameter
-field, matching Testo runtime behavior. For example, an `int` element can populate
-an `any` field, but an `any` element cannot populate an `int` field.
-Named slice types are accepted as provider return types.
-
-```go
-func (Suite) CasesRole(limit int) []string { // TESTO005: parameters are not allowed
-    return nil
-}
-
-func (Suite) CasesUnused() []bool { // TESTO006 if no test has an Unused field
-    return nil
-}
-```
-
-Providers with malformed names receive `TESTO008` and are excluded from the
-orphan-provider check. Other independent checks can report multiple diagnostics
-on the same method, such as `TESTO005` and `TESTO006`.
-
-### Naming
-
-The naming rules match Testo: the suffix may be empty; otherwise, its first
-Unicode rune must not be lowercase:
-
-```go
-func (Suite) TestUser(t T) {}       // valid name
-func (Suite) Testuser(t T) {}       // TESTO007
-func (Suite) Test(t T) {}           // valid name
-func (Suite) Casesuser() []int {    // TESTO008
-    return nil
-}
-```
-
-Digits and underscores immediately after the prefix are accepted, as are Unicode
-runes without lowercase status. `Cases` alone is also a valid provider name.
-Methods without the exact `Test` or `Cases` prefix, such as `testUser`,
-are not analyzed as tests or providers.
+Return `[]int{18}` from `CasesAge` to satisfy the `Age int` parameter.
 
 ## Scope and limitations
 
-- Suites are recognized by directly embedding `Suite[T]` from
-  `github.com/ozontech/testo`, including pointer embedding. Recognition uses the
-  package path and type name, so an unrelated type named `Suite` is ignored.
-- Only methods declared on the suite type in the analyzed package are collected.
-  Promoted methods and suites embedding another user-defined suite are not
-  included in the discovery model.
-- The analyzer does not verify that a suite is passed to `testo.RunSuite`.
-- Empty suites, parallel execution, shared state, plugin hooks, and standalone
-  `testo.Run` or `testo.RunTest` callbacks are not currently checked.
-- Provider bodies and returned values are not evaluated. For example, a nil or
-  empty case slice does not produce a diagnostic.
-
-## CI
-
-Add installation and analysis to your existing Go CI job:
-
-```sh
-go install github.com/nashabanov/testolint/cmd/testolint@vX.Y.Z
-testolint ./...
-```
-
-Replace `vX.Y.Z` with a specific published testolint tag.
-The command exits unsuccessfully when it reports diagnostics or cannot analyze
-the requested packages.
-
+- Discovery recognizes direct embedding of `github.com/ozontech/testo.Suite[T]`,
+  including aliases and pointer embedding. Unrelated `Suite` types are ignored.
+- Declared methods with pointer and value receivers are checked together.
+  The analyzer does not inspect the actual value passed to `testo.RunSuite`.
+- Promoted providers prevent missing-provider diagnostics, but their signatures
+  and element types are not checked. Promoted tests suppress orphan detection.
+  Suites that only indirectly embed a user-defined suite are not discovered.
+- Generic suite declarations are outside the supported scope.
+- Orphan detection is conservative when a malformed parameterized test makes
+  provider usage uncertain.
+- Lifecycle, parallelism, plugin hooks, standalone `testo.Run`/`RunTest`, provider
+  bodies and empty/nil case slices are outside this release's scope.
 
 ## Development
-
-From a checkout of this repository, run the analyzer with:
-
-```sh
-go run ./cmd/testolint ./...
-```
-
-Run tests and lint checks:
 
 ```sh
 make test
 make lint
+go vet ./...
+go mod tidy
 ```
 
-After building the custom binary, run the opt-in end-to-end test from the
-repository root. It executes golangci-lint against the example project and checks
-both the diagnostic and the exit status:
+`make lint` requires golangci-lint v2. Tests cover analyzer diagnostics and CLI
+exit codes using real Testo fixtures. After building the custom binary:
 
 ```sh
 TESTOLINT_GOLANGCI_BINARY="$PWD/bin/golangci-lint" go test ./plugin/golangci -run '^TestIntegration$' -count=1 -v
+(cd plugin/golangci/testdata/integration && go test ./clean)
 ```
 
-The default test run skips this external binary test; the adapter contract test
-always runs and verifies that it returns the existing analyzer with type loading.
-
-`make test` runs `go test ./...`. `make lint` requires `golangci-lint` v2 and uses
-the repository's [.golangci.yml](.golangci.yml) configuration.
-
-The analyzer is built on `golang.org/x/tools/go/analysis` and is exposed as
-`analyzer.Analyzer` for integration into custom analysis drivers.
-
-Rule implementations live in [analyzer](analyzer). Test fixtures live in
-[analyzer/testdata/src](analyzer/testdata/src) and use `analysistest` comments to
-declare expected diagnostics:
-
-```go
-func (Suite) Testinvalid(t T) {} // want "TESTO007"
-```
-
-When adding a rule, register it in [analyzer/rules.go](analyzer/rules.go), add
-fixtures for invalid and valid usage, and include any new fixture package in
-[analyzer/analyzer_test.go](analyzer/analyzer_test.go).
+The external binary test is otherwise skipped. CI builds the custom binary and
+runs this check. The analyzer is also available as `analyzer.Analyzer` for
+standard `go/analysis` drivers.
 
 ## License
 

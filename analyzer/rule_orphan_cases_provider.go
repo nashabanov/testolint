@@ -1,8 +1,22 @@
 package analyzer
 
-import "golang.org/x/tools/go/analysis"
+import (
+	"go/types"
+
+	"golang.org/x/tools/go/analysis"
+)
 
 func checkOrphanCasesProvider(p *analysis.Pass, suite *Suite) {
+	if suite.promotedTests() {
+		return
+	}
+	// A malformed test may hide provider references; avoid secondary orphan reports.
+	for _, test := range suite.Tests {
+		sig := test.Func().Type().(*types.Signature)
+		if sig.Params().Len() > 1 && !test.validParams(suite) {
+			return
+		}
+	}
 	used := make(map[string]struct{})
 
 	for _, test := range suite.Tests {

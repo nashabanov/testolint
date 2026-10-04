@@ -9,6 +9,8 @@ import (
 func TestAnalyzer(t *testing.T) {
 	tests := []string{
 		"wrongpackage",
+		"robustness",
+		"no_suites",
 		"test_signature",
 		"hook_signature",
 		"cases_signature",

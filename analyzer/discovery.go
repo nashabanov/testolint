@@ -21,7 +21,7 @@ func discoverSuites(p *analysis.Pass) []*Suite {
 			}
 
 			recv := receiverType(p, fn)
-			if recv == nil {
+			if recv == nil || recv.TypeParams().Len() != 0 {
 				continue
 			}
 
@@ -44,7 +44,7 @@ func discoverSuites(p *analysis.Pass) []*Suite {
 			case isTestMethod(fn):
 				suite.Tests = append(suite.Tests, testFromMethod(method))
 
-			case isCasesMethod(fn):
+			case isCasesMethod(fn) && fn.Name.Name != "Cases":
 				suite.Cases = append(suite.Cases, method)
 				suite.CasesByName[casesName(method)] = method
 
@@ -61,6 +61,7 @@ func discoverSuites(p *analysis.Pass) []*Suite {
 			continue
 		}
 
+		suite.MethodSet = types.NewMethodSet(types.NewPointer(suite.Type))
 		result = append(result, suite)
 	}
 
@@ -90,11 +91,15 @@ func testFromMethod(method *Method) *Test {
 
 	for i := 0; i < paramStruct.NumFields(); i++ {
 		field := paramStruct.Field(i)
+		pos := field.Pos()
+		if !pos.IsValid() || field.Pkg() != method.Func.Pkg() {
+			pos = method.Decl.Name.Pos()
+		}
 
 		test.Params = append(test.Params, Param{
 			Name: field.Name(),
 			Type: field.Type(),
-			Pos:  field.Pos(),
+			Pos:  pos,
 		})
 	}
 
@@ -123,8 +128,9 @@ func isTestoSuite(named *types.Named) bool {
 }
 
 func isTestoSuiteType(t types.Type) bool {
+	t = types.Unalias(t)
 	if ptr, ok := t.(*types.Pointer); ok {
-		t = ptr.Elem()
+		t = types.Unalias(ptr.Elem())
 	}
 
 	named, ok := t.(*types.Named)
@@ -173,8 +179,9 @@ func receiverType(
 		return nil
 	}
 
+	t = types.Unalias(t)
 	if ptr, ok := t.(*types.Pointer); ok {
-		t = ptr.Elem()
+		t = types.Unalias(ptr.Elem())
 	}
 
 	named, ok := t.(*types.Named)
@@ -218,8 +225,9 @@ func testoTType(named *types.Named) types.Type {
 
 		t := field.Type()
 
+		t = types.Unalias(t)
 		if ptr, ok := t.(*types.Pointer); ok {
-			t = ptr.Elem()
+			t = types.Unalias(ptr.Elem())
 		}
 
 		testoSuite, ok := t.(*types.Named)

@@ -29,4 +29,9 @@ func TestIntegration(t *testing.T) {
 	if !strings.Contains(string(output), "TESTO001:") || !strings.Contains(string(output), "(testolint)") {
 		t.Fatalf("expected TESTO001 from testolint\n%s", output)
 	}
+	clean := exec.Command(binary, "run", "--config", ".golangci.yml", "./clean")
+	clean.Dir = "testdata/integration"
+	if output, err := clean.CombinedOutput(); err != nil || strings.Contains(string(output), "TESTO") {
+		t.Fatalf("clean suite: %v\n%s", err, output)
+	}
 }
