@@ -150,6 +150,8 @@ Return `[]int{18}` from `CasesAge` to satisfy the `Age int` parameter.
 
 - Discovery recognizes direct embedding of `github.com/ozontech/testo.Suite[T]`,
   including aliases and pointer embedding. Unrelated `Suite` types are ignored.
+  Suites are discovered from package-level named struct type declarations,
+  even when they have no declared methods; aliases do not create duplicate suites.
 - Declared methods with pointer and value receivers are checked together.
   The analyzer does not inspect the actual value passed to `testo.RunSuite`.
 - Promoted providers prevent missing-provider diagnostics, but their signatures

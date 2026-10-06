@@ -12,7 +12,41 @@ const testoImportPath = "github.com/ozontech/testo"
 
 func discoverSuites(p *analysis.Pass) []*Suite {
 	byType := make(map[*types.Named]*Suite)
+	var result []*Suite
 
+	// Discover package-level named types before examining any methods.
+	for _, file := range p.Files {
+		for _, decl := range file.Decls {
+			gen, ok := decl.(*ast.GenDecl)
+			if !ok {
+				continue
+			}
+			for _, spec := range gen.Specs {
+				typeSpec, ok := spec.(*ast.TypeSpec)
+				if !ok || typeSpec.Assign.IsValid() {
+					continue
+				}
+				obj, ok := p.TypesInfo.ObjectOf(typeSpec.Name).(*types.TypeName)
+				if !ok {
+					continue
+				}
+				named, ok := obj.Type().(*types.Named)
+				if !ok || named.TypeParams().Len() != 0 || !isTestoSuite(named) {
+					continue
+				}
+				suite := &Suite{
+					Type:        named,
+					TType:       testoTType(named),
+					MethodSet:   types.NewMethodSet(types.NewPointer(named)),
+					CasesByName: make(map[string]*Method),
+				}
+				byType[named] = suite
+				result = append(result, suite)
+			}
+		}
+	}
+
+	// Attach declared methods only to suites discovered above.
 	for _, file := range p.Files {
 		for _, decl := range file.Decls {
 			fn, ok := decl.(*ast.FuncDecl)
@@ -21,18 +55,13 @@ func discoverSuites(p *analysis.Pass) []*Suite {
 			}
 
 			recv := receiverType(p, fn)
-			if recv == nil || recv.TypeParams().Len() != 0 {
+			if recv == nil {
 				continue
 			}
 
 			suite, ok := byType[recv]
 			if !ok {
-				suite = &Suite{
-					Type:        recv,
-					TType:       testoTType(recv),
-					CasesByName: make(map[string]*Method),
-				}
-				byType[recv] = suite
+				continue
 			}
 
 			method := methodFromDecl(p, fn)
@@ -52,17 +81,6 @@ func discoverSuites(p *analysis.Pass) []*Suite {
 				suite.Hooks = append(suite.Hooks, method)
 			}
 		}
-	}
-
-	result := make([]*Suite, 0, len(byType))
-
-	for _, suite := range byType {
-		if !isTestoSuite(suite.Type) {
-			continue
-		}
-
-		suite.MethodSet = types.NewMethodSet(types.NewPointer(suite.Type))
-		result = append(result, suite)
 	}
 
 	return result
@@ -89,8 +107,7 @@ func testFromMethod(method *Method) *Test {
 		return test
 	}
 
-	for i := 0; i < paramStruct.NumFields(); i++ {
-		field := paramStruct.Field(i)
+	for field := range paramStruct.Fields() {
 		pos := field.Pos()
 		if !pos.IsValid() || field.Pkg() != method.Func.Pkg() {
 			pos = method.Decl.Name.Pos()
@@ -112,9 +129,7 @@ func isTestoSuite(named *types.Named) bool {
 		return false
 	}
 
-	for i := 0; i < st.NumFields(); i++ {
-		field := st.Field(i)
-
+	for field := range st.Fields() {
 		if !field.Embedded() {
 			continue
 		}
@@ -217,8 +232,7 @@ func testoTType(named *types.Named) types.Type {
 		return nil
 	}
 
-	for i := 0; i < st.NumFields(); i++ {
-		field := st.Field(i)
+	for field := range st.Fields() {
 		if !field.Embedded() {
 			continue
 		}
