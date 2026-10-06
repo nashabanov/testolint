@@ -21,6 +21,7 @@ func TestAnalyzer(t *testing.T) {
 		"discovery",
 		"promotion",
 		"empty_cases",
+		"empty_suite",
 	}
 
 	for _, tt := range tests {

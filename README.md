@@ -2,7 +2,7 @@
 
 A small Go linter for tests written with [Testo](https://github.com/ozontech/testo).
 It checks suite signatures, parameter providers, and naming without running tests.
-Both the standalone CLI and golangci-lint integration run the same ten rules.
+Both the standalone CLI and golangci-lint integration run the same eleven rules.
 Runtime semantics were checked against Testo v1.8.0.
 
 ## Installation
@@ -110,6 +110,7 @@ The same installation and invocation commands work in CI.
 | `TESTO008` | After `Cases`, the suffix is empty or begins with a non-lowercase Unicode rune. |
 | `TESTO009` | Parameter fields must be exported so reflection can set them. |
 | `TESTO010` | Providers whose body is a single return of `nil` or an empty slice literal always return an empty case set. |
+| `TESTO011` | Suite must contain at least one runnable Testo test. |
 
 For `testo.Suite[T]`, tests have the form `TestX(t T)` or
 `TestX(t T, p struct{ Age int })`. Named structs and named slice returns are
@@ -120,6 +121,9 @@ field, but `[]any` cannot supply an `int` field.
 `Test`, `Test1`, `Test_Foo`, and `TestÉ` are valid names; `Testfoo` is not.
 Testo ignores a method named exactly `Cases`, including its signature.
 Methods without the exact `Test` or `Cases` prefix are ignored, except hooks.
+`TESTO011` counts tests with names recognized by Testo, including promoted and
+imported tests. Malformed names do not count; signature errors are reported
+separately by `TESTO001`. Empty-suite diagnostics point to the suite type name.
 
 Unexported fields receive only `TESTO009`, without missing/type provider
 messages. Invalid test signatures suppress dependent parameter checks; invalid

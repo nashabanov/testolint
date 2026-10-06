@@ -4,7 +4,7 @@ import "github.com/ozontech/testo"
 
 type T struct{ *testo.T }
 
-type Suite struct {
+type Suite struct { // want `TESTO011: suite "Suite" contains no tests`
 	testo.Suite[T]
 }
 

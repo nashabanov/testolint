@@ -6,7 +6,7 @@ import (
 )
 
 type T = *testo.T
-type Base struct{ testo.Suite[T] }
+type Base struct{ testo.Suite[T] } // want `TESTO011: suite "Base" contains no tests`
 type BaseAlias = Base
 type Indirect struct{ BaseAlias }
 type Pointer struct{ *BaseAlias }
@@ -86,7 +86,7 @@ type Right struct{}
 func (Left) TestAmbiguous()  {}
 func (Right) TestAmbiguous() {}
 
-type Ambiguous struct {
+type Ambiguous struct { // want `TESTO011: suite "Ambiguous" contains no tests`
 	Base
 	Left
 	Right

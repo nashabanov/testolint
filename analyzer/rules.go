@@ -15,4 +15,5 @@ var rules = []Rule{
 	checkMalformedCasesName,
 	checkUnexportedParamField,
 	checkEmptyCases,
+	checkEmptySuite,
 }
