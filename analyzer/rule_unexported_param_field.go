@@ -18,7 +18,7 @@ func checkUnexportedParamField(p *analysis.Pass, suite *Suite) {
 
 			pos := param.Pos
 			if !pos.IsValid() {
-				pos = test.Decl().Name.Pos()
+				pos = test.Method.Pos(suite)
 			}
 			p.Reportf(
 				pos,

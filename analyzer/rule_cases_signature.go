@@ -15,7 +15,7 @@ func checkCasesSignature(p *analysis.Pass, suite *Suite) {
 
 		if sig.Params().Len() != 0 {
 			p.Reportf(
-				cases.Decl.Name.Pos(),
+				cases.Pos(suite),
 				"TESTO005: cases provider must not accept parameters",
 			)
 			continue
@@ -25,7 +25,7 @@ func checkCasesSignature(p *analysis.Pass, suite *Suite) {
 
 		if results.Len() != 1 {
 			p.Reportf(
-				cases.Decl.Name.Pos(),
+				cases.Pos(suite),
 				"TESTO005: cases provider must return exactly one slice",
 			)
 			continue
@@ -33,7 +33,7 @@ func checkCasesSignature(p *analysis.Pass, suite *Suite) {
 
 		if !isSliceType(results.At(0).Type()) {
 			p.Reportf(
-				cases.Decl.Name.Pos(),
+				cases.Pos(suite),
 				"TESTO005: cases provider must return a slice",
 			)
 		}

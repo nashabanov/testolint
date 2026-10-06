@@ -16,13 +16,13 @@ func checkMissingCaseProvider(p *analysis.Pass, suite *Suite) {
 				continue // Not settable by Testo; reported by TESTO009.
 			}
 
-			if suite.MethodSet.Lookup(nil, "Cases"+param.Name) != nil {
+			if suite.CasesByName[param.Name] != nil {
 				continue
 			}
 
 			pos := param.Pos
 			if !pos.IsValid() {
-				pos = test.Decl().Name.Pos()
+				pos = test.Method.Pos(suite)
 			}
 			p.Reportf(
 				pos,

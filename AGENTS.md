@@ -54,3 +54,7 @@ Without this variable, `TestIntegration` is skipped; a skip does not count as su
 ## Change Consistency
 
 Keep diagnostic identifiers (`TESTOxxx`) stable. When public behavior changes, update the rule descriptions and limitations in `README.md`. In the work report, identify the added fixture, the red and green phase results, and the checks performed.
+
+## Review and Commit
+
+After completing changes and verification, present the changes and check results to the user for review. Wait for explicit user approval before creating a commit. After approval, commit the reviewed changes using the project's existing commit convention (Conventional Commits, such as `fix: ...`, `feat: ...`, or `docs: ...`). If further changes are made after approval, present them for review again before committing.

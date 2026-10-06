@@ -148,15 +148,19 @@ Return `[]int{18}` from `CasesAge` to satisfy the `Age int` parameter.
 
 ## Scope and limitations
 
-- Discovery recognizes direct embedding of `github.com/ozontech/testo.Suite[T]`,
-  including aliases and pointer embedding. Unrelated `Suite` types are ignored.
+- Discovery recognizes direct and indirect embedding of
+  `github.com/ozontech/testo.Suite[T]`, including aliases and pointer embedding.
+  It uses Testo v1.8.0's private suite-interface marker to identify the base
+  suite and its `T`. Unrelated `Suite` types are ignored.
   Suites are discovered from package-level named struct type declarations,
   even when they have no declared methods; aliases do not create duplicate suites.
-- Declared methods with pointer and value receivers are checked together.
+- Declared and promoted tests, providers and hooks are checked using the
+  pointer method set, including pointer and value receivers. Go's shadowing
+  and ambiguity rules determine which methods are included.
   The analyzer does not inspect the actual value passed to `testo.RunSuite`.
-- Promoted providers prevent missing-provider diagnostics, but their signatures
-  and element types are not checked. Promoted tests suppress orphan detection.
-  Suites that only indirectly embed a user-defined suite are not discovered.
+- Diagnostics for methods declared in the analyzed package point to the method
+  or parameter field. Diagnostics for imported methods point to the local
+  suite declaration that exposes them.
 - Generic suite declarations are outside the supported scope.
 - Orphan detection is conservative when a malformed parameterized test makes
   provider usage uncertain.

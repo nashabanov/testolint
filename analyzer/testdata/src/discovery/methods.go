@@ -9,6 +9,6 @@ func (Active) AfterEach()                        {}             // want "TESTO00
 func (Active) CasesUnused() []int                { return nil } // want "TESTO006"
 
 func (Generic[P]) TestInvalid() {}
-func (Indirect) TestInvalid()   {}
+func (Indirect) TestInvalid()   {} // want "TESTO001"
 func (Unrelated) TestInvalid()  {}
 func (NonStruct) TestInvalid()  {}

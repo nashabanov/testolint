@@ -42,7 +42,7 @@ func checkCaseTypeMismatch(p *analysis.Pass, suite *Suite) {
 			}
 
 			p.Reportf(
-				provider.Decl.Name.Pos(),
+				provider.Pos(suite),
 				"TESTO004: Cases%s provides %s, but parameter %q expects %s",
 				param.Name,
 				slice.Elem(),

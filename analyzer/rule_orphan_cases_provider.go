@@ -7,9 +7,6 @@ import (
 )
 
 func checkOrphanCasesProvider(p *analysis.Pass, suite *Suite) {
-	if suite.promotedTests() {
-		return
-	}
 	// A malformed test may hide provider references; avoid secondary orphan reports.
 	for _, test := range suite.Tests {
 		sig := test.Func().Type().(*types.Signature)
@@ -26,7 +23,7 @@ func checkOrphanCasesProvider(p *analysis.Pass, suite *Suite) {
 	}
 
 	for _, provider := range suite.Cases {
-		if !isValidPrefixedName(provider.Decl.Name.Name, "Cases") {
+		if !isValidPrefixedName(provider.Func.Name(), "Cases") {
 			continue
 		}
 
@@ -37,7 +34,7 @@ func checkOrphanCasesProvider(p *analysis.Pass, suite *Suite) {
 		}
 
 		p.Reportf(
-			provider.Decl.Name.Pos(),
+			provider.Pos(suite),
 			"TESTO006: Cases%s is not used by any test parameter",
 			name,
 		)

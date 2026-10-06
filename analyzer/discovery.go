@@ -11,7 +11,6 @@ import (
 const testoImportPath = "github.com/ozontech/testo"
 
 func discoverSuites(p *analysis.Pass) []*Suite {
-	byType := make(map[*types.Named]*Suite)
 	var result []*Suite
 
 	// Discover package-level named types before examining any methods.
@@ -31,53 +30,41 @@ func discoverSuites(p *analysis.Pass) []*Suite {
 					continue
 				}
 				named, ok := obj.Type().(*types.Named)
-				if !ok || named.TypeParams().Len() != 0 || !isTestoSuite(named) {
+				if !ok || named.TypeParams().Len() != 0 {
+					continue
+				}
+				if _, ok := named.Underlying().(*types.Struct); !ok {
+					continue
+				}
+				methodSet := types.NewMethodSet(types.NewPointer(named))
+				tType := testoTType(methodSet)
+				if tType == nil {
 					continue
 				}
 				suite := &Suite{
 					Type:        named,
-					TType:       testoTType(named),
-					MethodSet:   types.NewMethodSet(types.NewPointer(named)),
+					TType:       tType,
+					MethodSet:   methodSet,
 					CasesByName: make(map[string]*Method),
 				}
-				byType[named] = suite
 				result = append(result, suite)
 			}
 		}
 	}
 
-	// Attach declared methods only to suites discovered above.
-	for _, file := range p.Files {
-		for _, decl := range file.Decls {
-			fn, ok := decl.(*ast.FuncDecl)
-			if !ok || fn.Recv == nil {
-				continue
-			}
-
-			recv := receiverType(p, fn)
-			if recv == nil {
-				continue
-			}
-
-			suite, ok := byType[recv]
-			if !ok {
-				continue
-			}
-
-			method := methodFromDecl(p, fn)
-			if method == nil {
-				continue
-			}
-
-			switch {
-			case isTestMethod(fn):
-				suite.Tests = append(suite.Tests, testFromMethod(method))
-
-			case isCasesMethod(fn) && fn.Name.Name != "Cases":
+	// The method set contains exactly the selectable declared and promoted
+	// methods, with instantiated signatures and Go's shadowing rules applied.
+	for _, suite := range result {
+		for selection := range suite.MethodSet.Methods() {
+			f := selection.Obj().(*types.Func)
+			method := &Method{Func: f}
+			switch name := f.Name(); {
+			case strings.HasPrefix(name, "Test"):
+				suite.Tests = append(suite.Tests, testFromMethod(method, suite))
+			case strings.HasPrefix(name, "Cases") && name != "Cases":
 				suite.Cases = append(suite.Cases, method)
 				suite.CasesByName[casesName(method)] = method
-
-			case isHookMethod(fn):
+			case isHookMethod(name):
 				suite.Hooks = append(suite.Hooks, method)
 			}
 		}
@@ -86,7 +73,7 @@ func discoverSuites(p *analysis.Pass) []*Suite {
 	return result
 }
 
-func testFromMethod(method *Method) *Test {
+func testFromMethod(method *Method, suite *Suite) *Test {
 	test := &Test{
 		Method: method,
 	}
@@ -109,8 +96,8 @@ func testFromMethod(method *Method) *Test {
 
 	for field := range paramStruct.Fields() {
 		pos := field.Pos()
-		if !pos.IsValid() || field.Pkg() != method.Func.Pkg() {
-			pos = method.Decl.Name.Pos()
+		if !pos.IsValid() || field.Pkg() != suite.Type.Obj().Pkg() {
+			pos = method.Pos(suite)
 		}
 
 		test.Params = append(test.Params, Param{
@@ -121,25 +108,6 @@ func testFromMethod(method *Method) *Test {
 	}
 
 	return test
-}
-
-func isTestoSuite(named *types.Named) bool {
-	st, ok := named.Underlying().(*types.Struct)
-	if !ok {
-		return false
-	}
-
-	for field := range st.Fields() {
-		if !field.Embedded() {
-			continue
-		}
-
-		if isTestoSuiteType(field.Type()) {
-			return true
-		}
-	}
-
-	return false
 }
 
 func isTestoSuiteType(t types.Type) bool {
@@ -162,63 +130,8 @@ func isTestoSuiteType(t types.Type) bool {
 		obj.Name() == "Suite"
 }
 
-func methodFromDecl(
-	p *analysis.Pass,
-	fn *ast.FuncDecl,
-) *Method {
-	obj := p.TypesInfo.ObjectOf(fn.Name)
-
-	f, ok := obj.(*types.Func)
-	if !ok {
-		return nil
-	}
-
-	return &Method{
-		Decl: fn,
-		Func: f,
-	}
-}
-
-func receiverType(
-	p *analysis.Pass,
-	fn *ast.FuncDecl,
-) *types.Named {
-	if fn.Recv == nil || len(fn.Recv.List) == 0 {
-		return nil
-	}
-
-	recvExpr := fn.Recv.List[0].Type
-
-	t := p.TypesInfo.TypeOf(recvExpr)
-	if t == nil {
-		return nil
-	}
-
-	t = types.Unalias(t)
-	if ptr, ok := t.(*types.Pointer); ok {
-		t = types.Unalias(ptr.Elem())
-	}
-
-	named, ok := t.(*types.Named)
-	if !ok {
-		return nil
-	}
-
-	return named
-}
-
-func isTestMethod(fn *ast.FuncDecl) bool {
-	return fn.Recv != nil &&
-		strings.HasPrefix(fn.Name.Name, "Test")
-}
-
-func isCasesMethod(fn *ast.FuncDecl) bool {
-	return fn.Recv != nil &&
-		strings.HasPrefix(fn.Name.Name, "Cases")
-}
-
-func isHookMethod(fn *ast.FuncDecl) bool {
-	switch fn.Name.Name {
+func isHookMethod(name string) bool {
+	switch name {
 	case "BeforeAll", "BeforeEach", "AfterEach", "AfterAll":
 		return true
 	default:
@@ -226,53 +139,34 @@ func isHookMethod(fn *ast.FuncDecl) bool {
 	}
 }
 
-func testoTType(named *types.Named) types.Type {
-	st, ok := named.Underlying().(*types.Struct)
-	if !ok {
-		return nil
-	}
-
-	for field := range st.Fields() {
-		if !field.Embedded() {
+// testoTType uses Testo's private suite-interface marker rather than
+// reconstructing Go's embedding and promotion rules. The selected method's
+// receiver is the instantiated testo.Suite[T], even for indirect embedding.
+func testoTType(methodSet *types.MethodSet) types.Type {
+	for selection := range methodSet.Methods() {
+		f := selection.Obj().(*types.Func)
+		if f.Name() != "private" || f.Pkg() == nil || f.Pkg().Path() != testoImportPath {
 			continue
 		}
-
-		t := field.Type()
-
-		t = types.Unalias(t)
+		sig := f.Type().(*types.Signature)
+		if !isTestoSuiteType(sig.Recv().Type()) {
+			continue
+		}
+		t := types.Unalias(sig.Recv().Type())
 		if ptr, ok := t.(*types.Pointer); ok {
 			t = types.Unalias(ptr.Elem())
 		}
-
-		testoSuite, ok := t.(*types.Named)
-		if !ok {
-			continue
+		args := t.(*types.Named).TypeArgs()
+		if args.Len() == 1 {
+			return args.At(0)
 		}
-
-		obj := testoSuite.Obj()
-		if obj == nil || obj.Pkg() == nil {
-			continue
-		}
-
-		if obj.Pkg().Path() != testoImportPath ||
-			obj.Name() != "Suite" {
-			continue
-		}
-
-		args := testoSuite.TypeArgs()
-		if args.Len() != 1 {
-			return nil
-		}
-
-		return args.At(0)
 	}
-
 	return nil
 }
 
 func casesName(method *Method) string {
 	return strings.TrimPrefix(
-		method.Decl.Name.Name,
+		method.Func.Name(),
 		"Cases",
 	)
 }

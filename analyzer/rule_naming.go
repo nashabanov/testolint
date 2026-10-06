@@ -10,14 +10,14 @@ import (
 
 func checkMalformedTestName(p *analysis.Pass, suite *Suite) {
 	for _, test := range suite.Tests {
-		name := test.Method.Decl.Name.Name
+		name := test.Func().Name()
 
 		if isValidPrefixedName(name, "Test") {
 			continue
 		}
 
 		p.Reportf(
-			test.Method.Decl.Name.Pos(),
+			test.Method.Pos(suite),
 			"TESTO007: malformed test name %q: suffix must be empty or start with a non-lowercase rune",
 			name,
 		)
@@ -26,14 +26,14 @@ func checkMalformedTestName(p *analysis.Pass, suite *Suite) {
 
 func checkMalformedCasesName(p *analysis.Pass, suite *Suite) {
 	for _, provider := range suite.Cases {
-		name := provider.Decl.Name.Name
+		name := provider.Func.Name()
 
 		if isValidPrefixedName(name, "Cases") {
 			continue
 		}
 
 		p.Reportf(
-			provider.Decl.Name.Pos(),
+			provider.Pos(suite),
 			"TESTO008: malformed cases provider name %q: suffix must be empty or start with a non-lowercase rune",
 			name,
 		)

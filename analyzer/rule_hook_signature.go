@@ -17,7 +17,7 @@ func checkHookSignature(p *analysis.Pass, suite *Suite) {
 
 		if params.Len() != 1 {
 			p.Reportf(
-				hook.Decl.Name.Pos(),
+				hook.Pos(suite),
 				"TESTO002: invalid hook signature: expected func(T)",
 			)
 			continue
@@ -26,14 +26,14 @@ func checkHookSignature(p *analysis.Pass, suite *Suite) {
 		if suite.TType != nil &&
 			!types.Identical(params.At(0).Type(), suite.TType) {
 			p.Reportf(
-				hook.Decl.Name.Pos(),
+				hook.Pos(suite),
 				"TESTO002: invalid hook signature: parameter must match suite T",
 			)
 		}
 
 		if sig.Results().Len() != 0 {
 			p.Reportf(
-				hook.Decl.Name.Pos(),
+				hook.Pos(suite),
 				"TESTO002: hook must not return values",
 			)
 		}

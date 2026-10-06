@@ -19,6 +19,7 @@ func TestAnalyzer(t *testing.T) {
 		"naming",
 		"param_visibility",
 		"discovery",
+		"promotion",
 	}
 
 	for _, tt := range tests {
