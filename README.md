@@ -7,13 +7,13 @@ Runtime semantics were checked against Testo v1.8.0.
 
 ## Installation
 
-Requires Go 1.27.1 or newer. The commands using `v0.1.0` below become available
+Requires Go 1.27.1 or newer. The commands using `v0.2.0` below become available
 **after the release tag is published**.
 
 ### Standalone
 
 ```sh
-go install github.com/nashabanov/testolint/cmd/testolint@v0.1.0
+go install github.com/nashabanov/testolint/cmd/testolint@v0.2.0
 ```
 
 Add your Go binary directory (`go env GOBIN`, or `$(go env GOPATH)/bin` when
@@ -48,7 +48,7 @@ destination: ./bin
 plugins:
   - module: github.com/nashabanov/testolint
     import: github.com/nashabanov/testolint/plugin/golangci
-    version: v0.1.0
+    version: v0.2.0
 ```
 
 Install the bootstrap and run `custom` using the commands above. In the project

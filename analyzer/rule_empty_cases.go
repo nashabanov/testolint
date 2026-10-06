@@ -12,9 +12,7 @@ func checkEmptyCases(p *analysis.Pass, suite *Suite) {
 		if !isValidPrefixedName(provider.Func.Name(), "Cases") {
 			continue // TESTO008: not a runtime cases provider.
 		}
-		sig, ok := provider.Func.Type().(*types.Signature)
-		if !ok || sig.Params().Len() != 0 || sig.Results().Len() != 1 ||
-			!isSliceType(sig.Results().At(0).Type()) {
+		if slice, _ := casesSignature(provider.Func.Type()); slice == nil {
 			continue // TESTO005: avoid secondary diagnostics.
 		}
 		decl := provider.Decl

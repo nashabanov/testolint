@@ -22,18 +22,8 @@ func checkCaseTypeMismatch(p *analysis.Pass, suite *Suite) {
 				continue // TESTO003
 			}
 
-			sig, ok := provider.Func.Type().(*types.Signature)
-			if !ok || sig.Params().Len() != 0 {
-				continue // TESTO005
-			}
-
-			results := sig.Results()
-			if results.Len() != 1 {
-				continue // TESTO005
-			}
-
-			slice, ok := results.At(0).Type().Underlying().(*types.Slice)
-			if !ok {
+			slice, _ := casesSignature(provider.Func.Type())
+			if slice == nil {
 				continue // TESTO005
 			}
 
