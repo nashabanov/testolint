@@ -2,7 +2,7 @@
 
 A small Go linter for tests written with [Testo](https://github.com/ozontech/testo).
 It checks suite signatures, parameter providers, and naming without running tests.
-Both the standalone CLI and golangci-lint integration run the same nine rules.
+Both the standalone CLI and golangci-lint integration run the same ten rules.
 Runtime semantics were checked against Testo v1.8.0.
 
 ## Installation
@@ -109,6 +109,7 @@ The same installation and invocation commands work in CI.
 | `TESTO007` | After `Test`, the suffix is empty or begins with a non-lowercase Unicode rune. |
 | `TESTO008` | After `Cases`, the suffix is empty or begins with a non-lowercase Unicode rune. |
 | `TESTO009` | Parameter fields must be exported so reflection can set them. |
+| `TESTO010` | Providers whose body is a single return of `nil` or an empty slice literal always return an empty case set. |
 
 For `testo.Suite[T]`, tests have the form `TestX(t T)` or
 `TestX(t T, p struct{ Age int })`. Named structs and named slice returns are
@@ -165,7 +166,13 @@ Return `[]int{18}` from `CasesAge` to satisfy the `Age int` parameter.
 - Orphan detection is conservative when a malformed parameterized test makes
   provider usage uncertain.
 - Lifecycle, parallelism, plugin hooks, standalone `testo.Run`/`RunTest`, provider
-  bodies and empty/nil case slices are outside this release's scope.
+  logic beyond the obvious empty-return check is outside this release's scope.
+- `TESTO010` only checks valid providers with a local AST body consisting of
+  one `return nil` or one return of an empty slice composite literal, including
+  named slice types and aliases. Local promoted providers are included;
+  imported providers without an AST body in the current pass are skipped.
+  Variables, calls, `make`, constant propagation and control flow are not
+  analyzed. Invalid signatures and malformed names suppress this check.
 
 ## Development
 

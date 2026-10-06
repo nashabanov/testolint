@@ -1,6 +1,7 @@
 package analyzer
 
 import (
+	"go/ast"
 	"go/token"
 	"go/types"
 )
@@ -19,6 +20,9 @@ type Suite struct {
 
 type Method struct {
 	Func *types.Func
+	// Decl is optional and available only for declarations in this pass.
+	// Func remains the semantic identity, including instantiated methods.
+	Decl *ast.FuncDecl
 }
 
 type Param struct {

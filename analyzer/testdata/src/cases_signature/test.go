@@ -9,11 +9,11 @@ type Suite struct {
 }
 
 func (Suite) CasesValid() []int { // want "TESTO006"
-	return nil
+	return []int{0}
 }
 
 func (Suite) CasesWithArg(x int) []int { // want "TESTO005" "TESTO006"
-	return nil
+	return []int{0}
 }
 
 func (Suite) CasesNoResult() {} // want "TESTO005" "TESTO006"

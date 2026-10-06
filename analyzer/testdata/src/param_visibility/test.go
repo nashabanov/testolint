@@ -13,8 +13,8 @@ func (Suite) TestValid(t T, p struct {
 }) {
 }
 
-func (Suite) CasesUserID() []int  { return nil }
-func (Suite) CasesRole() []string { return nil }
+func (Suite) CasesUserID() []int  { return []int{0} }
+func (Suite) CasesRole() []string { return []string{"admin"} }
 
 func (Suite) TestUnexported(t T, p struct {
 	UserID int
@@ -30,7 +30,7 @@ func (Suite) TestMultiple(t T, p struct {
 
 // An existing provider with an incompatible element must not cause TESTO004.
 // Its malformed name still independently receives TESTO008.
-func (Suite) CasesuserID() []string { return nil } // want "TESTO008"
+func (Suite) CasesuserID() []string { return []string{"admin"} } // want "TESTO008"
 
 type UnicodeParams struct {
 	État string
@@ -39,4 +39,4 @@ type UnicodeParams struct {
 }
 
 func (Suite) TestUnicode(t T, p UnicodeParams) {}
-func (Suite) CasesÉtat() []string              { return nil }
+func (Suite) CasesÉtat() []string              { return []string{"admin"} }

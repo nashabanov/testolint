@@ -18,13 +18,13 @@ func (*Pointer) BeforeEach()   {} // want "TESTO002"
 type Methods struct{}
 
 func (Methods) TestValid(t T, p struct{ Role string }) {}
-func (*Methods) CasesRole() []string                   { return nil }
+func (*Methods) CasesRole() []string                   { return []string{"admin"} }
 func (Methods) BeforeEach(t T)                         {}
-func (Methods) TestBad()                               {}             // want "TESTO001"
-func (Methods) AfterEach()                             {}             // want "TESTO002"
-func (Methods) Testbad(t T)                            {}             // want "TESTO007"
-func (Methods) Casesbad() []int                        { return nil } // want "TESTO008"
-func (Methods) CasesUnused() []int                     { return nil } // want "TESTO006"
+func (Methods) TestBad()                               {}                  // want "TESTO001"
+func (Methods) AfterEach()                             {}                  // want "TESTO002"
+func (Methods) Testbad(t T)                            {}                  // want "TESTO007"
+func (Methods) Casesbad() []int                        { return []int{0} } // want "TESTO008"
+func (Methods) CasesUnused() []int                     { return []int{0} } // want "TESTO006"
 
 type Value struct {
 	Base
@@ -38,7 +38,7 @@ type Deep struct{ *Ptr }
 
 type BadProviders struct{}
 
-func (BadProviders) CasesRole(x int) []string { return nil } // want "TESTO005"
+func (BadProviders) CasesRole(x int) []string { return []string{"admin"} } // want "TESTO005"
 type Bad struct {
 	Base
 	BadProviders
@@ -48,7 +48,7 @@ func (Bad) TestUser(t T, p struct{ Role string }) {}
 
 type MismatchProviders struct{}
 
-func (MismatchProviders) CasesRole() []int { return nil } // want "TESTO004"
+func (MismatchProviders) CasesRole() []int { return []int{0} } // want "TESTO004"
 type Mismatch struct {
 	Base
 	MismatchProviders
@@ -77,9 +77,9 @@ type Shadow struct {
 
 func (Shadow) TestBad(t T)        {}
 func (Shadow) AfterEach(t T)      {}
-func (Shadow) Testbad(t T)        {}             // want "TESTO007"
-func (Shadow) Casesbad() []int    { return nil } // want "TESTO008"
-func (Shadow) CasesUnused() []int { return nil } // want "TESTO006"
+func (Shadow) Testbad(t T)        {}                  // want "TESTO007"
+func (Shadow) Casesbad() []int    { return []int{0} } // want "TESTO008"
+func (Shadow) CasesUnused() []int { return []int{0} } // want "TESTO006"
 type Left struct{}
 type Right struct{}
 

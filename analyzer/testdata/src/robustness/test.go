@@ -11,7 +11,7 @@ type ParamsAlias = Params
 
 type Providers struct{}
 
-func (Providers) CasesAge() Numbers { return nil }
+func (Providers) CasesAge() Numbers { return Numbers{0} }
 
 type Suite struct {
 	Base
@@ -32,18 +32,18 @@ type Inherited struct {
 	Tests
 }
 
-func (Inherited) CasesAge() Numbers { return nil }
+func (Inherited) CasesAge() Numbers { return Numbers{0} }
 
 type PointerSuite struct{ *testo.Suite[T] }
 
 func (PointerSuite) TestNamed(t T, p Params) {}
-func (*PointerSuite) CasesAge() Numbers      { return nil }
+func (*PointerSuite) CasesAge() Numbers      { return Numbers{0} }
 
 type Embedded struct{ Number }
 type EmbeddedSuite struct{ testo.Suite[T] }
 
 func (EmbeddedSuite) TestEmbedded(t T, p Embedded) {}
-func (EmbeddedSuite) CasesNumber() Numbers         { return nil }
+func (EmbeddedSuite) CasesNumber() Numbers         { return Numbers{0} }
 
 // Importing Testo does not turn unrelated types into suites.
 type Unrelated struct{}
@@ -58,9 +58,9 @@ func (Broken) TestOne(t T, p Shared)                      {}
 func (Broken) TestTwo(t T, p Shared)                      {}
 func (Broken) TestMismatchOne(t T, p struct{ Age int })   {}
 func (Broken) TestMismatchTwo(t T, p struct{ Age int })   {}
-func (Broken) CasesAge() []string                         { return nil } // want `TESTO004: CasesAge provides string, but parameter "Age" expects int`
+func (Broken) CasesAge() []string                         { return []string{"admin"} } // want `TESTO004: CasesAge provides string, but parameter "Age" expects int`
 func (Broken) TestBadProvider(t T, p struct{ Value int }) {}
-func (Broken) CasesValue(x int) []string                  { return nil } // want "TESTO005"
+func (Broken) CasesValue(x int) []string                  { return []string{"admin"} } // want "TESTO005"
 func (Broken) TestMalformed(t T, p struct { // want "TESTO001"
 	Absent  int
 	private int
@@ -73,7 +73,7 @@ func (Broken) TestWrongT(t string, p struct{ Absent int }) {} // want "TESTO001"
 type Generic[P any] struct{ testo.Suite[T] }
 
 func (Generic[P]) TestGeneric(t T, p struct{ Value P }) {}
-func (Generic[P]) CasesValue() []P                      { return nil }
+func (Generic[P]) CasesValue() []P                      { return []P{*new(P)} }
 
 // Variadic arguments are not valid test or hook signatures.
 type Variadic struct{ testo.Suite[T] }

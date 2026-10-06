@@ -12,6 +12,18 @@ const testoImportPath = "github.com/ozontech/testo"
 
 func discoverSuites(p *analysis.Pass) []*Suite {
 	var result []*Suite
+	decls := make(map[*types.Func]*ast.FuncDecl)
+	for _, file := range p.Files {
+		for _, decl := range file.Decls {
+			fn, ok := decl.(*ast.FuncDecl)
+			if !ok || fn.Recv == nil {
+				continue
+			}
+			if f, ok := p.TypesInfo.ObjectOf(fn.Name).(*types.Func); ok {
+				decls[f.Origin()] = fn
+			}
+		}
+	}
 
 	// Discover package-level named types before examining any methods.
 	for _, file := range p.Files {
@@ -57,7 +69,7 @@ func discoverSuites(p *analysis.Pass) []*Suite {
 	for _, suite := range result {
 		for selection := range suite.MethodSet.Methods() {
 			f := selection.Obj().(*types.Func)
-			method := &Method{Func: f}
+			method := &Method{Func: f, Decl: decls[f.Origin()]}
 			switch name := f.Name(); {
 			case strings.HasPrefix(name, "Test"):
 				suite.Tests = append(suite.Tests, testFromMethod(method, suite))

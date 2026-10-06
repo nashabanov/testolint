@@ -36,4 +36,4 @@ type Promoted struct { // want "TESTO_DISCOVERY: suite Promoted$"
 }
 type Providers struct{}
 
-func (Providers) CasesAge() []int { return nil } // want "TESTO006"
+func (Providers) CasesAge() []int { return []int{0} } // want "TESTO006"

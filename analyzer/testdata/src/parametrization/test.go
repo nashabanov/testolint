@@ -18,7 +18,7 @@ func (Suite) TestValid(
 }
 
 func (Suite) CasesUserID() []int {
-	return nil
+	return []int{0}
 }
 
 // TESTO003: missing provider
@@ -40,18 +40,18 @@ func (Suite) TestWrongCasesType(
 }
 
 func (Suite) CasesAge() []string { // want "TESTO004"
-	return nil
+	return []string{"admin"}
 }
 
 // TESTO006: orphan provider
 func (Suite) CasesUnused() []bool { // want "TESTO006"
-	return nil
+	return []bool{true}
 }
 
 // A concrete element type is assignable to an interface field, but not identical.
 func (Suite) TestAssignable(t T, p struct{ Value any }) {}
-func (Suite) CasesValue() []int                         { return nil }
+func (Suite) CasesValue() []int                         { return []int{0} }
 
 // The reverse direction is not assignable: any cannot be assigned to int.
 func (Suite) TestNotAssignable(t T, p struct{ Count int }) {}
-func (Suite) CasesCount() []any                            { return nil } // want "TESTO004"
+func (Suite) CasesCount() []any                            { return []any{0} } // want "TESTO004"

@@ -6,6 +6,15 @@ require github.com/ozontech/testo v0.0.0
 
 require faketesto v0.0.0
 
+require (
+	emptycaseslib v0.0.0
+	promotionlib v0.0.0
+)
+
 replace github.com/ozontech/testo => ./github.com/ozontech/testo
 
 replace faketesto => ./faketesto
+
+replace emptycaseslib => ./emptycaseslib
+
+replace promotionlib => ./promotionlib
