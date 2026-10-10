@@ -26,8 +26,13 @@ func TestIntegration(t *testing.T) {
 	if !errors.As(err, &exitErr) || exitErr.ExitCode() != 1 {
 		t.Fatalf("expected diagnostic exit code 1, got %v\n%s", err, output)
 	}
-	if !strings.Contains(string(output), "TESTO001:") || !strings.Contains(string(output), "(testolint)") {
-		t.Fatalf("expected TESTO001 from testolint\n%s", output)
+	for _, diagnostic := range []struct {
+		id    string
+		count int
+	}{{"TESTO001:", 1}, {"TESTO012:", 3}, {"TESTO013:", 2}, {"(testolint)", 6}} {
+		if count := strings.Count(string(output), diagnostic.id); count != diagnostic.count {
+			t.Errorf("%s count=%d, want %d\n%s", diagnostic.id, count, diagnostic.count, output)
+		}
 	}
 	clean := exec.Command(binary, "run", "--config", ".golangci.yml", "./clean")
 	clean.Dir = "testdata/integration"

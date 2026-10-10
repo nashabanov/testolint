@@ -11,12 +11,14 @@
   test with default preceding hooks; skip execution paths requiring inference.
 - Regression fixtures for discovery, both rules, false positives, diagnostic
   positions, deduplication and deterministic execution alongside existing rules.
+- CLI and custom golangci-lint integration coverage for both new rules and
+  clean execution with real Testo, including bounded receiver recursion.
 - Document detection boundaries and Testo v1.8.0 runtime behavior.
 
 ### Changed
 
 - Add separate run-level rules with shared discovery and diagnostic deduplication,
-  keep analysis state local, and modernize loops.
+  keep analysis state local, and modernize loops and test error handling.
 
 ## 0.2.0
 
