@@ -16,7 +16,7 @@ func ordinary(t *testo.T) {
 	testo.RunSuite[*S](t, &S{})                             // want `TESTO_RUN_DISCOVERY: RunSuite \*run_discovery.S`
 	testo.RunSuite[Alias, *testo.T](t, Alias{})             // want `TESTO_RUN_DISCOVERY: RunSuite run_discovery.(Alias|S)`
 	testo.RunSubSuite(t, &S{})                              // want `TESTO_RUN_DISCOVERY: RunSubSuite \*run_discovery.S`
-	testo.RunSubSuite[*S, *testo.T, *testo.T](t, (*S)(nil)) // want `TESTO_RUN_DISCOVERY: RunSubSuite \*run_discovery.S`
+	testo.RunSubSuite[*S, *testo.T, *testo.T](t, (*S)(nil)) // want `TESTO_RUN_DISCOVERY: RunSubSuite \*run_discovery.S` "TESTO012: suite argument is statically nil"
 	(testo.RunSuite[S])(t, S{})                             // want `TESTO_RUN_DISCOVERY: RunSuite run_discovery.S`
 	run := testo.RunSuite[S]
 	run(t, S{}) // want `TESTO_RUN_DISCOVERY: RunSuite run_discovery.S`

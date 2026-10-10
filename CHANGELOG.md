@@ -4,12 +4,21 @@
 
 ### Added
 
+- `TESTO012`: report statically nil suite arguments at `RunSuite` and
+  `RunSubSuite` call sites. Covers explicit nil, typed pointer conversions, and
+  unchanged local pointer declarations, including zero values. Reassignments,
+  address-taking and values requiring control-flow analysis are skipped.
+- Nil-suite regression fixtures covering import/type aliases, generic calls,
+  local declarations, argument positions and false-positive boundaries. Document
+  that nil-safe methods can run successfully: this diagnostic reports nilness,
+  not an unconditional runtime failure.
+
 - Internal discovery of `testo.RunSuite` and `testo.RunSubSuite` calls using
   Go type information, retaining the suite expression, static type and source
   position. Supports generic instantiations, import aliases and directly
   initialized local function aliases without reassignment or address-taking.
 - Analyzer fixtures for run discovery and filtering of unrelated calls and
-  mutable aliases. Public run-level diagnostics will be added separately.
+  mutable aliases.
 
 ### Changed
 
@@ -18,7 +27,7 @@
   state are local to each invocation; the eleven existing rules are unchanged.
 - Add a pipeline regression fixture covering all eleven suite diagnostics,
   run-rule dispatch, deduplication across both rule lists, and deterministic
-  diagnostics on repeated invocations. Public run rules remain pending.
+  diagnostics on repeated invocations.
 
 ## 0.2.0
 

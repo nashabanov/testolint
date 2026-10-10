@@ -23,6 +23,7 @@ func TestAnalyzer(t *testing.T) {
 		"discovery",
 		"run_discovery",
 		"run_pipeline",
+		"nil_suite",
 		"promotion",
 		"empty_cases",
 		"empty_suite",

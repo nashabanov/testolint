@@ -1,8 +1,9 @@
 # testolint
 
 A small Go linter for tests written with [Testo](https://github.com/ozontech/testo).
-It checks suite signatures, parameter providers, and naming without running tests.
-Both the standalone CLI and golangci-lint integration run the same eleven rules.
+It checks suite signatures, parameter providers, naming, and suite execution
+without running tests.
+Both the standalone CLI and golangci-lint integration run the same twelve rules.
 Runtime semantics were checked against Testo v1.8.0.
 
 ## Installation
@@ -111,6 +112,7 @@ The same installation and invocation commands work in CI.
 | `TESTO009` | Parameter fields must be exported so reflection can set them. |
 | `TESTO010` | Providers whose body is a single return of `nil` or an empty slice literal always return an empty case set. |
 | `TESTO011` | Suite must contain at least one runnable Testo test. |
+| `TESTO012` | Report a statically nil suite argument to `RunSuite` or `RunSubSuite`. |
 
 For `testo.Suite[T]`, tests have the form `TestX(t T)` or
 `TestX(t T, p struct{ Age int })`. Named structs and named slice returns are
@@ -151,6 +153,19 @@ suite_test.go:8:14: TESTO004: CasesAge provides string, but parameter "Age" expe
 
 Return `[]int{18}` from `CasesAge` to satisfy the `Age int` parameter.
 
+For suite execution, `TESTO012` reports at the suite argument:
+
+```go
+var suite *Suite = nil
+testo.RunSuite(t, suite) // TESTO012: suite argument is statically nil
+```
+
+Pass an initialized instance such as `&Suite{}`. This rule reports a known nil
+value, not a guaranteed panic. In Testo v1.8.0, inherited value-receiver hooks
+panic when invoked through a nil suite pointer, but explicitly nil-safe pointer
+hooks and tests can run successfully. Reporting those intentional nil suites is
+also part of this rule's policy; method bodies are not analyzed for nil safety.
+
 ## Scope and limitations
 
 - Discovery recognizes direct and indirect embedding of
@@ -162,11 +177,23 @@ Return `[]int{18}` from `CasesAge` to satisfy the `Age int` parameter.
 - Declared and promoted tests, providers and hooks are checked using the
   pointer method set, including pointer and value receivers. Go's shadowing
   and ambiguity rules determine which methods are included.
-  The analyzer does not inspect the actual value passed to `testo.RunSuite`.
 - Diagnostics for methods declared in the analyzed package point to the method
   or parameter field. Diagnostics for imported methods point to the local
   suite declaration that exposes them.
-- Generic suite declarations are outside the supported scope.
+- Generic suite declarations are outside the suite-level rules' scope;
+  run-level checks can inspect calls using instantiated generic suites.
+- Run discovery identifies Testo functions through Go type information. It
+  supports import aliases, inferred and explicit generic arguments, and direct
+  local function aliases without reassignment or address-taking. Global function
+  variables, alias chains and wrapper functions are not resolved.
+- `TESTO012` supports explicit `nil` and pointer conversions of `nil`, plus
+  direct local pointer variables declared with no initializer, `nil`, or a typed
+  nil conversion (`var` and `:=`). Any later assignment or address-taking
+  anywhere in the package disables inference for that variable, including
+  assignments after the call and inside closures. Function results, parameters,
+  globals, fields, chains of variable initializers, interface-typed variables,
+  and control-flow-dependent values are not inferred. No SSA or interprocedural
+  analysis is used.
 - Orphan detection is conservative when a malformed parameterized test makes
   provider usage uncertain.
 - Lifecycle, parallelism, plugin hooks, standalone `testo.Run`/`RunTest`, provider

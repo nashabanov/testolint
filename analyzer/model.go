@@ -73,4 +73,9 @@ type RunCall struct {
 	Call      *ast.CallExpr
 	SuiteExpr ast.Expr
 	SuiteType types.Type
+	// SuiteValue is SuiteExpr, or the initializer of an unchanged local
+	// variable used directly as the argument. Nil denotes its zero value.
+	// Initializers are resolved only one level; their type may differ from
+	// SuiteType because of implicit conversions in the declaration.
+	SuiteValue ast.Expr
 }

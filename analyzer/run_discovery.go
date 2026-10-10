@@ -16,7 +16,7 @@ func discoverRuns(p *analysis.Pass) []*RunCall {
 	if p.TypesInfo == nil {
 		return nil
 	}
-	aliases := make(map[types.Object]ast.Expr)
+	localValues := make(map[types.Object]ast.Expr)
 	invalid := make(map[types.Object]bool)
 	var calls []*ast.CallExpr
 	record := func(id *ast.Ident, expr ast.Expr) {
@@ -24,7 +24,7 @@ func discoverRuns(p *analysis.Pass) []*RunCall {
 		if !ok || obj.Parent() == nil || p.Pkg == nil || obj.Parent() == p.Pkg.Scope() {
 			return
 		}
-		aliases[obj] = expr
+		localValues[obj] = expr
 	}
 	invalidate := func(expr ast.Expr) {
 		if id, ok := ast.Unparen(expr).(*ast.Ident); ok {
@@ -39,7 +39,11 @@ func discoverRuns(p *analysis.Pass) []*RunCall {
 			case *ast.CallExpr:
 				calls = append(calls, n)
 			case *ast.ValueSpec:
-				if len(n.Names) == len(n.Values) {
+				if len(n.Values) == 0 {
+					for _, id := range n.Names {
+						record(id, nil)
+					}
+				} else if len(n.Names) == len(n.Values) {
 					for i, id := range n.Names {
 						record(id, n.Values[i])
 					}
@@ -77,7 +81,7 @@ func discoverRuns(p *analysis.Pass) []*RunCall {
 		fun := runFunctionExpr(call.Fun)
 		if id, ok := fun.(*ast.Ident); ok {
 			obj := p.TypesInfo.ObjectOf(id)
-			if expr := aliases[obj]; expr != nil && !invalid[obj] {
+			if expr := localValues[obj]; expr != nil && !invalid[obj] {
 				fun = runFunctionExpr(expr)
 			}
 		}
@@ -108,8 +112,17 @@ func discoverRuns(p *analysis.Pass) []*RunCall {
 		if len(call.Args) < 2 {
 			continue
 		}
+		suiteExpr := call.Args[1]
+		suiteValue := suiteExpr
+		if id, ok := ast.Unparen(suiteExpr).(*ast.Ident); ok {
+			obj := p.TypesInfo.ObjectOf(id)
+			if init, known := localValues[obj]; known && !invalid[obj] {
+				suiteValue = init
+			}
+		}
 		result = append(result, &RunCall{
-			Kind: kind, Call: call, SuiteExpr: call.Args[1], SuiteType: p.TypesInfo.TypeOf(call.Args[1]),
+			Kind: kind, Call: call, SuiteExpr: suiteExpr,
+			SuiteType: p.TypesInfo.TypeOf(suiteExpr), SuiteValue: suiteValue,
 		})
 	}
 	return result

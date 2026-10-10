@@ -13,7 +13,7 @@ var Analyzer = &analysis.Analyzer{
 }
 
 func run(p *analysis.Pass) (any, error) {
-	return runWithRules(p, suiteRules(), nil)
+	return runWithRules(p, suiteRules(), []RunRule{checkNilSuite})
 }
 
 // runWithRules shares discovery and diagnostic deduplication across both rule
