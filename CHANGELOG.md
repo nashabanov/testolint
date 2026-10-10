@@ -19,6 +19,7 @@
 
 - Add separate run-level rules with shared discovery and diagnostic deduplication,
   keep analysis state local, and modernize loops and test error handling.
+- Use the latest published release in installation examples and record pre-release checks.
 
 ## 0.2.0
 

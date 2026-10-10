@@ -8,17 +8,16 @@ Runtime semantics were checked against Testo v1.8.0.
 
 ## Installation
 
-Requires Go 1.27.1 or newer. The commands using `v0.2.0` below become available
-**after the release tag is published**.
+Requires Go 1.27.1 or newer. Installation examples use the latest published release.
 
 ### Standalone
 
 ```sh
-go install github.com/nashabanov/testolint/cmd/testolint@v0.2.0
+go install github.com/nashabanov/testolint/cmd/testolint@latest
 ```
 
 Add your Go binary directory (`go env GOBIN`, or `$(go env GOPATH)/bin` when
-GOBIN is empty) to `PATH`. Before the tag exists, build from this checkout:
+GOBIN is empty) to `PATH`. To use the current checkout, build locally:
 
 ```sh
 go build -o bin/testolint ./cmd/testolint
@@ -40,7 +39,7 @@ The checked-in `.custom-gcl.yml` builds local sources into `bin/golangci-lint`.
 This **custom binary** contains testolint; the bootstrap and your ordinary system
 binary do not. Rebuild it after updating the plugin or golangci-lint.
 
-After release, build in your own project using this `.custom-gcl.yml`:
+Build in your own project using this `.custom-gcl.yml`:
 
 ```yaml
 version: v2.14.0
@@ -49,7 +48,7 @@ destination: ./bin
 plugins:
   - module: github.com/nashabanov/testolint
     import: github.com/nashabanov/testolint/plugin/golangci
-    version: v0.2.0
+    version: latest
 ```
 
 Install the bootstrap and run `custom` using the commands above. In the project
