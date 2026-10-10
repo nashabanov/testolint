@@ -11,6 +11,15 @@
 - Analyzer fixtures for run discovery and filtering of unrelated calls and
   mutable aliases. Public run-level diagnostics will be added separately.
 
+### Changed
+
+- Integrate run discovery into the analyzer pipeline with separate suite and
+  run rule lists and shared diagnostic deduplication. Rule lists and diagnostic
+  state are local to each invocation; the eleven existing rules are unchanged.
+- Add a pipeline regression fixture covering all eleven suite diagnostics,
+  run-rule dispatch, deduplication across both rule lists, and deterministic
+  diagnostics on repeated invocations. Public run rules remain pending.
+
 ## 0.2.0
 
 ### Added

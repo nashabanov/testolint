@@ -4,16 +4,20 @@ import "golang.org/x/tools/go/analysis"
 
 type Rule func(*analysis.Pass, *Suite)
 
-var rules = []Rule{
-	checkTestSignature,
-	checkHookSignature,
-	checkMissingCaseProvider,
-	checkCaseTypeMismatch,
-	checkCasesSignature,
-	checkOrphanCasesProvider,
-	checkMalformedTestName,
-	checkMalformedCasesName,
-	checkUnexportedParamField,
-	checkEmptyCases,
-	checkEmptySuite,
+type RunRule func(*analysis.Pass, *RunCall)
+
+func suiteRules() []Rule {
+	return []Rule{
+		checkTestSignature,
+		checkHookSignature,
+		checkMissingCaseProvider,
+		checkCaseTypeMismatch,
+		checkCasesSignature,
+		checkOrphanCasesProvider,
+		checkMalformedTestName,
+		checkMalformedCasesName,
+		checkUnexportedParamField,
+		checkEmptyCases,
+		checkEmptySuite,
+	}
 }
