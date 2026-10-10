@@ -3,7 +3,7 @@
 A small Go linter for tests written with [Testo](https://github.com/ozontech/testo).
 It checks suite signatures, parameter providers, naming, and suite execution
 without running tests.
-Both the standalone CLI and golangci-lint integration run the same twelve rules.
+Both the standalone CLI and golangci-lint integration run the same thirteen rules.
 Runtime semantics were checked against Testo v1.8.0.
 
 ## Installation
@@ -113,6 +113,7 @@ The same installation and invocation commands work in CI.
 | `TESTO010` | Providers whose body is a single return of `nil` or an empty slice literal always return an empty case set. |
 | `TESTO011` | Suite must contain at least one runnable Testo test. |
 | `TESTO012` | Report a statically nil suite argument to `RunSuite` or `RunSubSuite`. |
+| `TESTO013` | Report a directly recursive `RunSubSuite` invocation on the current receiver. |
 
 For `testo.Suite[T]`, tests have the form `TestX(t T)` or
 `TestX(t T, p struct{ Age int })`. Named structs and named slice returns are
@@ -166,44 +167,52 @@ panic when invoked through a nil suite pointer, but explicitly nil-safe pointer
 hooks and tests can run successfully. Reporting those intentional nil suites is
 also part of this rule's policy; method bodies are not analyzed for nil safety.
 
+`TESTO013` detects direct receiver recursion in a narrowly defined execution
+path, for example:
+
+```go
+type RecursiveSuite struct{ testo.Suite[*testo.T] }
+
+func (s *RecursiveSuite) TestRecursive(t *testo.T) {
+    testo.RunSubSuite(t, s) // TESTO013: recursive RunSubSuite invocation
+}
+```
+
+The nested run selects the same method on the receiver again. Execute a child
+suite with its own tests instead. The diagnostic points to the `RunSubSuite`
+call. Different instances of the same type are not reported. Runtime plugins
+and filtering may interrupt execution; the message identifies direct recursion
+and does not claim that every run must loop forever.
+
 ## Scope and limitations
 
-- Discovery recognizes direct and indirect embedding of
-  `github.com/ozontech/testo.Suite[T]`, including aliases and pointer embedding.
-  It uses Testo v1.8.0's private suite-interface marker to identify the base
-  suite and its `T`. Unrelated `Suite` types are ignored.
-  Suites are discovered from package-level named struct type declarations,
-  even when they have no declared methods; aliases do not create duplicate suites.
-- Declared and promoted tests, providers and hooks are checked using the
-  pointer method set, including pointer and value receivers. Go's shadowing
-  and ambiguity rules determine which methods are included.
-- Diagnostics for methods declared in the analyzed package point to the method
-  or parameter field. Diagnostics for imported methods point to the local
-  suite declaration that exposes them.
-- Generic suite declarations are outside the suite-level rules' scope;
-  run-level checks can inspect calls using instantiated generic suites.
-- Run discovery identifies Testo functions through Go type information. It
-  supports import aliases, inferred and explicit generic arguments, and direct
-  local function aliases without reassignment or address-taking. Global function
-  variables, alias chains and wrapper functions are not resolved.
-- `TESTO012` supports explicit `nil` and pointer conversions of `nil`, plus
-  direct local pointer variables declared with no initializer, `nil`, or a typed
-  nil conversion (`var` and `:=`). Any later assignment or address-taking
-  anywhere in the package disables inference for that variable, including
-  assignments after the call and inside closures. Function results, parameters,
-  globals, fields, chains of variable initializers, interface-typed variables,
-  and control-flow-dependent values are not inferred. No SSA or interprocedural
-  analysis is used.
-- Orphan detection is conservative when a malformed parameterized test makes
-  provider usage uncertain.
-- Lifecycle, parallelism, plugin hooks, standalone `testo.Run`/`RunTest`, provider
-  logic beyond the obvious empty-return check is outside this release's scope.
-- `TESTO010` only checks valid providers with a local AST body consisting of
-  one `return nil` or one return of an empty slice composite literal, including
-  named slice types and aliases. Local promoted providers are included;
-  imported providers without an AST body in the current pass are skipped.
-  Variables, calls, `make`, constant propagation and control flow are not
-  analyzed. Invalid signatures and malformed names suppress this check.
+- Suite discovery uses Testo v1.8.0's private marker and recognizes package-level
+  named structs embedding `testo.Suite[T]` directly or indirectly, including
+  aliases and pointer embedding. Aliases do not duplicate suites. Generic suite
+  declarations are skipped by suite rules; instantiated calls support run checks.
+- Suite rules use the pointer method set for declared, promoted and imported
+  methods, respecting Go shadowing and ambiguity. Local diagnostics point to
+  methods or fields; imported-method diagnostics point to the local suite type.
+- Run discovery uses Go types and supports import aliases, inferred/explicit
+  generics and unchanged direct local function aliases. Globals, alias chains
+  and wrappers are not resolved.
+- `TESTO012` checks explicit nil, pointer conversions of nil and local pointer
+  declarations with a nil initializer or zero value (`var`/`:=`). Any assignment
+  or address-taking disables local inference, even after the call or in a closure.
+  Other values, interface variables and control-flow-dependent nilness are skipped.
+- `TESTO013` requires a sole `RunSubSuite` call without options, passing the
+  method's own Testo parameter and receiver (or a value receiver's address).
+  The argument's method set must select that same method. Suites must have valid
+  regular tests and no providers: `BeforeAll` is checked, or the sole test when
+  `BeforeAll`/`BeforeEach` are inherited defaults. Other execution paths, imported
+  bodies, plugins and runtime filters are outside this check's scope.
+- `TESTO010` checks valid local providers whose sole statement returns nil or an
+  empty slice literal, including named slices and aliases. Imported bodies and
+  other expressions or control flow are skipped. Invalid signatures/names
+  suppress this check; malformed parameterized tests make orphan checks conservative.
+- Other lifecycle/parallelism checks, plugin hooks, standalone `Run`/`RunTest`
+  and broader provider logic are outside this release's scope. No SSA or
+  interprocedural analysis is used.
 
 ## Development
 

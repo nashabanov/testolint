@@ -24,6 +24,7 @@ func TestAnalyzer(t *testing.T) {
 		"run_discovery",
 		"run_pipeline",
 		"nil_suite",
+		"recursive_subsuite",
 		"promotion",
 		"empty_cases",
 		"empty_suite",
@@ -86,7 +87,7 @@ func TestAnalyzer(t *testing.T) {
 						var first []analysis.Diagnostic
 						// Repeat the pass to check deterministic order and that
 						// deduplication does not leak into the next invocation.
-						for i := 0; i < 2; i++ {
+						for i := range 2 {
 							var diagnostics []analysis.Diagnostic
 							pass := *p
 							pass.Report = func(d analysis.Diagnostic) { diagnostics = append(diagnostics, d) }

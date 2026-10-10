@@ -2,6 +2,8 @@ package testo
 
 type T struct{}
 
+func (*T) Skip(args ...any) {}
+
 type Suite[T any] struct{}
 
 func (Suite[T]) private() {}

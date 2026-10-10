@@ -4,6 +4,7 @@ import (
 	"go/ast"
 	"go/token"
 	"go/types"
+	"slices"
 
 	"golang.org/x/tools/go/analysis"
 )
@@ -19,6 +20,7 @@ func discoverRuns(p *analysis.Pass) []*RunCall {
 	localValues := make(map[types.Object]ast.Expr)
 	invalid := make(map[types.Object]bool)
 	var calls []*ast.CallExpr
+	functions := make(map[*ast.CallExpr]*ast.FuncDecl)
 	record := func(id *ast.Ident, expr ast.Expr) {
 		obj, ok := p.TypesInfo.Defs[id].(*types.Var)
 		if !ok || obj.Parent() == nil || p.Pkg == nil || obj.Parent() == p.Pkg.Scope() {
@@ -34,10 +36,11 @@ func discoverRuns(p *analysis.Pass) []*RunCall {
 		}
 	}
 	for _, file := range p.Files {
-		ast.Inspect(file, func(n ast.Node) bool {
+		ast.PreorderStack(file, nil, func(n ast.Node, stack []ast.Node) bool {
 			switch n := n.(type) {
 			case *ast.CallExpr:
 				calls = append(calls, n)
+				functions[n] = enclosingFunc(stack)
 			case *ast.ValueSpec:
 				if len(n.Values) == 0 {
 					for _, id := range n.Names {
@@ -121,7 +124,7 @@ func discoverRuns(p *analysis.Pass) []*RunCall {
 			}
 		}
 		result = append(result, &RunCall{
-			Kind: kind, Call: call, SuiteExpr: suiteExpr,
+			Kind: kind, Call: call, SuiteExpr: suiteExpr, EnclosingFunc: functions[call],
 			SuiteType: p.TypesInfo.TypeOf(suiteExpr), SuiteValue: suiteValue,
 		})
 	}
@@ -139,4 +142,18 @@ func runFunctionExpr(expr ast.Expr) ast.Expr {
 			return e
 		}
 	}
+}
+
+// A call inside a function literal belongs to that literal, even when it is
+// nested in a method. It cannot be treated as a direct call by the method.
+func enclosingFunc(stack []ast.Node) *ast.FuncDecl {
+	for _, node := range slices.Backward(stack) {
+		switch node := node.(type) {
+		case *ast.FuncDecl:
+			return node
+		case *ast.FuncLit:
+			return nil
+		}
+	}
+	return nil
 }

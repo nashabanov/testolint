@@ -1,33 +1,22 @@
 # Changelog
 
-## 0.3.0 (Unreleased)
+## 0.3.0
 
 ### Added
 
-- `TESTO012`: report statically nil suite arguments at `RunSuite` and
-  `RunSubSuite` call sites. Covers explicit nil, typed pointer conversions, and
-  unchanged local pointer declarations, including zero values. Reassignments,
-  address-taking and values requiring control-flow analysis are skipped.
-- Nil-suite regression fixtures covering import/type aliases, generic calls,
-  local declarations, argument positions and false-positive boundaries. Document
-  that nil-safe methods can run successfully: this diagnostic reports nilness,
-  not an unconditional runtime failure.
-
-- Internal discovery of `testo.RunSuite` and `testo.RunSubSuite` calls using
-  Go type information, retaining the suite expression, static type and source
-  position. Supports generic instantiations, import aliases and directly
-  initialized local function aliases without reassignment or address-taking.
-- Analyzer fixtures for run discovery and filtering of unrelated calls and
-  mutable aliases.
+- Discover `RunSuite` and `RunSubSuite` using Go types, including generic calls,
+  import aliases and unchanged direct local function aliases.
+- `TESTO012`: report explicit nil and unchanged local nil suite pointers.
+- `TESTO013`: report direct receiver recursion in `BeforeAll` or a sole regular
+  test with default preceding hooks; skip execution paths requiring inference.
+- Regression fixtures for discovery, both rules, false positives, diagnostic
+  positions, deduplication and deterministic execution alongside existing rules.
+- Document detection boundaries and Testo v1.8.0 runtime behavior.
 
 ### Changed
 
-- Integrate run discovery into the analyzer pipeline with separate suite and
-  run rule lists and shared diagnostic deduplication. Rule lists and diagnostic
-  state are local to each invocation; the eleven existing rules are unchanged.
-- Add a pipeline regression fixture covering all eleven suite diagnostics,
-  run-rule dispatch, deduplication across both rule lists, and deterministic
-  diagnostics on repeated invocations.
+- Add separate run-level rules with shared discovery and diagnostic deduplication,
+  keep analysis state local, and modernize loops.
 
 ## 0.2.0
 
