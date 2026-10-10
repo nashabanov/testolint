@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.3.0 (Unreleased)
+
+### Added
+
+- Internal discovery of `testo.RunSuite` and `testo.RunSubSuite` calls using
+  Go type information, retaining the suite expression, static type and source
+  position. Supports generic instantiations, import aliases and directly
+  initialized local function aliases without reassignment or address-taking.
+- Analyzer fixtures for run discovery and filtering of unrelated calls and
+  mutable aliases. Public run-level diagnostics will be added separately.
+
 ## 0.2.0
 
 ### Added

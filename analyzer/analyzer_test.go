@@ -19,6 +19,7 @@ func TestAnalyzer(t *testing.T) {
 		"naming",
 		"param_visibility",
 		"discovery",
+		"run_discovery",
 		"promotion",
 		"empty_cases",
 		"empty_suite",
@@ -39,6 +40,25 @@ func TestAnalyzer(t *testing.T) {
 								t.Errorf("incomplete model for %s", suite.Type.Obj().Name())
 							}
 							p.Reportf(suite.Type.Obj().Pos(), "TESTO_DISCOVERY: suite %s", suite.Type.Obj().Name())
+						}
+						return run(p)
+					},
+				}
+			}
+			if tt == "run_discovery" {
+				analyzer = &analysis.Analyzer{
+					Name: "rundiscoverytest",
+					Doc:  "check discovered run models and ordinary diagnostics",
+					Run: func(p *analysis.Pass) (any, error) {
+						for _, call := range discoverRuns(p) {
+							if call.SuiteType == nil || call.SuiteExpr != call.Call.Args[1] {
+								t.Fatal("incomplete run model")
+							}
+							name := "RunSuite"
+							if call.Kind == RunSubSuite {
+								name = "RunSubSuite"
+							}
+							p.Reportf(call.SuiteExpr.Pos(), "TESTO_RUN_DISCOVERY: %s %s", name, call.SuiteType)
 						}
 						return run(p)
 					},

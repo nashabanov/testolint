@@ -57,3 +57,20 @@ func (t *Test) validParams(suite *Suite) bool {
 		types.Identical(sig.Params().At(0).Type(), suite.TType) &&
 		isStructType(sig.Params().At(1).Type())
 }
+
+// RunKind identifies a Testo suite execution entry point.
+type RunKind uint8
+
+const (
+	RunSuite RunKind = iota
+	RunSubSuite
+)
+
+// RunCall retains source expressions and the suite's static argument type.
+// SuiteType may be nil when type information is incomplete.
+type RunCall struct {
+	Kind      RunKind
+	Call      *ast.CallExpr
+	SuiteExpr ast.Expr
+	SuiteType types.Type
+}
