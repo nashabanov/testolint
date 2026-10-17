@@ -7,6 +7,8 @@ import (
 	"golang.org/x/tools/go/analysis"
 )
 
+const noExecutions = -1 // A proven empty provider or Cartesian product.
+
 func validParallelProviders(suite *Suite) bool {
 	for _, provider := range suite.Cases {
 		if _, problem := casesSignature(provider.Func.Type()); problem != "" || !isValidPrefixedName(provider.Func.Name(), "Cases") {
@@ -40,14 +42,17 @@ func validParallelParameters(suite *Suite, test *Test) bool {
 
 // Called after collection validation. Cap multiplicity at two, which is
 // sufficient to establish a second execution of the same test method.
-func testExecutionCount(p *analysis.Pass, suite *Suite, test *Test) int {
+func testExecutionCount(suite *Suite, test *Test, sizes map[*Method]int) int {
 	count := 1
 	for _, param := range test.Params {
-		size := constantProviderSize(p, suite.CasesByName[param.Name])
-		if size == 0 {
-			return 0
+		size := sizes[suite.CasesByName[param.Name]]
+		if size == noExecutions {
+			return noExecutions
 		}
-		if size >= 2 {
+		if size == 0 {
+			count = 0
+		}
+		if size >= 2 && count != 0 {
 			count = 2
 		}
 	}
@@ -55,7 +60,7 @@ func testExecutionCount(p *analysis.Pass, suite *Suite, test *Test) int {
 }
 
 // Recognize only a sole return of an unkeyed slice literal of constants.
-// Zero means no execution count was established (including an empty provider).
+// Zero means unknown; noExecutions distinguishes a proven empty provider.
 func constantProviderSize(p *analysis.Pass, provider *Method) int {
 	if provider.Decl == nil || provider.Decl.Body == nil || len(provider.Decl.Body.List) != 1 {
 		return 0
@@ -66,7 +71,13 @@ func constantProviderSize(p *analysis.Pass, provider *Method) int {
 	}
 	lit, ok := ast.Unparen(ret.Results[0]).(*ast.CompositeLit)
 	if !ok {
+		if id, ok := ast.Unparen(ret.Results[0]).(*ast.Ident); ok && p.TypesInfo.ObjectOf(id) == types.Universe.Lookup("nil") {
+			return noExecutions
+		}
 		return 0
+	}
+	if len(lit.Elts) == 0 {
+		return noExecutions
 	}
 	for _, element := range lit.Elts {
 		// Constants have no helper calls or side effects during collection.

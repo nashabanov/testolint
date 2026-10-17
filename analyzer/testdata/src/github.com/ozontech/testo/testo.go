@@ -33,3 +33,6 @@ func RunSubSuite[S suite[Sub], Parent, Sub CommonT](t Parent, s S, options ...an
 func (*T) Parallel()      {}
 func (*T) Cleanup(func()) {}
 func (*T) Log(...any)     {}
+
+func (*T) Helper()             {}
+func (*T) Logf(string, ...any) {}

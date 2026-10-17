@@ -3,6 +3,7 @@ package analyzer
 import (
 	"go/token"
 	"go/types"
+	"sort"
 
 	"golang.org/x/tools/go/analysis"
 )
@@ -28,8 +29,9 @@ type parallelEvent struct {
 // Cleanup reads retain their deferred nature rather than implying inline use.
 type parallelPath struct {
 	events     []parallelEvent
-	executions int // Capped at two; zero means multiplicity is not established.
+	executions int // Capped at two; zero is unknown, noExecutions is proven empty.
 	parallel   bool
+	understood bool // Complete local timeline; unknown bodies contribute no scheduling evidence.
 }
 
 // Shared by the four rules. Building this model never emits diagnostics.
@@ -47,16 +49,30 @@ func buildParallelModel(p *analysis.Pass, suite *Suite) *parallelModel {
 		return nil
 	}
 	model := &parallelModel{}
-	for _, test := range suite.Tests {
-		if !isValidPrefixedName(test.Func().Name(), "Test") || !validParallelParameters(suite, test) {
+	tests := append([]*Test(nil), suite.Tests...)
+	// Testo Collect appends regular methods first, then parameterized methods.
+	sort.SliceStable(tests, func(i, j int) bool {
+		a, b := tests[i].Func().Type().(*types.Signature).Params().Len(), tests[j].Func().Type().(*types.Signature).Params().Len()
+		if a != b {
+			return a < b
+		}
+		return tests[i].Func().Name() < tests[j].Func().Name()
+	})
+	sizes := make(map[*Method]int)
+	for _, provider := range suite.Cases {
+		sizes[provider] = constantProviderSize(p, provider)
+	}
+	for _, test := range tests {
+		if !validParallelSignature(test.Func().Type().(*types.Signature), suite.TType, test.Func().Name()) || !isValidPrefixedName(test.Func().Name(), "Test") || !validParallelParameters(suite, test) {
 			return nil
 		}
 		body, ok := parseParallelBody(p, suite, test.Method)
 		if !ok {
-			return nil
+			body = nil
 		}
 		path := newParallelPath(hooks["BeforeEach"], body, hooks["AfterEach"])
-		path.executions = testExecutionCount(p, suite, test)
+		path.understood = ok
+		path.executions = testExecutionCount(suite, test, sizes)
 		model.paths = append(model.paths, path)
 	}
 	model.sharedReads = findSharedFieldReads(model.paths)
@@ -66,6 +82,12 @@ func buildParallelModel(p *analysis.Pass, suite *Suite) *parallelModel {
 func parseParallelHooks(p *analysis.Pass, suite *Suite) (map[string][]parallelEvent, bool) {
 	hooks := make(map[string][]parallelEvent)
 	for _, method := range suite.Hooks {
+		if !validParallelSignature(method.Func.Type().(*types.Signature), suite.TType, method.Func.Name()) {
+			return nil, false
+		}
+		if method.Func.Name() == "BeforeAll" || method.Func.Name() == "AfterAll" {
+			continue
+		}
 		body, ok := parseParallelBody(p, suite, method)
 		if !ok {
 			return nil, false
@@ -93,15 +115,6 @@ func hasParallel(events []parallelEvent) bool {
 		}
 	}
 	return false
-}
-
-func knownParallelCounts(paths []parallelPath) bool {
-	for _, path := range paths {
-		if path.executions == 0 {
-			return false
-		}
-	}
-	return true
 }
 
 func standardTestoT(t types.Type) bool {

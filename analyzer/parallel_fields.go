@@ -11,33 +11,44 @@ type sharedFieldRead struct {
 }
 
 func findSharedFieldReads(paths []parallelPath) []sharedFieldRead {
-	if !knownParallelCounts(paths) || parallelExecutionCount(paths) < 2 {
-		return nil
+	// Unknown bodies may mutate any field or introduce synchronization. They
+	// are not safe interferers and still exclude shared-field proofs.
+	for _, path := range paths {
+		if !path.understood && path.executions != noExecutions {
+			return nil
+		}
 	}
 	replaced := fieldsWrittenOutsideBeforeEach(paths)
 	var reads []sharedFieldRead
-	for _, path := range paths {
-		if path.parallel {
+	for i, path := range paths {
+		if path.parallel && path.executions > 0 && hasLaterExecution(paths, i) {
 			reads = append(reads, sharedReadsInPath(path, replaced)...)
 		}
 	}
 	return reads
 }
 
-func parallelExecutionCount(paths []parallelPath) int {
-	count := 0
-	for _, path := range paths {
-		if path.parallel {
-			count += path.executions
+// A suspended consumer allows every later scheduled execution to enter
+// BeforeEach, regardless of whether that sibling itself calls Parallel.
+func hasLaterExecution(paths []parallelPath, index int) bool {
+	if paths[index].executions >= 2 {
+		return true
+	}
+	for _, later := range paths[index+1:] {
+		if later.executions > 0 {
+			return true
 		}
 	}
-	return count
+	return false
 }
 
 // Additional writes require ordering analysis beyond the BeforeEach model.
 func fieldsWrittenOutsideBeforeEach(paths []parallelPath) map[*types.Var]bool {
 	fields := make(map[*types.Var]bool)
 	for _, path := range paths {
+		if path.executions == noExecutions {
+			continue
+		}
 		for _, event := range path.events {
 			if event.kind == parallelFieldWrite && !event.beforeEach {
 				fields[event.field] = true

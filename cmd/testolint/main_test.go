@@ -32,7 +32,7 @@ func TestCLI(t *testing.T) {
 			"runs_test.go:27:9: TESTO012:",
 			"runs_test.go:28:51: TESTO012:",
 			"TESTO014:", "TESTO015:", "TESTO016:", "TESTO017:",
-		}, 3, 16},
+		}, 3, 20},
 		{"help", "-h", []string{"Usage: testolint"}, 0, 0},
 		{"long-help", "--help", []string{"Usage: testolint"}, 0, 0},
 	} {

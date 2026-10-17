@@ -1,5 +1,26 @@
 # Changelog
 
+## 0.4.1
+
+### Fixed
+
+- TESTO014–016 recognize later serial executions as possible BeforeEach
+  overwriters, respecting Testo's regular-before-parameterized collection order.
+- Unknown sibling provider counts no longer hide independently proven shared
+  field hazards; distinguish proven empty paths from unknown counts and inspect
+  each provider size once per suite.
+- Validate BeforeAll/AfterAll signatures without parsing unrelated hook bodies.
+- TESTO017 analyzes known test paths independently of unsupported siblings;
+  unsupported operations on the target path still suppress the diagnostic.
+- Recognize resolved standard context Helper and Logf calls in local timelines.
+
+### Tests and documentation
+
+- Add analyzer coverage regressions, real-Testo serial-order and Cartesian-case
+  runtime reproductions, and CLI/custom-plugin expectations.
+- Document partial analysis, ordering evidence, retained conservative limits
+  and the v0.4.1 review results in REVIEW-0.4.1.md.
+
 ## 0.4.0
 
 ### Added

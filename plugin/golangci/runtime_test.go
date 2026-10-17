@@ -10,7 +10,7 @@ import (
 // Exercise the real framework's suspension and context identity, rather than
 // treating analyzer stubs as runtime evidence.
 func TestParallelRuntime(t *testing.T) {
-	cmd := exec.Command("go", "test", "./testdata/parallelruntime", "-run", "^TestReplacement$", "-count=1", "-v")
+	cmd := exec.Command("go", "test", "./testdata/parallelruntime", "-run", "^Test(Replacement|SerialLater|SerialEarlier|ParameterOrder)$", "-count=1", "-v")
 	cmd.Dir = "testdata/integration"
 	out, err := cmd.CombinedOutput()
 	if err != nil {

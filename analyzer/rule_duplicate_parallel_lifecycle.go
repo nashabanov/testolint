@@ -9,7 +9,7 @@ func checkDuplicateParallelLifecycle(p *analysis.Pass, suite *Suite) {
 	for _, path := range suite.parallel.paths {
 		// Only this test must have an established execution. Sibling case
 		// counts do not affect the identity of its lifecycle context.
-		if path.executions == 0 {
+		if !path.understood || path.executions <= 0 {
 			continue
 		}
 		seen := false

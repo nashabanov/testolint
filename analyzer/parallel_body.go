@@ -202,7 +202,18 @@ func (b *parallelBodyParser) allocation(call *ast.CallExpr, name *ast.Ident) boo
 
 func (b *parallelBodyParser) logCall(call *ast.CallExpr, inCleanup bool) bool {
 	sel, ok := call.Fun.(*ast.SelectorExpr)
-	if !ok || sel.Sel.Name != "Log" || !b.isTestoMethod(sel) {
+	if !ok {
+		return false
+	}
+	if sel.Sel.Name == "Helper" && b.isObject(sel.X, b.context) && standardTestoT(b.info.TypeOf(sel.X)) {
+		selection := b.info.Selections[sel]
+		if selection == nil {
+			return false
+		}
+		method, ok := selection.Obj().(*types.Func)
+		return ok && method.Pkg() != nil && (method.Pkg().Path() == "testing" || method.Pkg().Path() == testoImportPath) && len(call.Args) == 0
+	}
+	if (sel.Sel.Name != "Log" && sel.Sel.Name != "Logf") || !b.isTestoMethod(sel) {
 		return false
 	}
 	if !b.isObject(sel.X, b.context) {

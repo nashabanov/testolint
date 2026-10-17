@@ -50,3 +50,57 @@ func TestDuplicate(t *testing.T) {
 	}
 	testo.RunSuite(t, &duplicate{})
 }
+
+// The serial execution completes while A is suspended; no sleep or race is needed.
+type serialLater struct{ shared }
+
+func (s *serialLater) TestA(t *testo.T) { s.shared.TestA(t) }
+func (s *serialLater) TestB(t *testo.T) {
+	if s.count != 2 {
+		t.Fatal("order")
+	}
+}
+func TestSerialLater(t *testing.T) { testo.RunSuite(t, &serialLater{shared: shared{observed: t}}) }
+
+type serialEarlier struct {
+	testo.Suite[*testo.T]
+	count int
+}
+
+func (s *serialEarlier) BeforeEach(t *testo.T) { s.count++ }
+func (s *serialEarlier) TestA(t *testo.T) {
+	if s.count != 1 {
+		t.Fatal("order")
+	}
+}
+func (s *serialEarlier) TestB(t *testo.T) {
+	t.Parallel()
+	if s.count != 2 {
+		t.Fatal("unexpected overwrite")
+	}
+}
+func TestSerialEarlier(t *testing.T) { testo.RunSuite(t, &serialEarlier{}) }
+
+type parameterOrder struct {
+	testo.Suite[*testo.T]
+	count int
+}
+
+func (s *parameterOrder) BeforeEach(t *testo.T) { s.count++ }
+func (s *parameterOrder) TestZ(t *testo.T) {
+	if s.count != 1 {
+		t.Fatal("regular must run first")
+	}
+	t.Parallel()
+	if s.count != 5 {
+		t.Fatal("Cartesian executions missing")
+	}
+}
+func (s *parameterOrder) TestA(t *testo.T, p struct{ X, Y int }) {
+	if s.count < 2 {
+		t.Fatal("parameterized order")
+	}
+}
+func (*parameterOrder) CasesX() []int { return []int{1, 2} }
+func (*parameterOrder) CasesY() []int { return []int{1, 2} }
+func TestParameterOrder(t *testing.T) { testo.RunSuite(t, &parameterOrder{}) }

@@ -187,13 +187,15 @@ call. Different instances of the same type are not reported. Runtime plugins
 and filtering may interrupt execution; the message identifies direct recursion
 and does not claim that every run must loop forever.
 
-## Parallel lifecycle checks (0.4.0)
+## Parallel lifecycle checks
 
 Testo reuses a pointer suite instance. BeforeEach, the test and AfterEach share
 one per-test T; BeforeAll and AfterAll use a separate suite context. Parallel
 suspends the current test until its parent has scheduled the sibling tests.
-With two parallel executions, both BeforeEach hooks can write the same suite
-field before either suspended test resumes. Cleanup runs later and can re-read
+A later serial or parallel execution can run BeforeEach and replace the suite
+field while an earlier parallel consumer is suspended. Testo collects regular
+methods first, then parameterized methods, in method-name order within each group.
+A serial execution completed before the consumer does not establish an overwrite. Cleanup runs later and can re-read
 the other execution's resource. These are lifecycle hazards; TESTO014–016 are
 conservative linter policy, not a claim that every run fails. TESTO017 identifies
 a repeated Parallel call, which fails at runtime with default Testo behavior.
@@ -203,7 +205,7 @@ Plugins and runtime filtering can change these conclusions.
 func (s *Suite) BeforeEach(t *testo.T) { s.resource = new(int) }
 func (s *Suite) TestA(t *testo.T) {
     t.Parallel()
-    t.Log(s.resource) // TESTO014, when TestB also calls Parallel
+    t.Log(s.resource) // TESTO014: TestB runs BeforeEach while TestA is suspended
 }
 func (s *Suite) TestB(t *testo.T) { t.Parallel() }
 ```
@@ -245,26 +247,40 @@ reported once at each source position.
 - TESTO014–017 support the actual `*testo.T` type (including aliases), local
   straight-line bodies, resolved direct calls on the context parameter, and
   direct fields of the suite's own pointer receiver. Supported statements are
-  single assignments, local captures, `new`, `Log`, `Parallel`, and direct
+  single assignments, local captures, `new`, `Log`, `Logf`, `Helper`, `Parallel`, and direct
   `Cleanup(func() { ... })` closures containing local captures and Log. A terminal
   method call on a direct pointer field (such as `s.resource.Close()`) is also
   supported inside Cleanup: evaluating its receiver is the hazardous read;
   the method body and anything it might synchronize are not inferred.
   Value receivers can participate in TESTO017; their fields are not analyzed.
 - TESTO014–016 require a BeforeEach write before the first Parallel suspension
-  and at least two known parallel executions. A single parameterized method
+  and an established later execution on the same receiver, serial or parallel.
+  A single parameterized method
   qualifies when every used provider returns a non-empty, unkeyed slice literal
   of constants in its sole return statement. Other case counts are unknown.
   Fields written by tests or AfterEach are skipped. Storing T in a test body,
   shared referenced storage behind value receivers, and nested fields are outside
-  this initial model. Unknown case counts suppress these shared-field checks.
+  this model. Unknown case counts do not suppress a proof established by other
+  known executions, but cannot establish an interfering execution themselves.
+  Proven empty providers are distinguished from unknown counts: an empty
+  path cannot interfere, even if its body is unsupported. Provider sizes are
+  inspected once per suite.
 - TESTO017 requires an established execution of the checked test: a regular
   method or a parameterized method with known non-empty constant cases. It does
   not require sibling executions or known sibling case counts. Collection errors
   (including missing or incompatible providers) still suppress the check.
-- These checks skip the suite if a hook/test has unknown calls, branches, loops,
-  early exits, receiver/context aliases, imported/promoted bodies, unsupported
-  signatures or invalid providers. Synchronization, helpers, subtests,
+- Invalid lifecycle/test signatures and collection errors suppress dependent
+  checks. BeforeAll/AfterAll signatures are validated; their bodies do not enter
+  per-test timelines. Suite-context Parallel does not reorder the inner siblings.
+  An unknown test body (calls, branches, loops, early exits, aliases or unavailable
+  bodies) excludes that path from TESTO017, without suppressing known sibling paths.
+  BeforeEach/AfterEach must remain understood. For TESTO014–016, unknown test
+  bodies still suppress shared-field proofs because they may mutate any field
+  or synchronize. No partial events from an unsupported body are used.
+  Helper is accepted only on the actual context parameter with its resolved
+  standard method; arbitrary helpers and context aliases remain unknown.
+  Other expressions, including arithmetic, indexing and conversions,
+  remain unsupported. Identical constant field assignments retain existing policy. Synchronization, helpers, subtests,
   custom T types, plugin overrides and runtime filters are not modeled. A clean
   result is not proof of race freedom. No general concurrency analysis is used.
 - Other lifecycle checks, plugin hooks, standalone `Run`/`RunTest`

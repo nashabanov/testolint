@@ -35,11 +35,11 @@ func TestIntegration(t *testing.T) {
 		{"TESTO001:", 1},
 		{"TESTO012:", 3},
 		{"TESTO013:", 2},
-		{"TESTO014:", 3},
-		{"TESTO015:", 2},
-		{"TESTO016:", 1},
-		{"TESTO017:", 4},
-		{"(testolint)", 16},
+		{"TESTO014:", 4},
+		{"TESTO015:", 3},
+		{"TESTO016:", 2},
+		{"TESTO017:", 5},
+		{"(testolint)", 20},
 	} {
 		if count := strings.Count(string(output), diagnostic.id); count != diagnostic.count {
 			t.Errorf("%s count=%d, want %d\n%s", diagnostic.id, count, diagnostic.count, output)
