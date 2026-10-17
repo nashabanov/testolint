@@ -29,3 +29,7 @@ type suite[T any] interface {
 
 func RunSuite[S suite[T], T CommonT](t any, s S, options ...any) bool                   { return true }
 func RunSubSuite[S suite[Sub], Parent, Sub CommonT](t Parent, s S, options ...any) bool { return true }
+
+func (*T) Parallel()      {}
+func (*T) Cleanup(func()) {}
+func (*T) Log(...any)     {}

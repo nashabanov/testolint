@@ -1,5 +1,38 @@
 # Changelog
 
+## 0.4.0 (Unreleased)
+
+### Added
+
+- `TESTO014`: shared BeforeEach field reads after proven Parallel suspension.
+- `TESTO015`: Cleanup callbacks re-reading replaceable shared fixture fields,
+  with precedence over TESTO014 for the same field.
+- `TESTO016`: shared BeforeEach storage exposing another test context.
+- `TESTO017`: repeated Parallel calls on a single lifecycle/test context.
+- Conservative local timelines, resolved context identity, direct receiver-field
+  identity and constant literal provider multiplicity for parallel checks.
+- Fixture-first regression coverage, real-Testo runtime reproductions, CLI and
+  custom golangci-lint coverage, and executable safe serial/local-capture cases.
+
+### Changed
+
+- Split TESTO014–017 into four separately registered rules, backed by a shared
+  model built once per suite. Separate AST parsing, provider counts and
+  shared-field analysis from diagnostic reporting; remove nested parser closures.
+
+### Fixed
+
+- Unknown sibling case counts no longer suppress TESTO017 on a test with its
+  own established execution. Preserve suppression for collection errors and
+  unknown or empty cases of the checked test.
+- Disable golangci-lint's identical-message cap in the integration harness so
+  it verifies every expected diagnostic, including four TESTO017 reports.
+
+### Documentation
+
+- Document supported scheduling patterns, remedies and precision boundaries.
+- Include the version roadmap and a pre-commit 0.4.0 review report.
+
 ## 0.3.0
 
 ### Added

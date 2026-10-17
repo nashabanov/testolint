@@ -1,9 +1,9 @@
 # testolint
 
 A small Go linter for tests written with [Testo](https://github.com/ozontech/testo).
-It checks suite signatures, parameter providers, naming, and suite execution
-without running tests.
-Both the standalone CLI and golangci-lint integration run the same thirteen rules.
+It checks suite signatures, parameter providers, naming, suite execution, and
+conservative parallel lifecycle hazards without running tests.
+Both the standalone CLI and golangci-lint integration run the same seventeen rules.
 Runtime semantics were checked against Testo v1.8.0.
 
 ## Installation
@@ -113,6 +113,10 @@ The same installation and invocation commands work in CI.
 | `TESTO011` | Suite must contain at least one runnable Testo test. |
 | `TESTO012` | Report a statically nil suite argument to `RunSuite` or `RunSubSuite`. |
 | `TESTO013` | Report a directly recursive `RunSubSuite` invocation on the current receiver. |
+| `TESTO014` | BeforeEach writes a shared receiver field read after Parallel suspension. |
+| `TESTO015` | Cleanup re-reads a shared BeforeEach field that another execution can replace. |
+| `TESTO016` | A shared BeforeEach field can expose another execution's test context. |
+| `TESTO017` | Repeated Parallel calls on the same context across BeforeEach, test and AfterEach. |
 
 For `testo.Suite[T]`, tests have the form `TestX(t T)` or
 `TestX(t T, p struct{ Age int })`. Named structs and named slice returns are
@@ -183,6 +187,35 @@ call. Different instances of the same type are not reported. Runtime plugins
 and filtering may interrupt execution; the message identifies direct recursion
 and does not claim that every run must loop forever.
 
+## Parallel lifecycle checks (0.4.0, unreleased)
+
+Testo reuses a pointer suite instance. BeforeEach, the test and AfterEach share
+one per-test T; BeforeAll and AfterAll use a separate suite context. Parallel
+suspends the current test until its parent has scheduled the sibling tests.
+With two parallel executions, both BeforeEach hooks can write the same suite
+field before either suspended test resumes. Cleanup runs later and can re-read
+the other execution's resource. These are lifecycle hazards; TESTO014–016 are
+conservative linter policy, not a claim that every run fails. TESTO017 identifies
+a repeated Parallel call, which fails at runtime with default Testo behavior.
+Plugins and runtime filtering can change these conclusions.
+
+```go
+func (s *Suite) BeforeEach(t *testo.T) { s.resource = new(int) }
+func (s *Suite) TestA(t *testo.T) {
+    t.Parallel()
+    t.Log(s.resource) // TESTO014, when TestB also calls Parallel
+}
+func (s *Suite) TestB(t *testo.T) { t.Parallel() }
+```
+
+Capture the resource in a local **before** Parallel, or keep fixture ownership
+local to the test. In BeforeEach, use `resource := s.resource` and close over
+`resource` in Cleanup rather than re-reading `s.resource`. Keep T in the test's
+parameter or a local. Choose one Parallel call per test context across its
+hooks and body. TESTO015 takes precedence over TESTO014 for the same field in
+the same execution; context fields use TESTO016. Shared hook diagnostics are
+reported once at each source position.
+
 ## Scope and limitations
 
 - Suite discovery uses Testo v1.8.0's private marker and recognizes package-level
@@ -209,7 +242,32 @@ and does not claim that every run must loop forever.
   empty slice literal, including named slices and aliases. Imported bodies and
   other expressions or control flow are skipped. Invalid signatures/names
   suppress this check; malformed parameterized tests make orphan checks conservative.
-- Other lifecycle/parallelism checks, plugin hooks, standalone `Run`/`RunTest`
+- TESTO014–017 support the actual `*testo.T` type (including aliases), local
+  straight-line bodies, resolved direct calls on the context parameter, and
+  direct fields of the suite's own pointer receiver. Supported statements are
+  single assignments, local captures, `new`, `Log`, `Parallel`, and direct
+  `Cleanup(func() { ... })` closures containing local captures and Log. A terminal
+  method call on a direct pointer field (such as `s.resource.Close()`) is also
+  supported inside Cleanup: evaluating its receiver is the hazardous read;
+  the method body and anything it might synchronize are not inferred.
+  Value receivers can participate in TESTO017; their fields are not analyzed.
+- TESTO014–016 require a BeforeEach write before the first Parallel suspension
+  and at least two known parallel executions. A single parameterized method
+  qualifies when every used provider returns a non-empty, unkeyed slice literal
+  of constants in its sole return statement. Other case counts are unknown.
+  Fields written by tests or AfterEach are skipped. Storing T in a test body,
+  shared referenced storage behind value receivers, and nested fields are outside
+  this initial model. Unknown case counts suppress these shared-field checks.
+- TESTO017 requires an established execution of the checked test: a regular
+  method or a parameterized method with known non-empty constant cases. It does
+  not require sibling executions or known sibling case counts. Collection errors
+  (including missing or incompatible providers) still suppress the check.
+- These checks skip the suite if a hook/test has unknown calls, branches, loops,
+  early exits, receiver/context aliases, imported/promoted bodies, unsupported
+  signatures or invalid providers. Synchronization, helpers, subtests,
+  custom T types, plugin overrides and runtime filters are not modeled. A clean
+  result is not proof of race freedom. No general concurrency analysis is used.
+- Other lifecycle checks, plugin hooks, standalone `Run`/`RunTest`
   and broader provider logic are outside this release's scope. No SSA or
   interprocedural analysis is used.
 

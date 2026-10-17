@@ -19,7 +19,9 @@ func TestIntegration(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	cmd := exec.Command(binary, "run", "--config", ".golangci.yml", "./...")
+	// Assert every diagnostic: golangci-lint otherwise caps identical messages
+	// at three, which can hide a correct fourth TESTO017 from this fixture.
+	cmd := exec.Command(binary, "run", "--max-same-issues=0", "--config", ".golangci.yml", "./...")
 	cmd.Dir = "testdata/integration"
 	output, err := cmd.CombinedOutput()
 	var exitErr *exec.ExitError
@@ -29,7 +31,16 @@ func TestIntegration(t *testing.T) {
 	for _, diagnostic := range []struct {
 		id    string
 		count int
-	}{{"TESTO001:", 1}, {"TESTO012:", 3}, {"TESTO013:", 2}, {"(testolint)", 6}} {
+	}{
+		{"TESTO001:", 1},
+		{"TESTO012:", 3},
+		{"TESTO013:", 2},
+		{"TESTO014:", 3},
+		{"TESTO015:", 2},
+		{"TESTO016:", 1},
+		{"TESTO017:", 4},
+		{"(testolint)", 16},
+	} {
 		if count := strings.Count(string(output), diagnostic.id); count != diagnostic.count {
 			t.Errorf("%s count=%d, want %d\n%s", diagnostic.id, count, diagnostic.count, output)
 		}

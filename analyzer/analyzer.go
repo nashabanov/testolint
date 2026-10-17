@@ -36,6 +36,7 @@ func runWithRules(p *analysis.Pass, suiteRules []Rule, runRules []RunRule) (any,
 	}
 
 	for _, suite := range suites {
+		suite.parallel = buildParallelModel(&pass, suite)
 		for _, rule := range suiteRules {
 			rule(&pass, suite)
 		}

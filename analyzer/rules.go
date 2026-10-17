@@ -19,5 +19,9 @@ func suiteRules() []Rule {
 		checkUnexportedParamField,
 		checkEmptyCases,
 		checkEmptySuite,
+		checkSharedBeforeEachWrite,
+		checkSharedFixtureCleanup,
+		checkSharedTestContext,
+		checkDuplicateParallelLifecycle,
 	}
 }

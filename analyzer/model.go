@@ -16,6 +16,9 @@ type Suite struct {
 	Hooks []*Method
 
 	CasesByName map[string]*Method
+
+	// Prepared once per suite before rules run; nil means unsupported suite analysis.
+	parallel *parallelModel
 }
 
 type Method struct {
