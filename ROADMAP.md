@@ -31,8 +31,8 @@ framework require evidence that simpler approaches cannot solve a valuable case.
 
 ## Current status
 
-The repository's latest release tag and [changelog](CHANGELOG.md) are v0.3.0.
-The working tree for **v0.4.0 (unreleased)** implements **TESTO001–TESTO017**,
+The repository's latest release tag and [changelog](CHANGELOG.md) are v0.4.0.
+Release **v0.4.0** implements **TESTO001–TESTO017**,
 all enabled by default. TESTO014–017 use the conservative subset documented in
 the README; helpers, custom contexts and unknown schedules remain excluded.
 The [README](README.md) is the detailed reference for existing rules and limits.
@@ -106,7 +106,7 @@ must never be reassigned.
 | Version | Focus | Planned new rules | Experimental candidates | Other work |
 | --- | --- | --- | --- | --- |
 | v0.3.0 | Execution Discovery — released | 13 implemented overall | — | Preserve current behavior |
-| v0.4.0 | Shared State & Parallel Safety | 4 | 0 | Establish conservative concurrency evidence |
+| v0.4.0 | Shared State & Parallel Safety — released | 4 implemented | 0 | Conservative concurrency evidence |
 | v0.5.0 | Execution & Lifecycle Safety | 2 | 1 | Extend execution API discovery as needed |
 | v0.6.0 | Custom T & Plugin Validation | 2 | 1 | Match reflection traversal |
 | v0.7.0 | Providers & Annotations | 3 | 2 | Optional TESTO010 extension |
@@ -128,7 +128,7 @@ changes. No additional work is assigned to this released version.
 
 ### v0.4.0 — Shared State & Parallel Safety
 
-**Implemented, pending review (unreleased).** TESTO014–017 cover local
+**Released.** TESTO014–017 cover local
 straight-line lifecycle/test bodies with standard `*testo.T` context identity.
 Shared-field checks require direct pointer receiver fields, BeforeEach writes
 before suspension and two known parallel executions. Constant literal providers
@@ -139,7 +139,7 @@ excluded. Unknown provider counts suppress shared-field checks; TESTO017 only
 requires an established execution of its own test, independently of sibling
 counts. Runtime reproductions and CLI/plugin fixtures
 exercise the accepted subset. See README and the 0.4.0 review report for exact
-verification and remaining release conditions.
+verification and documented coverage boundaries.
 
 **Required:** define context identity, receiver sharing, direct field accesses,
 and execution ordering for each supported pattern before writing diagnostics.

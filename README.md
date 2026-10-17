@@ -187,7 +187,7 @@ call. Different instances of the same type are not reported. Runtime plugins
 and filtering may interrupt execution; the message identifies direct recursion
 and does not claim that every run must loop forever.
 
-## Parallel lifecycle checks (0.4.0, unreleased)
+## Parallel lifecycle checks (0.4.0)
 
 Testo reuses a pointer suite instance. BeforeEach, the test and AfterEach share
 one per-test T; BeforeAll and AfterAll use a separate suite context. Parallel

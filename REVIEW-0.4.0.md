@@ -1,13 +1,23 @@
 # v0.4.0 pre-commit review
 
-Status: implemented, unreleased, awaiting user review. No commit, tag or
-publication has been created. Review date: 2026-10-17.
+Status: v0.4.0 published after explicit user approval of the reviewed changes.
+Review and publication date: 2026-10-17.
+
+- Implementation commit: `dd08c1d6350fc8a1dacd2fff09fc3a5ccfbb7706`,
+  `feat(analyzer): add shared state and parallel lifecycle checks`.
+- [CI for that exact commit](https://github.com/nashabanov/testolint/actions/runs/38990076341): success.
+- Annotated tag: `v0.4.0`, pointing to the implementation commit above.
+- [GitHub Release](https://github.com/nashabanov/testolint/releases/tag/v0.4.0):
+  published at `2026-10-17T01:17:12Z`, latest, neither draft nor prerelease.
+- Publication status in documentation was updated only after release creation;
+  the following documentation commit does not alter the tagged implementation.
 
 ## Scope and baseline
 
 - Target: v0.4.0, compared with v0.3.0.
-- HEAD: `8261c66ba25e00bdc16df8334e844ec5a7769951`; changes below are uncommitted.
-  HEAD differs from v0.3.0 by removal of generated review documents.
+- Initial review baseline: `8261c66ba25e00bdc16df8334e844ec5a7769951`.
+  It differs from v0.3.0 by removal of generated review documents. The reviewed
+  working-tree changes are now committed in the implementation commit above.
 - The incoming tree already contained staged `ROADMAP.md`. Its staged contents
   were preserved; its working copy now records implementation status.
 - Added TESTO014–017 through one shared local lifecycle timeline; existing
@@ -228,15 +238,17 @@ with "matched no packages". The identical uncached command outside the sandbox
 passed before any implementation edits; the environment failure was not counted
 as a TDD red phase. No essential check remains unavailable or only skipped.
 
-## Release conditions
+## Publication outcome
 
 README documents 17 enabled rules, actual tested versions and detection limits.
-Installation still uses the published `latest`, not an unpublished v0.4.0 tag.
-CHANGELOG records 0.4.0 as Unreleased without a release date. CI already builds
+Installation uses the published `latest`; v0.4.0 is now available as an explicit
+version. CHANGELOG, README and ROADMAP record the actual publication status. CI already builds
 and exercises the custom plugin and clean real-Testo module; no CI change was
 needed. ROADMAP distinguishes implemented scope from broader candidates.
 
-Ready for user review of this working-tree implementation. Before committing,
-obtain explicit approval of code, fixtures and documentation. Before publishing,
-review the resulting commit and authorize the release/tag separately. Broader
-compatibility and arbitrary concurrent Go code are not claimed.
+The user approved committing the reviewed implementation and publishing the
+release. The implementation was committed and pushed, its exact GitHub CI run
+passed, and v0.4.0 was then tagged and published. The working tree was clean at
+tag creation. This documentation follow-up records publication without moving
+the tag. No outstanding publication condition remains. Broader compatibility and
+arbitrary concurrent Go code are not claimed.
