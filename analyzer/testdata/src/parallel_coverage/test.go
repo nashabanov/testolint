@@ -126,3 +126,206 @@ func (s *EmptySibling) TestA(t *testo.T)                  { t.Parallel(); t.Log(
 func (*EmptySibling) TestB(t *testo.T)                    {}
 func (*EmptySibling) TestC(t *testo.T, p struct{ N int }) { helper() }
 func (*EmptySibling) CasesN() []int                       { return nil } // want "TESTO010:"
+
+// A later body need not be understood to establish entry into BeforeEach.
+type UnsupportedSerial struct {
+	testo.Suite[*testo.T]
+	resource *int
+	ctx      *testo.T
+}
+
+func (s *UnsupportedSerial) BeforeEach(t *testo.T) { s.resource = new(int); s.ctx = t }
+func (s *UnsupportedSerial) TestA(t *testo.T) {
+	t.Parallel()
+	t.Log(s.resource)    // want "TESTO014:"
+	s.ctx.Log("context") // want "TESTO016:"
+}
+func (*UnsupportedSerial) TestB(t *testo.T)                    { helper() }
+func (*UnsupportedSerial) TestC(t *testo.T, p struct{ N int }) { helper() }
+func (*UnsupportedSerial) CasesN() []int                       { helper(); return nil }
+
+type UnsupportedParallel struct {
+	testo.Suite[*testo.T]
+	resource *int
+}
+
+func (s *UnsupportedParallel) BeforeEach(t *testo.T) { s.resource = new(int) }
+func (s *UnsupportedParallel) TestA(t *testo.T)      { t.Parallel(); t.Log(s.resource) } // want "TESTO014:"
+func (*UnsupportedParallel) TestB(t *testo.T)        { t.Parallel(); helper() }
+
+type UnsupportedCleanup struct {
+	testo.Suite[*testo.T]
+	resource *int
+}
+
+func (s *UnsupportedCleanup) BeforeEach(t *testo.T) {
+	s.resource = new(int)
+	t.Cleanup(func() { t.Log(s.resource) }) // want "TESTO015:"
+}
+func (s *UnsupportedCleanup) TestA(t *testo.T) { t.Parallel(); t.Log(s.resource) }
+func (*UnsupportedCleanup) TestB(t *testo.T) {
+	if true {
+		helper()
+	}
+}
+
+type KnownCasesUnknownSibling struct {
+	testo.Suite[*testo.T]
+	resource *int
+}
+
+func (s *KnownCasesUnknownSibling) BeforeEach(t *testo.T) { s.resource = new(int) }
+func (s *KnownCasesUnknownSibling) TestA(t *testo.T, p struct{ X int }) {
+	t.Parallel()
+	t.Log(s.resource) // want "TESTO014:"
+}
+func (*KnownCasesUnknownSibling) CasesX() []int                       { return []int{1, 2} }
+func (*KnownCasesUnknownSibling) TestB(t *testo.T, p struct{ N int }) { helper() }
+func (*KnownCasesUnknownSibling) CasesN() []int                       { helper(); return nil }
+
+type ReceiverEscape struct {
+	testo.Suite[*testo.T]
+	resource *int
+}
+
+func (s *ReceiverEscape) BeforeEach(t *testo.T) { s.resource = new(int) }
+func (s *ReceiverEscape) TestA(t *testo.T)      { t.Parallel(); t.Log(s.resource) }
+func (s *ReceiverEscape) TestB(t *testo.T)      { modify(s) }
+
+type UnknownWrite struct {
+	testo.Suite[*testo.T]
+	resource *int
+}
+
+func (s *UnknownWrite) BeforeEach(t *testo.T) { s.resource = new(int) }
+func (s *UnknownWrite) TestA(t *testo.T)      { t.Parallel(); t.Log(s.resource) }
+func (s *UnknownWrite) TestB(t *testo.T)      { s.resource = new(int); helper() }
+
+type ReceiverAlias struct {
+	testo.Suite[*testo.T]
+	resource *int
+}
+
+func (s *ReceiverAlias) BeforeEach(t *testo.T) { s.resource = new(int) }
+func (s *ReceiverAlias) TestA(t *testo.T)      { t.Parallel(); t.Log(s.resource) }
+func (s *ReceiverAlias) TestB(t *testo.T)      { alias := s; modify(alias) }
+
+type ConditionalWrite struct {
+	testo.Suite[*testo.T]
+	resource *int
+}
+
+func (s *ConditionalWrite) BeforeEach(t *testo.T) { s.resource = new(int) }
+func (s *ConditionalWrite) TestA(t *testo.T)      { t.Parallel(); t.Log(s.resource) }
+func (s *ConditionalWrite) TestB(t *testo.T) {
+	if true {
+		s.resource = new(int)
+	}
+}
+
+type AddressEscape struct {
+	testo.Suite[*testo.T]
+	resource *int
+}
+
+func (s *AddressEscape) BeforeEach(t *testo.T) { s.resource = new(int) }
+func (s *AddressEscape) TestA(t *testo.T)      { t.Parallel(); t.Log(s.resource) }
+func (s *AddressEscape) TestB(t *testo.T)      { modify(&s.resource) }
+
+func modify(any) {}
+
+type UnsupportedEarlier struct {
+	testo.Suite[*testo.T]
+	resource *int
+}
+
+func (s *UnsupportedEarlier) BeforeEach(t *testo.T) { s.resource = new(int) }
+func (s *UnsupportedEarlier) TestA(t *testo.T)      { helper() }
+func (s *UnsupportedEarlier) TestB(t *testo.T)      { t.Parallel(); t.Log(s.resource) }
+
+type CaptureUnknownSibling struct {
+	testo.Suite[*testo.T]
+	resource *int
+}
+
+func (s *CaptureUnknownSibling) BeforeEach(t *testo.T) { s.resource = new(int) }
+func (s *CaptureUnknownSibling) TestA(t *testo.T)      { v := s.resource; t.Parallel(); t.Log(v) }
+func (s *CaptureUnknownSibling) TestB(t *testo.T)      { helper() }
+
+type ValueUnknownSibling struct {
+	testo.Suite[*testo.T]
+	resource *int
+}
+
+func (s ValueUnknownSibling) BeforeEach(t *testo.T) { s.resource = new(int) }
+func (s ValueUnknownSibling) TestA(t *testo.T)      { t.Parallel(); t.Log(s.resource) }
+func (ValueUnknownSibling) TestB(t *testo.T)        { helper() }
+
+type UnknownOnlyInterferer struct {
+	testo.Suite[*testo.T]
+	resource *int
+}
+
+func (s *UnknownOnlyInterferer) BeforeEach(t *testo.T)             { s.resource = new(int) }
+func (s *UnknownOnlyInterferer) TestA(t *testo.T)                  { t.Parallel(); t.Log(s.resource) }
+func (*UnknownOnlyInterferer) TestB(t *testo.T, p struct{ N int }) { helper() }
+func (*UnknownOnlyInterferer) CasesN() []int                       { helper(); return nil }
+
+// An empty provider cannot supply the only later execution.
+type EmptyOnlyInterferer struct {
+	testo.Suite[*testo.T]
+	resource *int
+}
+
+func (s *EmptyOnlyInterferer) BeforeEach(t *testo.T)             { s.resource = new(int) }
+func (s *EmptyOnlyInterferer) TestA(t *testo.T)                  { t.Parallel(); t.Log(s.resource) }
+func (*EmptyOnlyInterferer) TestB(t *testo.T, p struct{ N int }) { helper() }
+func (*EmptyOnlyInterferer) CasesN() []int                       { return []int{} } // want "TESTO010:"
+
+// A known AfterEach replacement remains relevant after an unknown test body.
+type TeardownWrite struct {
+	testo.Suite[*testo.T]
+	resource *int
+}
+
+func (s *TeardownWrite) BeforeEach(t *testo.T) { s.resource = new(int) }
+func (s *TeardownWrite) TestA(t *testo.T)      { t.Parallel(); t.Log(s.resource) }
+func (*TeardownWrite) TestB(t *testo.T)        { helper() }
+func (s *TeardownWrite) AfterEach(t *testo.T)  { s.resource = nil }
+
+// Each suite has only its own execution; models must not pool instances.
+type IndependentOne struct {
+	testo.Suite[*testo.T]
+	resource *int
+}
+
+func (s *IndependentOne) BeforeEach(t *testo.T) { s.resource = new(int) }
+func (s *IndependentOne) TestA(t *testo.T)      { t.Parallel(); t.Log(s.resource) }
+
+type IndependentTwo struct {
+	testo.Suite[*testo.T]
+	resource *int
+}
+
+func (s *IndependentTwo) BeforeEach(t *testo.T) { s.resource = new(int) }
+func (s *IndependentTwo) TestA(t *testo.T)      { t.Parallel(); t.Log(s.resource) }
+
+// An opaque helper can recover the suite from Testo's context reflection.
+// Passing T (or an alias) is not receiver-independent evidence.
+type ContextEscape struct {
+	testo.Suite[*testo.T]
+	resource *int
+}
+
+func (s *ContextEscape) BeforeEach(t *testo.T) { s.resource = new(int) }
+func (s *ContextEscape) TestA(t *testo.T)      { t.Parallel(); t.Log(s.resource) }
+func (*ContextEscape) TestB(t *testo.T)        { modify(t) }
+
+type ContextAlias struct {
+	testo.Suite[*testo.T]
+	resource *int
+}
+
+func (s *ContextAlias) BeforeEach(t *testo.T) { s.resource = new(int) }
+func (s *ContextAlias) TestA(t *testo.T)      { t.Parallel(); t.Log(s.resource) }
+func (*ContextAlias) TestB(t *testo.T)        { alias := t; modify(alias) }

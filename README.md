@@ -194,9 +194,11 @@ one per-test T; BeforeAll and AfterAll use a separate suite context. Parallel
 suspends the current test until its parent has scheduled the sibling tests.
 A later serial or parallel execution can run BeforeEach and replace the suite
 field while an earlier parallel consumer is suspended. Testo collects regular
-methods first, then parameterized methods, in method-name order within each group.
-A serial execution completed before the consumer does not establish an overwrite. Cleanup runs later and can re-read
-the other execution's resource. These are lifecycle hazards; TESTO014–016 are
+methods first, then parameterized methods, in method-name order within each
+group.
+A serial execution completed before the consumer does not establish an overwrite.
+Cleanup runs later and can re-read the other execution's resource. These are
+lifecycle hazards; TESTO014–016 are
 conservative linter policy, not a claim that every run fails. TESTO017 identifies
 a repeated Parallel call, which fails at runtime with default Testo behavior.
 Plugins and runtime filtering can change these conclusions.
@@ -247,17 +249,18 @@ reported once at each source position.
 - TESTO014–017 support the actual `*testo.T` type (including aliases), local
   straight-line bodies, resolved direct calls on the context parameter, and
   direct fields of the suite's own pointer receiver. Supported statements are
-  single assignments, local captures, `new`, `Log`, `Logf`, `Helper`, `Parallel`, and direct
-  `Cleanup(func() { ... })` closures containing local captures and Log. A terminal
-  method call on a direct pointer field (such as `s.resource.Close()`) is also
+  single assignments, local captures, `new`, `Log`, `Logf`, `Helper`, `Parallel`,
+  and direct `Cleanup(func() { ... })` closures containing local captures and Log.
+  A terminal method call on a direct pointer field (such as
+  `s.resource.Close()`) is also
   supported inside Cleanup: evaluating its receiver is the hazardous read;
   the method body and anything it might synchronize are not inferred.
   Value receivers can participate in TESTO017; their fields are not analyzed.
 - TESTO014–016 require a BeforeEach write before the first Parallel suspension
   and an established later execution on the same receiver, serial or parallel.
-  A single parameterized method
-  qualifies when every used provider returns a non-empty, unkeyed slice literal
-  of constants in its sole return statement. Other case counts are unknown.
+  A single parameterized method qualifies when every used provider returns a
+  non-empty, unkeyed slice literal of constants in its sole return statement.
+  Other case counts are unknown.
   Fields written by tests or AfterEach are skipped. Storing T in a test body,
   shared referenced storage behind value receivers, and nested fields are outside
   this model. Unknown case counts do not suppress a proof established by other
@@ -273,14 +276,29 @@ reported once at each source position.
   checks. BeforeAll/AfterAll signatures are validated; their bodies do not enter
   per-test timelines. Suite-context Parallel does not reorder the inner siblings.
   An unknown test body (calls, branches, loops, early exits, aliases or unavailable
-  bodies) excludes that path from TESTO017, without suppressing known sibling paths.
-  BeforeEach/AfterEach must remain understood. For TESTO014–016, unknown test
-  bodies still suppress shared-field proofs because they may mutate any field
-  or synchronize. No partial events from an unsupported body are used.
+  bodies) blocks inference about its own events and later stages, without
+  suppressing known sibling paths.
+  TESTO017 uses complete lifecycle stages up to the first unknown body. An
+  unsupported AfterEach does not hide a duplicate already established by
+  BeforeEach and the test; an unknown BeforeEach or test blocks reasoning
+  about later stages. Unknown hooks are never treated as empty hooks.
+  TESTO014–016 require understood BeforeEach/AfterEach bodies and a complete
+  consumer path. A later sibling can establish the BeforeEach overwrite even
+  when its test body is unsupported, provided the local body never references
+  its suite receiver or exposes T beyond the resolved standard operations.
+  Such a body supplies no reads, writes, or Parallel facts.
+  Any receiver reference in unknown code (including aliases, field addresses
+  and helper arguments), context escapes (T can expose the suite through
+  `testo.Reflect`), or an unavailable/promoted body suppresses shared-field
+  proofs. Known test/AfterEach writes still exclude the affected field.
+  No partial events from an unsupported body are used. Receiver access through
+  globals or other hidden aliases and helper side effects are not inferred;
+  the supported ownership model assumes no such external receiver access.
   Helper is accepted only on the actual context parameter with its resolved
   standard method; arbitrary helpers and context aliases remain unknown.
   Other expressions, including arithmetic, indexing and conversions,
-  remain unsupported. Identical constant field assignments retain existing policy. Synchronization, helpers, subtests,
+  remain unsupported. Identical constant field assignments retain existing policy.
+  Synchronization, helper internals, subtests,
   custom T types, plugin overrides and runtime filters are not modeled. A clean
   result is not proof of race freedom. No general concurrency analysis is used.
 - Other lifecycle checks, plugin hooks, standalone `Run`/`RunTest`

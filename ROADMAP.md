@@ -31,10 +31,12 @@ framework require evidence that simpler approaches cannot solve a valuable case.
 
 ## Current status
 
-The repository's latest release tag and [changelog](CHANGELOG.md) are v0.4.0.
-Release **v0.4.0** implements **TESTO001–TESTO017**,
+The repository's latest release tag and [changelog](CHANGELOG.md) are v0.4.2.
+Release **v0.4.2** includes **TESTO001–TESTO017**,
 all enabled by default. TESTO014–017 use the conservative subset documented in
-the README; helpers, custom contexts and unknown schedules remain excluded.
+the README; helper internals, custom contexts and unknown schedules remain excluded.
+v0.4.2 extends partial lifecycle evidence across unsupported teardown or
+receiver-independent sibling bodies while retaining the documented limits.
 The [README](README.md) is the detailed reference for existing rules and limits.
 
 Already implemented:
@@ -54,8 +56,9 @@ Already implemented:
 
 These are foundations to preserve, not new deliverables. Current models retain
 suite types, T, method sets and optional local method bodies, plus suite run
-calls and limited local initializers. They do not model execution schedules,
-field ownership, callback contexts, or standalone Testo execution APIs.
+calls and limited local initializers. Parallel checks retain narrow local
+lifecycle order, direct field ownership and Cleanup reads; they do not provide
+general scheduling, alias analysis or standalone Testo execution-API modeling.
 The plugin currently ignores settings; per-rule configuration is not implemented.
 The declared baseline is Go 1.27.1, Testo v1.8.0 in integration fixtures, and
 golangci-lint v2.14.0 in CI. Broader compatibility is not implied.
@@ -107,6 +110,8 @@ must never be reassigned.
 | --- | --- | --- | --- | --- |
 | v0.3.0 | Execution Discovery — released | 13 implemented overall | — | Preserve current behavior |
 | v0.4.0 | Shared State & Parallel Safety — released | 4 implemented | 0 | Conservative concurrency evidence |
+| v0.4.1 | Parallel Analysis Coverage Fixes — released | 0 | 0 | Serial interference, partial paths and case counts |
+| v0.4.2 | Parallel Lifecycle Analysis Fixes — released | 0 | 0 | Independent hook and sibling lifecycle facts |
 | v0.5.0 | Execution & Lifecycle Safety | 2 | 1 | Extend execution API discovery as needed |
 | v0.6.0 | Custom T & Plugin Validation | 2 | 1 | Match reflection traversal |
 | v0.7.0 | Providers & Annotations | 3 | 2 | Optional TESTO010 extension |
@@ -138,8 +143,8 @@ imported/promoted bodies and additional test/AfterEach writes are conservatively
 excluded. Unknown provider counts suppress shared-field checks; TESTO017 only
 requires an established execution of its own test, independently of sibling
 counts. Runtime reproductions and CLI/plugin fixtures
-exercise the accepted subset. See README and the 0.4.0 review report for exact
-verification and documented coverage boundaries.
+exercise the accepted subset. The 0.4.1 patch expanded this initial scope; see
+README for current boundaries and CHANGELOG for the preserved release history.
 
 **Required:** define context identity, receiver sharing, direct field accesses,
 and execution ordering for each supported pattern before writing diagnostics.

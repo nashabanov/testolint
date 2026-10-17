@@ -11,17 +11,22 @@ type sharedFieldRead struct {
 }
 
 func findSharedFieldReads(paths []parallelPath) []sharedFieldRead {
-	// Unknown bodies may mutate any field or introduce synchronization. They
-	// are not safe interferers and still exclude shared-field proofs.
+	// BeforeEach supplies the write independently of an unsupported sibling
+	// body. Receiver access in unknown code could restore/replace that field;
+	// never interpret those effects as either an observed write or a safe body.
 	for _, path := range paths {
-		if !path.understood && path.executions != noExecutions {
+		if path.executions == noExecutions {
+			continue
+		}
+		if !path.beforeEach.understood || !path.afterEach.understood ||
+			(!path.test.understood && path.test.unknownReceiverAccess) {
 			return nil
 		}
 	}
 	replaced := fieldsWrittenOutsideBeforeEach(paths)
 	var reads []sharedFieldRead
 	for i, path := range paths {
-		if path.parallel && path.executions > 0 && hasLaterExecution(paths, i) {
+		if path.understood && path.parallel && path.executions > 0 && hasLaterExecution(paths, i) {
 			reads = append(reads, sharedReadsInPath(path, replaced)...)
 		}
 	}
@@ -49,9 +54,13 @@ func fieldsWrittenOutsideBeforeEach(paths []parallelPath) map[*types.Var]bool {
 		if path.executions == noExecutions {
 			continue
 		}
-		for _, event := range path.events {
-			if event.kind == parallelFieldWrite && !event.beforeEach {
-				fields[event.field] = true
+		// These facts remain relevant even when an earlier lifecycle stage is
+		// unknown and consequently absent from the reachable prefix.
+		for _, body := range []parallelBody{path.test, path.afterEach} {
+			for _, event := range body.events {
+				if event.kind == parallelFieldWrite {
+					fields[event.field] = true
+				}
 			}
 		}
 	}

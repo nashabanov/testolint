@@ -87,3 +87,54 @@ type PrivateParameter struct{ testo.Suite[*testo.T] }
 func (*PrivateParameter) BeforeEach(t *testo.T)                     { t.Parallel() }
 func (*PrivateParameter) TestKnown(t *testo.T)                      { t.Parallel() }
 func (*PrivateParameter) TestInvalid(t *testo.T, p struct{ n int }) {} // want "TESTO009:"
+
+// Unknown teardown cannot hide a duplicate reached before teardown starts.
+func cleanupDatabase() {}
+
+type UnknownAfter struct{ testo.Suite[*testo.T] }
+
+func (*UnknownAfter) BeforeAll(t *testo.T)  { cleanupDatabase() }
+func (*UnknownAfter) AfterAll(t *testo.T)   { cleanupDatabase() }
+func (*UnknownAfter) BeforeEach(t *testo.T) { t.Parallel() }
+func (*UnknownAfter) TestA(t *testo.T)      { t.Parallel() } // want "TESTO017:"
+func (*UnknownAfter) AfterEach(t *testo.T)  { cleanupDatabase() }
+
+type SingleUnknownAfter struct{ testo.Suite[*testo.T] }
+
+func (*SingleUnknownAfter) BeforeEach(t *testo.T) { t.Parallel() }
+func (*SingleUnknownAfter) TestA(t *testo.T)      {}
+func (*SingleUnknownAfter) AfterEach(t *testo.T)  { cleanupDatabase() }
+
+type UnknownBefore struct{ testo.Suite[*testo.T] }
+
+func (*UnknownBefore) BeforeEach(t *testo.T) { cleanupDatabase(); t.Parallel() }
+func (*UnknownBefore) TestA(t *testo.T)      { t.Parallel() }
+func (*UnknownBefore) AfterEach(t *testo.T)  { t.Parallel() }
+
+type UnknownTest struct{ testo.Suite[*testo.T] }
+
+func (*UnknownTest) BeforeEach(t *testo.T) { t.Parallel() }
+func (*UnknownTest) TestA(t *testo.T)      { cleanupDatabase() }
+func (*UnknownTest) AfterEach(t *testo.T)  { t.Parallel() }
+
+type UnknownAfterBetween struct{ testo.Suite[*testo.T] }
+
+func (*UnknownAfterBetween) TestA(t *testo.T)     { t.Parallel() }
+func (*UnknownAfterBetween) AfterEach(t *testo.T) { cleanupDatabase(); t.Parallel() }
+
+type SupportedAfter struct{ testo.Suite[*testo.T] }
+
+func (*SupportedAfter) TestA(t *testo.T)     { t.Parallel() }
+func (*SupportedAfter) AfterEach(t *testo.T) { t.Parallel() } // want "TESTO017:"
+
+type InvalidAfter struct{ testo.Suite[*testo.T] }
+
+func (*InvalidAfter) BeforeEach(t *testo.T) { t.Parallel() }
+func (*InvalidAfter) TestA(t *testo.T)      { t.Parallel() }
+func (*InvalidAfter) AfterEach(t int)       {} // want "TESTO002:"
+
+type SuiteContext struct{ testo.Suite[*testo.T] }
+
+func (*SuiteContext) BeforeAll(t *testo.T) { t.Parallel() }
+func (*SuiteContext) TestA(t *testo.T)     { t.Parallel() }
+func (*SuiteContext) AfterEach(t *testo.T) { cleanupDatabase() }

@@ -44,6 +44,7 @@ type duplicate struct{ testo.Suite[*testo.T] }
 
 func (*duplicate) BeforeEach(t *testo.T) { t.Parallel() }
 func (*duplicate) TestA(t *testo.T)      { t.Parallel() }
+func (*duplicate) AfterEach(t *testo.T)  { runtimeBusiness(t) }
 func TestDuplicate(t *testing.T) {
 	if os.Getenv("TESTOLINT_REPRO_DUPLICATE") != "1" {
 		t.Skip("intentional runtime failure; subprocess only")
@@ -104,3 +105,70 @@ func (s *parameterOrder) TestA(t *testo.T, p struct{ X, Y int }) {
 func (*parameterOrder) CasesX() []int { return []int{1, 2} }
 func (*parameterOrder) CasesY() []int { return []int{1, 2} }
 func TestParameterOrder(t *testing.T) { testo.RunSuite(t, &parameterOrder{}) }
+
+// This helper is deliberately opaque to testolint; the runtime reproduction
+// checks lifecycle ordering without using its implementation as static evidence.
+func runtimeBusiness(t *testo.T) { t.Helper(); t.Log("business helper reached") }
+
+type lifecycleEvidence struct {
+	testo.Suite[*testo.T]
+	resource        *int
+	context         *testo.T
+	executions      int
+	parallelSibling bool
+	identity        *lifecycleEvidence
+}
+
+func (s *lifecycleEvidence) BeforeEach(t *testo.T) {
+	if s.identity != s {
+		t.Fatal("suite receiver changed")
+	}
+	s.executions++
+	s.resource = new(int)
+	*s.resource = s.executions
+	s.context = t
+	local := s.resource
+	if *local == 1 {
+		t.Cleanup(func() {
+			if s.resource == local || *s.resource != 2 || s.context == t {
+				t.Fatal("cleanup must observe later BeforeEach")
+			}
+			t.Log("opaque sibling cleanup confirmed")
+		})
+	}
+}
+func (s *lifecycleEvidence) TestA(t *testo.T) {
+	local := s.resource
+	t.Parallel()
+	if s.executions != 2 || s.resource == local || *s.resource != 2 || s.context == t {
+		t.Fatal("later hook must replace resource and T")
+	}
+	if *local != 1 {
+		t.Fatal("local capture changed")
+	}
+	t.Log("opaque sibling replacement confirmed")
+}
+func (s *lifecycleEvidence) TestB(t *testo.T) {
+	if s.executions != 2 {
+		t.Fatal("sibling BeforeEach not reached")
+	}
+	if s.parallelSibling {
+		t.Parallel()
+	}
+	runtimeBusiness(t)
+}
+func TestLifecycleEvidence(t *testing.T) {
+	for _, parallel := range []bool{false, true} {
+		t.Run(map[bool]string{false: "serial", true: "parallel"}[parallel], func(t *testing.T) {
+			s := &lifecycleEvidence{parallelSibling: parallel}
+			s.identity = s
+			testo.RunSuite(t, s)
+		})
+	}
+	// A fresh instance starts its own lifecycle count and resource ownership.
+	t.Run("independent", func(t *testing.T) {
+		s := &lifecycleEvidence{}
+		s.identity = s
+		testo.RunSuite(t, s)
+	})
+}

@@ -45,6 +45,16 @@ func TestIntegration(t *testing.T) {
 			t.Errorf("%s count=%d, want %d\n%s", diagnostic.id, count, diagnostic.count, output)
 		}
 	}
+	for _, position := range []string{
+		"coverage_test.go:14:8: TESTO014:",
+		"coverage_test.go:15:2: TESTO016:",
+		"coverage_test.go:28:27: TESTO015:",
+		"coverage_test.go:43:2: TESTO017:",
+	} {
+		if !strings.Contains(string(output), position) {
+			t.Errorf("missing position %q\n%s", position, output)
+		}
+	}
 	clean := exec.Command(binary, "run", "--config", ".golangci.yml", "./clean")
 	clean.Dir = "testdata/integration"
 	if output, err := clean.CombinedOutput(); err != nil || strings.Contains(string(output), "TESTO") {

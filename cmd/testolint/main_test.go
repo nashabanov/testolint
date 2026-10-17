@@ -31,7 +31,10 @@ func TestCLI(t *testing.T) {
 			"runs_test.go:25:17: TESTO012:",
 			"runs_test.go:27:9: TESTO012:",
 			"runs_test.go:28:51: TESTO012:",
-			"TESTO014:", "TESTO015:", "TESTO016:", "TESTO017:",
+			"coverage_test.go:14:8: TESTO014:",
+			"coverage_test.go:15:2: TESTO016:",
+			"coverage_test.go:28:27: TESTO015:",
+			"coverage_test.go:43:2: TESTO017:",
 		}, 3, 20},
 		{"help", "-h", []string{"Usage: testolint"}, 0, 0},
 		{"long-help", "--help", []string{"Usage: testolint"}, 0, 0},
@@ -56,6 +59,15 @@ func TestCLI(t *testing.T) {
 			}
 			if count := strings.Count(string(out), "TESTO"); count != tc.diagnostics {
 				t.Errorf("diagnostics=%d, want %d; output:\n%s", count, tc.diagnostics, out)
+			}
+			if tc.name == "diagnostic" {
+				repeat := exec.Command(binary, tc.arg)
+				repeat.Dir = cmd.Dir
+				repeated, repeatErr := repeat.CombinedOutput()
+				var exit *exec.ExitError
+				if !errors.As(repeatErr, &exit) || exit.ExitCode() != tc.code || string(repeated) != string(out) {
+					t.Fatalf("diagnostics changed between runs: %v\n%s", repeatErr, repeated)
+				}
 			}
 		})
 	}

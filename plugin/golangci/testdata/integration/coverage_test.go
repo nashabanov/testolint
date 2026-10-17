@@ -14,7 +14,7 @@ func (s *Coverage) TestA(t *testo.T) {
 	t.Log(s.resource)
 	s.ctx.Log("ctx")
 }
-func (s *Coverage) TestB(t *testo.T)                    {}
+func (s *Coverage) TestB(t *testo.T)                    { coverageHelper() }
 func (s *Coverage) TestC(t *testo.T, p struct{ N int }) {}
 func (*Coverage) CasesN() []int                         { n := 1; return []int{n} }
 
@@ -28,12 +28,13 @@ func (s *CoverageCleanup) BeforeEach(t *testo.T) {
 	t.Cleanup(func() { t.Log(s.resource) })
 }
 func (*CoverageCleanup) TestA(t *testo.T) { t.Parallel() }
-func (*CoverageCleanup) TestB(t *testo.T) {}
+func (*CoverageCleanup) TestB(t *testo.T) { coverageHelper() }
 func coverageHelper()                     {}
 
 type CoverageDuplicate struct{ testo.Suite[*testo.T] }
 
 func (*CoverageDuplicate) BeforeAll(t *testo.T)  { coverageHelper() }
+func (*CoverageDuplicate) AfterEach(t *testo.T)  { coverageHelper() }
 func (*CoverageDuplicate) AfterAll(t *testo.T)   { coverageHelper() }
 func (*CoverageDuplicate) BeforeEach(t *testo.T) { t.Parallel() }
 func (*CoverageDuplicate) TestA(t *testo.T) {

@@ -1,5 +1,25 @@
 # Changelog
 
+## 0.4.2
+
+### Fixed
+
+- TESTO017 retains duplicates established before an unsupported AfterEach,
+  while treating unknown lifecycle stages as barriers to later diagnostics.
+  Lifecycle signature validation remains independent of body support.
+- TESTO014–016 use a later execution's understood BeforeEach even when its test
+  body is unsupported and does not expose the suite receiver or test context.
+  Unknown receiver/context access and known test/AfterEach field replacements
+  still suppress unsafe proofs.
+
+### Tests and documentation
+
+- Extend existing analyzer and real-Testo CLI/plugin fixtures, assert diagnostic
+  positions and repeated CLI output, and reproduce opaque sibling lifecycle
+  ordering and duplicate Parallel with opaque teardown at runtime.
+- Document lifecycle-stage boundaries and receiver-ownership assumptions;
+  correct the roadmap release baseline and the obsolete review-file reference.
+
 ## 0.4.1
 
 ### Fixed
@@ -18,8 +38,8 @@
 
 - Add analyzer coverage regressions, real-Testo serial-order and Cartesian-case
   runtime reproductions, and CLI/custom-plugin expectations.
-- Document partial analysis, ordering evidence, retained conservative limits
-  and the v0.4.1 review results in REVIEW-0.4.1.md.
+- Document partial analysis, ordering evidence and retained conservative limits
+  in README.md.
 
 ## 0.4.0
 

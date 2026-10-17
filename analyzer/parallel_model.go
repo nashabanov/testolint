@@ -25,13 +25,21 @@ type parallelEvent struct {
 	beforeEach    bool // Event belongs to BeforeEach, not the test or AfterEach.
 }
 
+// Body support is independent of signature validity and execution count.
+type parallelBody struct {
+	events                []parallelEvent
+	understood            bool // All statements in this body are supported.
+	unknownReceiverAccess bool // Unknown code can access the suite directly or through T.
+}
+
 // Each path combines BeforeEach, one test method and AfterEach on the same T.
 // Cleanup reads retain their deferred nature rather than implying inline use.
 type parallelPath struct {
-	events     []parallelEvent
-	executions int // Capped at two; zero is unknown, noExecutions is proven empty.
-	parallel   bool
-	understood bool // Complete local timeline; unknown bodies contribute no scheduling evidence.
+	events                      []parallelEvent
+	executions                  int // Capped at two; zero is unknown, noExecutions is proven empty.
+	parallel                    bool
+	understood                  bool // Complete lifecycle timeline, required for shared-field consumers.
+	beforeEach, test, afterEach parallelBody
 }
 
 // Shared by the four rules. Building this model never emits diagnostics.
@@ -66,12 +74,8 @@ func buildParallelModel(p *analysis.Pass, suite *Suite) *parallelModel {
 		if !validParallelSignature(test.Func().Type().(*types.Signature), suite.TType, test.Func().Name()) || !isValidPrefixedName(test.Func().Name(), "Test") || !validParallelParameters(suite, test) {
 			return nil
 		}
-		body, ok := parseParallelBody(p, suite, test.Method)
-		if !ok {
-			body = nil
-		}
+		body := parallelBodyFacts(p, suite, test.Method)
 		path := newParallelPath(hooks["BeforeEach"], body, hooks["AfterEach"])
-		path.understood = ok
 		path.executions = testExecutionCount(suite, test, sizes)
 		model.paths = append(model.paths, path)
 	}
@@ -79,8 +83,8 @@ func buildParallelModel(p *analysis.Pass, suite *Suite) *parallelModel {
 	return model
 }
 
-func parseParallelHooks(p *analysis.Pass, suite *Suite) (map[string][]parallelEvent, bool) {
-	hooks := make(map[string][]parallelEvent)
+func parseParallelHooks(p *analysis.Pass, suite *Suite) (map[string]parallelBody, bool) {
+	hooks := make(map[string]parallelBody)
 	for _, method := range suite.Hooks {
 		if !validParallelSignature(method.Func.Type().(*types.Signature), suite.TType, method.Func.Name()) {
 			return nil, false
@@ -88,24 +92,34 @@ func parseParallelHooks(p *analysis.Pass, suite *Suite) (map[string][]parallelEv
 		if method.Func.Name() == "BeforeAll" || method.Func.Name() == "AfterAll" {
 			continue
 		}
-		body, ok := parseParallelBody(p, suite, method)
-		if !ok {
-			return nil, false
-		}
-		hooks[method.Func.Name()] = body
+		hooks[method.Func.Name()] = parallelBodyFacts(p, suite, method)
 	}
 	return hooks, true
 }
 
-func newParallelPath(before, test, after []parallelEvent) parallelPath {
-	events := make([]parallelEvent, 0, len(before)+len(test)+len(after))
-	for _, event := range before {
-		event.beforeEach = true
-		events = append(events, event)
+// Keep only complete, reachable lifecycle stages for duplicate-call checking.
+// An unknown stage is a barrier, not an empty body. Later stages retain their
+// independent facts but do not contribute events to this known prefix.
+func newParallelPath(before, test, after parallelBody) parallelPath {
+	path := parallelPath{
+		beforeEach: before, test: test, afterEach: after,
+		understood: before.understood && test.understood && after.understood,
 	}
-	events = append(events, test...)
-	events = append(events, after...)
-	return parallelPath{events: events, parallel: hasParallel(before) || hasParallel(test)}
+	if !before.understood {
+		return path
+	}
+	for _, event := range before.events {
+		event.beforeEach = true
+		path.events = append(path.events, event)
+	}
+	if test.understood {
+		path.events = append(path.events, test.events...)
+		if after.understood {
+			path.events = append(path.events, after.events...)
+		}
+	}
+	path.parallel = hasParallel(before.events) || (test.understood && hasParallel(test.events))
+	return path
 }
 
 func hasParallel(events []parallelEvent) bool {

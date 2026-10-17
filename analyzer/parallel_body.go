@@ -44,6 +44,72 @@ func parseParallelBody(p *analysis.Pass, suite *Suite, method *Method) ([]parall
 	return parser.events, true
 }
 
+// Keep unsupported behavior unknown. A receiver-independent sibling can still
+// establish entry into BeforeEach, but supplies no test-body or scheduling
+// events. Any receiver reference or context escape (which can expose the suite via
+// testo.Reflect) makes its field effects unknown. Global aliases and helper
+// bodies are not inferred.
+func parallelBodyFacts(p *analysis.Pass, suite *Suite, method *Method) parallelBody {
+	events, understood := parseParallelBody(p, suite, method)
+	body := parallelBody{events: events, understood: understood}
+	if understood {
+		return body
+	}
+	sig := method.Func.Type().(*types.Signature)
+	if method.Decl == nil || method.Decl.Body == nil || sig.Recv() == nil {
+		body.unknownReceiverAccess = true
+		return body
+	}
+	receiverType := sig.Recv().Type()
+	if ptr, ok := types.Unalias(receiverType).(*types.Pointer); ok {
+		receiverType = ptr.Elem()
+	}
+	if !types.Identical(receiverType, suite.Type) {
+		body.unknownReceiverAccess = true
+		return body
+	}
+	ast.Inspect(method.Decl.Body, func(node ast.Node) bool {
+		if body.unknownReceiverAccess {
+			return false
+		}
+		// Skip only a resolved context-method selector, not its call arguments.
+		// Passing T itself, aliasing it or using other methods remains unknown.
+		if sel, ok := node.(*ast.SelectorExpr); ok && isolatedContextSelector(p.TypesInfo, sel, sig.Params().At(0)) {
+			return false
+		}
+		if id, ok := node.(*ast.Ident); ok {
+			object := p.TypesInfo.ObjectOf(id)
+			body.unknownReceiverAccess = object == sig.Recv() || object == sig.Params().At(0)
+		}
+		return !body.unknownReceiverAccess
+	})
+	return body
+}
+
+// These selectors expose only the narrow standard operations already modeled
+// by the parser. Their arguments and any callback bodies are still inspected.
+func isolatedContextSelector(info *types.Info, sel *ast.SelectorExpr, context *types.Var) bool {
+	id, ok := ast.Unparen(sel.X).(*ast.Ident)
+	if !ok || info.ObjectOf(id) != context {
+		return false
+	}
+	selection := info.Selections[sel]
+	if selection == nil {
+		return false
+	}
+	method, ok := selection.Obj().(*types.Func)
+	if !ok || method.Pkg() == nil {
+		return false
+	}
+	switch method.Name() {
+	case "Parallel", "Log", "Logf", "Cleanup":
+		return method.Pkg().Path() == testoImportPath
+	case "Helper":
+		return method.Pkg().Path() == "testing" || method.Pkg().Path() == testoImportPath
+	}
+	return false
+}
+
 func validParallelSignature(sig *types.Signature, context types.Type, name string) bool {
 	if sig.Variadic() || sig.Results().Len() != 0 {
 		return false

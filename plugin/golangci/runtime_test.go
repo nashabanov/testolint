@@ -10,13 +10,13 @@ import (
 // Exercise the real framework's suspension and context identity, rather than
 // treating analyzer stubs as runtime evidence.
 func TestParallelRuntime(t *testing.T) {
-	cmd := exec.Command("go", "test", "./testdata/parallelruntime", "-run", "^Test(Replacement|SerialLater|SerialEarlier|ParameterOrder)$", "-count=1", "-v")
+	cmd := exec.Command("go", "test", "./testdata/parallelruntime", "-run", "^Test(Replacement|SerialLater|SerialEarlier|ParameterOrder|LifecycleEvidence)$", "-count=1", "-v")
 	cmd.Dir = "testdata/integration"
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Fatalf("replacement reproduction: %v\n%s", err, out)
 	}
-	for _, marker := range []string{"cleanup replacement confirmed", "field and context replacement confirmed"} {
+	for _, marker := range []string{"cleanup replacement confirmed", "field and context replacement confirmed", "opaque sibling replacement confirmed", "opaque sibling cleanup confirmed"} {
 		if !strings.Contains(string(out), marker) {
 			t.Fatalf("missing %q\n%s", marker, out)
 		}
