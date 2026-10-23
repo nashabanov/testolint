@@ -2,8 +2,9 @@
 
 A small Go linter for tests written with [Testo](https://github.com/ozontech/testo).
 It checks suite signatures, parameter providers, naming, suite execution, and
-conservative parallel lifecycle hazards without running tests.
-Both the standalone CLI and golangci-lint integration run the same seventeen rules.
+conservative parallel lifecycle hazards, cleanup misuse and nil test callbacks
+without running tests.
+Both the standalone CLI and golangci-lint integration run the same twenty rules.
 Runtime semantics were checked against Testo v1.8.0.
 
 ## Installation
@@ -117,6 +118,9 @@ The same installation and invocation commands work in CI.
 | `TESTO015` | Cleanup re-reads a shared BeforeEach field that another execution can replace. |
 | `TESTO016` | A shared BeforeEach field can expose another execution's test context. |
 | `TESTO017` | Repeated Parallel calls on the same context across BeforeEach, test and AfterEach. |
+| `TESTO018` | Direct `testo.Run` on the cleanup context inside its Cleanup callback. |
+| `TESTO019` | Statically nil callbacks to `RunTest` or an immediately executed `Test` adapter. |
+| `TESTO020` | AfterEach closes an `*os.File` before a parallel child uses the same file. |
 
 For `testo.Suite[T]`, tests have the form `TestX(t T)` or
 `TestX(t T, p struct{ Age int })`. Named structs and named slice returns are
@@ -220,6 +224,55 @@ hooks and body. TESTO015 takes precedence over TESTO014 for the same field in
 the same execution; context fields use TESTO016. Shared hook diagnostics are
 reported once at each source position.
 
+## Execution and cleanup safety
+
+TESTO018 reports a direct `testo.Run` inside `t.Cleanup(func() { ... })` when
+both operations use the same unchanged local `*testo.T` variable. Testo delegates
+Run to the underlying testing context, where running a subtest during Cleanup
+panics. Run subtests before cleanup; use Cleanup to release their resources.
+
+```go
+t.Cleanup(func() {
+    testo.Run(t, "child", nil) // TESTO018, even though nil is valid for Run
+})
+```
+
+TESTO019 reports a statically nil function supplied to `testo.RunTest`. It also
+checks `testo.Test` when the returned adapter is immediately called or passed
+directly to the resolved `testing.T.Run` method. Test creates an adapter without
+invoking the callback; the failure occurs when that adapter runs. Supply a
+non-nil function, such as `func(t *testo.T) {}`, for an intentionally empty test.
+**`testo.Run(t, name, nil)` is valid** and uses a no-op callback.
+
+```go
+testo.RunTest[*testo.T](t, nil)       // TESTO019
+t.Run("child", testo.Test[*testo.T](nil)) // TESTO019 when the adapter runs
+```
+
+These are runtime-failure checks under the default Testo behavior, verified
+against v1.8.0. Plugins can override Cleanup or filter singleton execution;
+such runtime changes are not inferred.
+
+TESTO020 detects premature teardown of an `*os.File`: AfterEach calls Close
+before a parallel child resumes and calls Read, Write or Stat on the same direct
+suite field. These operations return an error after Close; ignored errors do not
+necessarily fail the test. The rule combines Testo lifecycle order with the
+concrete os.File contract, rather than interpreting arbitrary Close-like names.
+Move the Close into `t.Cleanup(func() { _ = s.file.Close() })` in AfterEach,
+which runs after the children complete, or keep the child serial.
+
+```go
+func (s *Suite) TestFile(t *testo.T) {
+    testo.Run(t, "child", func(child *testo.T) {
+        child.Parallel()
+        _, _ = s.file.Read(nil)
+    })
+}
+func (s *Suite) AfterEach(t *testo.T) {
+    _ = s.file.Close() // TESTO020: the parallel child has not resumed yet
+}
+```
+
 ## Scope and limitations
 
 - Suite discovery uses Testo v1.8.0's private marker and recognizes package-level
@@ -301,8 +354,37 @@ reported once at each source position.
   Synchronization, helper internals, subtests,
   custom T types, plugin overrides and runtime filters are not modeled. A clean
   result is not proof of race freedom. No general concurrency analysis is used.
-- Other lifecycle checks, plugin hooks, standalone `Run`/`RunTest`
-  and broader provider logic are outside this release's scope. No SSA or
+- TESTO018 inspects direct synchronous expression statements in the straight-line
+  prefix of a direct Cleanup closure. The context must be the same local variable
+  or parameter with the actual `*testo.T` type (aliases accepted); any reassignment
+  or address-taking anywhere disables identity inference. Different contexts,
+  context alias chains, fields, custom contexts, Cleanup method values/expressions,
+  stored callbacks, nested function bodies, branches, calls following control-flow
+  statements, and go/defer Run calls are skipped. It does not analyze helper
+  bodies or prove that registration/callback execution is reached.
+- TESTO019 accepts explicit nil, function-type conversions of nil (including
+  named function types and aliases), and unchanged local zero/nil initializers.
+  Reassignment or address-taking anywhere disables local inference. Unknown
+  functions, global callback variables and alias chains are skipped. Stored,
+  returned, discarded or indirectly passed Test adapters are not tracked.
+  The rule supports custom Testo context types for RunTest/Test and does not
+  require a suite declaration. It never rejects nil callbacks to Run.
+- TESTO020 requires one regular test, no case providers, standard `*testo.T`,
+  default BeforeAll/BeforeEach/AfterAll, and local non-promoted test/AfterEach
+  methods. The test body must consist of one direct `testo.Run` without options,
+  on its context parameter and with a constant name. Its literal callback must
+  contain exactly the child's Parallel call followed by Read, Write or Stat on
+  the same direct `*os.File` field closed by the sole AfterEach statement.
+  Calls may discard results as expressions or blank assignments; named-result
+  handling, branches, joins, aliases, deferred calls and helpers are skipped.
+  File operation arguments must be nil or constant-only literals. File/context
+  type aliases and pointer/value suite receivers are supported. Custom resource
+  types (including wrappers around os.File), multiple tests, parameterized tests,
+  field replacement and custom surrounding hooks remain unknown. The model
+  assumes no external mutation of the suite field or custom runtime scheduling.
+  It is a narrow file-lifetime check, not general resource or race analysis.
+- Other lifecycle checks, plugin hooks and broader provider logic are outside
+  this release's scope. No SSA or
   interprocedural analysis is used.
 
 ## Development

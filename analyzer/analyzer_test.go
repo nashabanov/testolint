@@ -11,6 +11,8 @@ import (
 
 func TestAnalyzer(t *testing.T) {
 	tests := []string{
+		"execution_safety",
+		"premature_teardown",
 		"parallel_safety",
 		"parallel_coverage",
 		"duplicate_parallel",

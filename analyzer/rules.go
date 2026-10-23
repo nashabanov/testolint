@@ -23,5 +23,13 @@ func suiteRules() []Rule {
 		checkSharedFixtureCleanup,
 		checkSharedTestContext,
 		checkDuplicateParallelLifecycle,
+		checkPrematureTeardown,
+	}
+}
+
+func runRules() []RunRule {
+	return []RunRule{
+		checkNilSuite,
+		checkRecursiveSubSuite,
 	}
 }

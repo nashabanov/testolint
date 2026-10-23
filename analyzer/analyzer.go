@@ -13,14 +13,15 @@ var Analyzer = &analysis.Analyzer{
 }
 
 func run(p *analysis.Pass) (any, error) {
-	return runWithRules(p, suiteRules(), []RunRule{checkNilSuite, checkRecursiveSubSuite})
+	return runWithRules(p, suiteRules(), runRules())
 }
 
-// runWithRules shares discovery and diagnostic deduplication across both rule
-// collections. All state belongs to this invocation, including the rule lists.
+// runWithRules shares call facts and diagnostic deduplication across suite/run
+// rules and standalone execution checks. All state belongs to this invocation.
 func runWithRules(p *analysis.Pass, suiteRules []Rule, runRules []RunRule) (any, error) {
 	suites := discoverSuites(p)
-	runs := discoverRuns(p)
+	facts := collectCallFacts(p)
+	runs := discoverRunsWithFacts(p, facts)
 	pass := *p
 	type key struct {
 		pos     token.Pos
@@ -48,5 +49,6 @@ func runWithRules(p *analysis.Pass, suiteRules []Rule, runRules []RunRule) (any,
 		}
 	}
 
+	checkExecutionSafety(&pass, facts)
 	return nil, nil
 }

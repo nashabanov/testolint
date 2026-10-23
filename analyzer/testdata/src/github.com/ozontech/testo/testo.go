@@ -1,5 +1,7 @@
 package testo
 
+import "testing"
+
 type T struct{}
 
 func (*T) Skip(args ...any) {}
@@ -36,3 +38,7 @@ func (*T) Log(...any)     {}
 
 func (*T) Helper()             {}
 func (*T) Logf(string, ...any) {}
+
+func Run[T CommonT](t T, name string, f func(T), options ...any) bool { return true }
+func RunTest[T CommonT](t any, f func(T), options ...any) bool        { return true }
+func Test[T CommonT](f func(T), options ...any) func(*testing.T)      { return nil }

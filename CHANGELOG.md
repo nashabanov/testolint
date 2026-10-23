@@ -1,5 +1,35 @@
 # Changelog
 
+## 0.5.0
+
+### Added
+
+- TESTO018: detect direct testo.Run calls on the same unchanged standard context
+  inside a registered Cleanup closure.
+- TESTO019: detect statically nil callbacks to RunTest and immediately executed
+  Test adapters, including direct testing.T.Run arguments. Preserve Run's valid
+  nil-as-no-op behavior; do not flag unused/stored Test adapters.
+- TESTO020: detect an os.File closed in AfterEach before a direct parallel child
+  calls Read, Write or Stat on the same field. Restrict analysis to one regular
+  test, default surrounding hooks and complete direct bodies; recommend Cleanup.
+
+### Refactoring
+
+- Share typed call facts, unchanged-local resolution and assignment/address
+  invalidation across suite execution discovery and standalone execution checks.
+  Keep diagnostic deduplication in the existing analyzer pipeline.
+- Centralize suite-run rule registration in runRules.
+
+### Tests and documentation
+
+- Add execution_safety analyzer fixtures, real-Testo runtime reproductions,
+  safe examples and CLI/custom-plugin assertions for IDs and source positions.
+- Document supported execution patterns, unknown cases and runtime assumptions.
+- Add premature_teardown analyzer fixtures, real-Testo closed-file reproduction
+  and safe serial/Cleanup runtime checks. Verify os.ErrClosed for Read, Write
+  and Stat, plus CLI/plugin diagnostic position and count.
+- Update the roadmap for the v0.5.0 implementation.
+
 ## 0.4.2
 
 ### Fixed

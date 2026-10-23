@@ -31,7 +31,10 @@ framework require evidence that simpler approaches cannot solve a valuable case.
 
 ## Current status
 
-The repository's latest release tag and [changelog](CHANGELOG.md) are v0.4.2.
+The v0.5.0 implementation adds TESTO018–020 (20 default rules total);
+see [changelog](CHANGELOG.md).
+Published versions are listed on the
+[releases page](https://github.com/nashabanov/testolint/releases).
 Release **v0.4.2** includes **TESTO001–TESTO017**,
 all enabled by default. TESTO014–017 use the conservative subset documented in
 the README; helper internals, custom contexts and unknown schedules remain excluded.
@@ -102,7 +105,7 @@ warnings (including strict-mode escalation), and optional linter policy.
 
 ## Release overview
 
-Counts below are candidate counts, not promised totals. All IDs after TESTO017
+Counts below are candidate counts, not promised totals. All IDs after TESTO020
 are provisional and must be rechecked before implementation; implemented IDs
 must never be reassigned.
 
@@ -112,7 +115,7 @@ must never be reassigned.
 | v0.4.0 | Shared State & Parallel Safety — released | 4 implemented | 0 | Conservative concurrency evidence |
 | v0.4.1 | Parallel Analysis Coverage Fixes — released | 0 | 0 | Serial interference, partial paths and case counts |
 | v0.4.2 | Parallel Lifecycle Analysis Fixes — released | 0 | 0 | Independent hook and sibling lifecycle facts |
-| v0.5.0 | Execution & Lifecycle Safety | 2 | 1 | Extend execution API discovery as needed |
+| v0.5.0 | Execution & Lifecycle Safety — implemented | 3 implemented | 0 | Shared typed call facts |
 | v0.6.0 | Custom T & Plugin Validation | 2 | 1 | Match reflection traversal |
 | v0.7.0 | Providers & Annotations | 3 | 2 | Optional TESTO010 extension |
 | v0.8.0 | Configuration & Developer Experience | 0 | 0 | Rule selection, defaults, diagnostic usability |
@@ -211,7 +214,7 @@ preserve import aliases, generics, unrelated-symbol exclusion and deduplication.
 
 #### TESTO018 — RunInCleanup
 
-**P1 · Planned.** Detect testo.Run executed directly inside a registered Cleanup
+**P1 · Implemented for v0.5.0.** Detect testo.Run executed directly inside a registered Cleanup
 callback, matching Testo's documented cleanup restriction. Scope: resolved Testo
 Run calls in direct cleanup closures with the relevant context established.
 Risks: helper registration that does not execute the call, unrelated Cleanup
@@ -220,26 +223,35 @@ function whose name starts with Run or duplicate generic testing.Run checks.
 
 #### TESTO019 — NilTestCallback
 
-**P1 · Planned.** Detect statically nil function callbacks supplied to RunTest
+**P1 · Implemented for v0.5.0.** Detect statically nil function callbacks supplied to RunTest
 or Test; their singleton execution path invokes the callback. Scope: explicit
 nil, typed nil conversions, and unchanged local zero/nil function variables.
 For Test, explain that failure occurs when the returned adapter is executed.
 Risks: reassignment, unknown function values and adapters never invoked.
 Explicitly exclude testo.Run, which supports nil as a no-op callback.
+The accepted subset checks Test adapters only when immediately invoked or passed
+as the direct callback to testing.T.Run; stored/unused adapters remain unknown.
 
 #### TESTO020 — PrematureTeardown
 
-**P2 · Experimental.** Investigate AfterEach teardown of a resource used by
-parallel subtests that finish later. The Testo-specific issue is deferred
-AfterEach ordering. Candidate scope: a locally identified resource, explicit
-parallel subtest use and direct teardown of that same resource. Risks: arbitrary
-Close-like methods, independent resources, joins, cleanup ordering and plugin
-behavior. Method names alone cannot establish teardown or dependence. A minimal
-reproduction and precise resource identity are required before implementation.
+**P2 · Implemented for v0.5.0, narrow os.File subset.** Detect
+AfterEach closing a direct `*os.File` field that a parallel child subsequently
+uses through Read, Write or Stat. Resolved os.File methods establish the resource
+contract; direct field objects and complete small bodies establish identity.
+The supported suite has one regular test, no providers, default surrounding
+hooks and a sole direct Run whose callback calls Parallel followed by the file
+operation. AfterEach contains only Close. Type aliases and pointer/value suite
+receivers are supported. See README for the full limits.
 
-**Definition of Done:** TESTO018/019 pass acceptance and execution-API boundary
-tests; document the nil-Run exception. TESTO020 ends with either an accepted
-narrow strategy or a recorded research outcome, not a required diagnostic.
+The real-Testo `TestClosedFile` reproduction confirms os.ErrClosed for all three
+operations; safe serial and Cleanup variants pass. `TestPremature` separately
+confirms lifecycle ordering. Arbitrary Close-like methods, wrappers, joins,
+multiple tests, unknown field mutation and helper behavior remain outside scope.
+Broader resource analysis needs independent evidence before expansion.
+
+**Definition of Done:** TESTO018–020 pass acceptance and execution-API boundary
+tests, with real-Testo reproductions, documented limits and CLI/plugin coverage.
+Preserve the nil-Run exception. TESTO020 uses the accepted narrow strategy above.
 
 ### v0.6.0 — Custom T & Plugin Validation
 
@@ -429,8 +441,7 @@ Unresolved experimental proposals can remain outside the stable rule set.
 ## Deferred / experimental backlog
 
 Items here have no release commitment. Unnumbered ideas receive no diagnostic
-ID until their semantics are established. Milestone experiments TESTO020,
-TESTO023, TESTO025 and TESTO028 can move here without blocking delivery.
+ID until their semantics are established. Milestone experiments TESTO023, TESTO025 and TESTO028 can move here without blocking delivery.
 
 | Idea | Priority / status | Reason deferred and next evidence needed |
 | --- | --- | --- |
