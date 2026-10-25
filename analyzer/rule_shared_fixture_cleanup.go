@@ -2,11 +2,8 @@ package analyzer
 
 import "golang.org/x/tools/go/analysis"
 
-func checkSharedFixtureCleanup(p *analysis.Pass, suite *Suite) {
-	if suite.parallel == nil {
-		return
-	}
-	for _, read := range suite.parallel.sharedReads {
+func checkSharedFixtureCleanup(p *analysis.Pass, model *parallelModel) {
+	for _, read := range model.sharedReads {
 		// Stored test contexts are reported by TESTO016, including in Cleanup.
 		if read.storesContext || !read.event.inCleanup {
 			continue

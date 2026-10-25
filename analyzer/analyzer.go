@@ -13,12 +13,18 @@ var Analyzer = &analysis.Analyzer{
 }
 
 func run(p *analysis.Pass) (any, error) {
-	return runWithRules(p, suiteRules(), runRules())
+	return runWithRules(p, ruleSet{
+		suites:        suiteRules(),
+		parallel:      parallelRules(),
+		afterParallel: afterParallelRules(),
+		runs:          runRules(),
+		packages:      packageRules(),
+	})
 }
 
-// runWithRules shares call facts and diagnostic deduplication across suite/run
-// rules and standalone execution checks. All state belongs to this invocation.
-func runWithRules(p *analysis.Pass, suiteRules []Rule, runRules []RunRule) (any, error) {
+// runWithRules shares call facts and diagnostic deduplication across all rule
+// groups. All state belongs to this invocation.
+func runWithRules(p *analysis.Pass, rules ruleSet) (any, error) {
 	suites := discoverSuites(p)
 	facts := collectCallFacts(p)
 	runs := discoverRunsWithFacts(p, facts)
@@ -37,19 +43,29 @@ func runWithRules(p *analysis.Pass, suiteRules []Rule, runRules []RunRule) (any,
 	}
 
 	for _, suite := range suites {
-		suite.parallel = buildParallelModel(&pass, suite)
-		for _, rule := range suiteRules {
+		for _, rule := range rules.suites {
+			rule(&pass, suite)
+		}
+		if len(rules.parallel) > 0 {
+			if model := buildParallelModel(&pass, suite); model != nil {
+				for _, rule := range rules.parallel {
+					rule(&pass, model)
+				}
+			}
+		}
+		for _, rule := range rules.afterParallel {
 			rule(&pass, suite)
 		}
 	}
 
 	for _, call := range runs {
-		for _, rule := range runRules {
+		for _, rule := range rules.runs {
 			rule(&pass, call)
 		}
 	}
 
-	checkExecutionSafety(&pass, facts)
-	checkConstruction(&pass, facts)
+	for _, rule := range rules.packages {
+		rule(&pass, facts)
+	}
 	return nil, nil
 }

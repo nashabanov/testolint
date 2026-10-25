@@ -2,12 +2,26 @@ package analyzer
 
 import "golang.org/x/tools/go/analysis"
 
-type Rule func(*analysis.Pass, *Suite)
+type suiteRule func(*analysis.Pass, *suite)
 
-type RunRule func(*analysis.Pass, *RunCall)
+type runRule func(*analysis.Pass, *runCall)
 
-func suiteRules() []Rule {
-	return []Rule{
+// packageRule checks package-wide calls independently of suite declarations.
+type packageRule func(*analysis.Pass, *callFacts)
+
+type parallelRule func(*analysis.Pass, *parallelModel)
+
+type ruleSet struct {
+	suites   []suiteRule
+	parallel []parallelRule
+	// Final suite checks retain their reporting order after parallel checks.
+	afterParallel []suiteRule
+	runs          []runRule
+	packages      []packageRule
+}
+
+func suiteRules() []suiteRule {
+	return []suiteRule{
 		checkTestSignature,
 		checkHookSignature,
 		checkMissingCaseProvider,
@@ -19,17 +33,34 @@ func suiteRules() []Rule {
 		checkUnexportedParamField,
 		checkEmptyCases,
 		checkEmptySuite,
-		checkSharedBeforeEachWrite,
-		checkSharedFixtureCleanup,
-		checkSharedTestContext,
-		checkDuplicateParallelLifecycle,
+	}
+}
+
+func afterParallelRules() []suiteRule {
+	return []suiteRule{
 		checkPrematureTeardown,
 	}
 }
 
-func runRules() []RunRule {
-	return []RunRule{
+func parallelRules() []parallelRule {
+	return []parallelRule{
+		checkSharedBeforeEachWrite,
+		checkSharedFixtureCleanup,
+		checkSharedTestContext,
+		checkDuplicateParallelLifecycle,
+	}
+}
+
+func runRules() []runRule {
+	return []runRule{
 		checkNilSuite,
 		checkRecursiveSubSuite,
+	}
+}
+
+func packageRules() []packageRule {
+	return []packageRule{
+		checkExecutionSafety,
+		checkConstruction,
 	}
 }

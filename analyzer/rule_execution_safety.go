@@ -68,40 +68,6 @@ func nilCallbackExpr(info *types.Info, expr ast.Expr) bool {
 	return false
 }
 
-func parentWithoutParens(facts *callFacts, node ast.Node) (ast.Node, ast.Node) {
-	for {
-		parent := facts.parents[node]
-		if _, ok := parent.(*ast.ParenExpr); !ok {
-			return node, parent
-		}
-		node = parent
-	}
-}
-
-func executedAdapter(info *types.Info, facts *callFacts, call *ast.CallExpr) bool {
-	node, parent := parentWithoutParens(facts, call)
-	outer, ok := parent.(*ast.CallExpr)
-	if !ok {
-		return false
-	}
-	if outer.Fun == node {
-		return true
-	}
-	if len(outer.Args) != 2 || outer.Args[1] != node {
-		return false
-	}
-	sel, ok := ast.Unparen(outer.Fun).(*ast.SelectorExpr)
-	if !ok {
-		return false
-	}
-	selection := info.Selections[sel]
-	if selection == nil || selection.Kind() != types.MethodVal {
-		return false
-	}
-	fn := selection.Obj()
-	return fn.Pkg() != nil && fn.Pkg().Path() == "testing" && fn.Name() == "Run"
-}
-
 func checkRunInCleanup(p *analysis.Pass, facts *callFacts, call *ast.CallExpr) {
 	if len(call.Args) < 3 {
 		return

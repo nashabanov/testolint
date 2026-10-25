@@ -1,9 +1,7 @@
 package analyzer
 
 import (
-	"go/ast"
 	"go/types"
-	"slices"
 
 	"golang.org/x/tools/go/analysis"
 )
@@ -12,15 +10,15 @@ import (
 // Local function aliases are accepted only with a direct initializer and no
 // reassignment or address-taking anywhere in the package. This deliberately
 // avoids making control-flow or execution-order assumptions.
-func discoverRuns(p *analysis.Pass) []*RunCall {
+func discoverRuns(p *analysis.Pass) []*runCall {
 	if p.TypesInfo == nil {
 		return nil
 	}
 	return discoverRunsWithFacts(p, collectCallFacts(p))
 }
 
-func discoverRunsWithFacts(p *analysis.Pass, facts *callFacts) []*RunCall {
-	var result []*RunCall
+func discoverRunsWithFacts(p *analysis.Pass, facts *callFacts) []*runCall {
+	var result []*runCall
 	for _, call := range facts.calls {
 		fn := facts.function(p.TypesInfo, call.Fun)
 		if fn == nil || fn.Pkg() == nil || fn.Pkg().Path() != testoImportPath {
@@ -30,12 +28,12 @@ func discoverRunsWithFacts(p *analysis.Pass, facts *callFacts) []*RunCall {
 		if !ok || sig.Recv() != nil {
 			continue
 		}
-		var kind RunKind
+		var kind runKind
 		switch fn.Name() {
 		case "RunSuite":
-			kind = RunSuite
+			kind = runSuite
 		case "RunSubSuite":
-			kind = RunSubSuite
+			kind = runSubSuite
 		default:
 			continue
 		}
@@ -44,37 +42,10 @@ func discoverRunsWithFacts(p *analysis.Pass, facts *callFacts) []*RunCall {
 		}
 		suiteExpr := call.Args[1]
 		suiteValue := facts.value(p.TypesInfo, suiteExpr)
-		result = append(result, &RunCall{
-			Kind: kind, Call: call, SuiteExpr: suiteExpr, EnclosingFunc: facts.functions[call],
-			SuiteType: p.TypesInfo.TypeOf(suiteExpr), SuiteValue: suiteValue,
+		result = append(result, &runCall{
+			kind: kind, call: call, suiteExpr: suiteExpr, enclosingFunc: facts.functions[call],
+			suiteType: p.TypesInfo.TypeOf(suiteExpr), suiteValue: suiteValue,
 		})
 	}
 	return result
-}
-
-func runFunctionExpr(expr ast.Expr) ast.Expr {
-	for {
-		switch e := ast.Unparen(expr).(type) {
-		case *ast.IndexExpr:
-			expr = e.X
-		case *ast.IndexListExpr:
-			expr = e.X
-		default:
-			return e
-		}
-	}
-}
-
-// A call inside a function literal belongs to that literal, even when it is
-// nested in a method. It cannot be treated as a direct call by the method.
-func enclosingFunc(stack []ast.Node) *ast.FuncDecl {
-	for _, node := range slices.Backward(stack) {
-		switch node := node.(type) {
-		case *ast.FuncDecl:
-			return node
-		case *ast.FuncLit:
-			return nil
-		}
-	}
-	return nil
 }

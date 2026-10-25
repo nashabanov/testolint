@@ -48,8 +48,8 @@ type parallelModel struct {
 	sharedReads []sharedFieldRead
 }
 
-func buildParallelModel(p *analysis.Pass, suite *Suite) *parallelModel {
-	if !standardTestoT(suite.TType) || !validParallelProviders(suite) {
+func buildParallelModel(p *analysis.Pass, suite *suite) *parallelModel {
+	if !standardTestoT(suite.tType) || !validParallelProviders(suite) {
 		return nil
 	}
 	hooks, ok := parseParallelHooks(p, suite)
@@ -57,24 +57,24 @@ func buildParallelModel(p *analysis.Pass, suite *Suite) *parallelModel {
 		return nil
 	}
 	model := &parallelModel{}
-	tests := append([]*Test(nil), suite.Tests...)
+	tests := append([]*test(nil), suite.tests...)
 	// Testo Collect appends regular methods first, then parameterized methods.
 	sort.SliceStable(tests, func(i, j int) bool {
-		a, b := tests[i].Func().Type().(*types.Signature).Params().Len(), tests[j].Func().Type().(*types.Signature).Params().Len()
+		a, b := tests[i].fn().Type().(*types.Signature).Params().Len(), tests[j].fn().Type().(*types.Signature).Params().Len()
 		if a != b {
 			return a < b
 		}
-		return tests[i].Func().Name() < tests[j].Func().Name()
+		return tests[i].fn().Name() < tests[j].fn().Name()
 	})
-	sizes := make(map[*Method]int)
-	for _, provider := range suite.Cases {
+	sizes := make(map[*method]int)
+	for _, provider := range suite.cases {
 		sizes[provider] = constantProviderSize(p, provider)
 	}
 	for _, test := range tests {
-		if !validParallelSignature(test.Func().Type().(*types.Signature), suite.TType, test.Func().Name()) || !isValidPrefixedName(test.Func().Name(), "Test") || !validParallelParameters(suite, test) {
+		if !validParallelSignature(test.fn().Type().(*types.Signature), suite.tType, test.fn().Name()) || !isValidPrefixedName(test.fn().Name(), "Test") || !validParallelParameters(suite, test) {
 			return nil
 		}
-		body := parallelBodyFacts(p, suite, test.Method)
+		body := parallelBodyFacts(p, suite, test.method)
 		path := newParallelPath(hooks["BeforeEach"], body, hooks["AfterEach"])
 		path.executions = testExecutionCount(suite, test, sizes)
 		model.paths = append(model.paths, path)
@@ -83,16 +83,16 @@ func buildParallelModel(p *analysis.Pass, suite *Suite) *parallelModel {
 	return model
 }
 
-func parseParallelHooks(p *analysis.Pass, suite *Suite) (map[string]parallelBody, bool) {
+func parseParallelHooks(p *analysis.Pass, suite *suite) (map[string]parallelBody, bool) {
 	hooks := make(map[string]parallelBody)
-	for _, method := range suite.Hooks {
-		if !validParallelSignature(method.Func.Type().(*types.Signature), suite.TType, method.Func.Name()) {
+	for _, method := range suite.hooks {
+		if !validParallelSignature(method.fn.Type().(*types.Signature), suite.tType, method.fn.Name()) {
 			return nil, false
 		}
-		if method.Func.Name() == "BeforeAll" || method.Func.Name() == "AfterAll" {
+		if method.fn.Name() == "BeforeAll" || method.fn.Name() == "AfterAll" {
 			continue
 		}
-		hooks[method.Func.Name()] = parallelBodyFacts(p, suite, method)
+		hooks[method.fn.Name()] = parallelBodyFacts(p, suite, method)
 	}
 	return hooks, true
 }
@@ -129,14 +129,4 @@ func hasParallel(events []parallelEvent) bool {
 		}
 	}
 	return false
-}
-
-func standardTestoT(t types.Type) bool {
-	ptr, ok := types.Unalias(t).(*types.Pointer)
-	if !ok {
-		return false
-	}
-	named, ok := types.Unalias(ptr.Elem()).(*types.Named)
-	return ok && named.Obj().Pkg() != nil &&
-		named.Obj().Pkg().Path() == testoImportPath && named.Obj().Name() == "T"
 }

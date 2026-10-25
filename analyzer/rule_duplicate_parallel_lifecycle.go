@@ -2,11 +2,8 @@ package analyzer
 
 import "golang.org/x/tools/go/analysis"
 
-func checkDuplicateParallelLifecycle(p *analysis.Pass, suite *Suite) {
-	if suite.parallel == nil {
-		return
-	}
-	for _, path := range suite.parallel.paths {
+func checkDuplicateParallelLifecycle(p *analysis.Pass, model *parallelModel) {
+	for _, path := range model.paths {
 		// Only this test must have an established execution. Sibling case
 		// counts do not affect the identity of its lifecycle context.
 		if path.executions <= 0 {

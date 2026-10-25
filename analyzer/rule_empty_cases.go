@@ -7,15 +7,15 @@ import (
 	"golang.org/x/tools/go/analysis"
 )
 
-func checkEmptyCases(p *analysis.Pass, suite *Suite) {
-	for _, provider := range suite.Cases {
-		if !isValidPrefixedName(provider.Func.Name(), "Cases") {
+func checkEmptyCases(p *analysis.Pass, suite *suite) {
+	for _, provider := range suite.cases {
+		if !isValidPrefixedName(provider.fn.Name(), "Cases") {
 			continue // TESTO008: not a runtime cases provider.
 		}
-		if slice, _ := casesSignature(provider.Func.Type()); slice == nil {
+		if slice, _ := casesSignature(provider.fn.Type()); slice == nil {
 			continue // TESTO005: avoid secondary diagnostics.
 		}
-		decl := provider.Decl
+		decl := provider.decl
 		if decl == nil || decl.Body == nil || len(decl.Body.List) != 1 {
 			continue
 		}
@@ -32,8 +32,8 @@ func checkEmptyCases(p *analysis.Pass, suite *Suite) {
 			empty = len(expr.Elts) == 0 && t != nil && isSliceType(t)
 		}
 		if empty {
-			p.Reportf(provider.Pos(suite),
-				"TESTO010: %s always returns an empty case set", provider.Func.Name())
+			p.Reportf(provider.pos(suite),
+				"TESTO010: %s always returns an empty case set", provider.fn.Name())
 		}
 	}
 }

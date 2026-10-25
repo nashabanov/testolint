@@ -9,9 +9,9 @@ import (
 
 const noExecutions = -1 // A proven empty provider or Cartesian product.
 
-func validParallelProviders(suite *Suite) bool {
-	for _, provider := range suite.Cases {
-		if _, problem := casesSignature(provider.Func.Type()); problem != "" || !isValidPrefixedName(provider.Func.Name(), "Cases") {
+func validParallelProviders(suite *suite) bool {
+	for _, provider := range suite.cases {
+		if _, problem := casesSignature(provider.fn.Type()); problem != "" || !isValidPrefixedName(provider.fn.Name(), "Cases") {
 			return false
 		}
 	}
@@ -20,20 +20,20 @@ func validParallelProviders(suite *Suite) bool {
 
 // Collection errors invalidate every test in the suite, unlike an unknown
 // provider count. Keep these two reasons for excluding analysis separate.
-func validParallelParameters(suite *Suite, test *Test) bool {
-	if test.Func().Type().(*types.Signature).Params().Len() == 1 {
+func validParallelParameters(suite *suite, test *test) bool {
+	if test.fn().Type().(*types.Signature).Params().Len() == 1 {
 		return true
 	}
 	if !test.validParams(suite) {
 		return false
 	}
-	for _, param := range test.Params {
-		provider := suite.CasesByName[param.Name]
-		if !ast.IsExported(param.Name) || provider == nil {
+	for _, param := range test.params {
+		provider := suite.casesByName[param.name]
+		if !ast.IsExported(param.name) || provider == nil {
 			return false
 		}
-		slice, _ := casesSignature(provider.Func.Type())
-		if slice == nil || !types.AssignableTo(slice.Elem(), param.Type) {
+		slice, _ := casesSignature(provider.fn.Type())
+		if slice == nil || !types.AssignableTo(slice.Elem(), param.typ) {
 			return false
 		}
 	}
@@ -42,10 +42,10 @@ func validParallelParameters(suite *Suite, test *Test) bool {
 
 // Called after collection validation. Cap multiplicity at two, which is
 // sufficient to establish a second execution of the same test method.
-func testExecutionCount(suite *Suite, test *Test, sizes map[*Method]int) int {
+func testExecutionCount(suite *suite, test *test, sizes map[*method]int) int {
 	count := 1
-	for _, param := range test.Params {
-		size := sizes[suite.CasesByName[param.Name]]
+	for _, param := range test.params {
+		size := sizes[suite.casesByName[param.name]]
 		if size == noExecutions {
 			return noExecutions
 		}
@@ -61,11 +61,11 @@ func testExecutionCount(suite *Suite, test *Test, sizes map[*Method]int) int {
 
 // Recognize only a sole return of an unkeyed slice literal of constants.
 // Zero means unknown; noExecutions distinguishes a proven empty provider.
-func constantProviderSize(p *analysis.Pass, provider *Method) int {
-	if provider.Decl == nil || provider.Decl.Body == nil || len(provider.Decl.Body.List) != 1 {
+func constantProviderSize(p *analysis.Pass, provider *method) int {
+	if provider.decl == nil || provider.decl.Body == nil || len(provider.decl.Body.List) != 1 {
 		return 0
 	}
-	ret, ok := provider.Decl.Body.List[0].(*ast.ReturnStmt)
+	ret, ok := provider.decl.Body.List[0].(*ast.ReturnStmt)
 	if !ok || len(ret.Results) != 1 {
 		return 0
 	}

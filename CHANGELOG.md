@@ -1,5 +1,30 @@
 # Changelog
 
+## 0.6.1
+
+### Refactoring
+
+- Make analyzer models, rule types, fields, methods and run-kind constants
+  private; keep `analyzer.Analyzer` as the package's only exported declaration.
+- Consolidate shared Testo type, naming and signature semantics in
+  `testo_semantics.go` and call facts and interpretation in `calls.go`. Keep
+  individual rule files separate.
+- Keep suite discovery models independent of parallel-analysis state; build one
+  separate lifecycle model per suite and pass it directly to parallel rules.
+- Register package-wide execution and construction checks alongside suite and
+  run checks, sharing invocation-local call facts and diagnostic deduplication.
+  Preserve diagnostic messages, positions and default reporting order.
+- Pass all rule groups explicitly through `ruleSet`; build the parallel model
+  once per suite only when parallel checks are selected. Keep final suite checks
+  after parallel diagnostics to preserve the existing reporting order.
+
+### Tests
+
+- Extend the run_pipeline analyzer fixture with parallel and standalone checks,
+  safe examples, teardown diagnostics, phase-order assertions, independent
+  package/parallel selection, omitted groups, duplicate registration and
+  repeated-pass checks.
+
 ## 0.6.0
 
 ### Added

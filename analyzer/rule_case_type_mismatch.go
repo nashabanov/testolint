@@ -7,37 +7,37 @@ import (
 	"golang.org/x/tools/go/analysis"
 )
 
-func checkCaseTypeMismatch(p *analysis.Pass, suite *Suite) {
-	for _, test := range suite.Tests {
+func checkCaseTypeMismatch(p *analysis.Pass, suite *suite) {
+	for _, test := range suite.tests {
 		if !test.validParams(suite) {
 			continue
 		}
-		for _, param := range test.Params {
-			if !ast.IsExported(param.Name) {
+		for _, param := range test.params {
+			if !ast.IsExported(param.name) {
 				continue // Not settable by Testo; reported by TESTO009.
 			}
 
-			provider := suite.CasesByName[param.Name]
+			provider := suite.casesByName[param.name]
 			if provider == nil {
 				continue // TESTO003
 			}
 
-			slice, _ := casesSignature(provider.Func.Type())
+			slice, _ := casesSignature(provider.fn.Type())
 			if slice == nil {
 				continue // TESTO005
 			}
 
-			if types.AssignableTo(slice.Elem(), param.Type) {
+			if types.AssignableTo(slice.Elem(), param.typ) {
 				continue
 			}
 
 			p.Reportf(
-				provider.Pos(suite),
+				provider.pos(suite),
 				"TESTO004: Cases%s provides %s, but parameter %q expects %s",
-				param.Name,
+				param.name,
 				slice.Elem(),
-				param.Name,
-				param.Type,
+				param.name,
+				param.typ,
 			)
 		}
 	}

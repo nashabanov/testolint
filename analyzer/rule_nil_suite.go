@@ -7,18 +7,18 @@ import (
 	"golang.org/x/tools/go/analysis"
 )
 
-func checkNilSuite(p *analysis.Pass, call *RunCall) {
-	if p.TypesInfo == nil || call.SuiteType == nil {
+func checkNilSuite(p *analysis.Pass, call *runCall) {
+	if p.TypesInfo == nil || call.suiteType == nil {
 		return
 	}
 	// Only pointer suites and explicit untyped nil are supported. In particular,
 	// a typed nil pointer boxed in an interface is not a nil interface.
-	_, pointer := call.SuiteType.Underlying().(*types.Pointer)
-	if !pointer && call.SuiteType != types.Typ[types.UntypedNil] {
+	_, pointer := call.suiteType.Underlying().(*types.Pointer)
+	if !pointer && call.suiteType != types.Typ[types.UntypedNil] {
 		return
 	}
-	if call.SuiteValue == nil || nilPointerExpr(p.TypesInfo, call.SuiteValue) {
-		p.Reportf(call.SuiteExpr.Pos(), "TESTO012: suite argument is statically nil")
+	if call.suiteValue == nil || nilPointerExpr(p.TypesInfo, call.suiteValue) {
+		p.Reportf(call.suiteExpr.Pos(), "TESTO012: suite argument is statically nil")
 	}
 }
 

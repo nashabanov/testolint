@@ -6,81 +6,69 @@ import (
 	"go/types"
 )
 
-type Suite struct {
-	Type      *types.Named
-	TType     types.Type
-	MethodSet *types.MethodSet
+type suite struct {
+	typ       *types.Named
+	tType     types.Type
+	methodSet *types.MethodSet
 
-	Tests []*Test
-	Cases []*Method
-	Hooks []*Method
+	tests []*test
+	cases []*method
+	hooks []*method
 
-	CasesByName map[string]*Method
-
-	// Prepared once per suite before rules run; nil means unsupported suite analysis.
-	parallel *parallelModel
+	casesByName map[string]*method
 }
 
-type Method struct {
-	Func *types.Func
-	// Decl is optional and available only for declarations in this pass.
-	// Func remains the semantic identity, including instantiated methods.
-	Decl *ast.FuncDecl
+type method struct {
+	fn *types.Func
+	// decl is optional and available only for declarations in this pass.
+	// fn remains the semantic identity, including instantiated methods.
+	decl *ast.FuncDecl
 }
 
-type Param struct {
-	Name string
-	Type types.Type
-	Pos  token.Pos
+type param struct {
+	name string
+	typ  types.Type
+	pos  token.Pos
 }
 
-type Test struct {
-	Method *Method
-	Params []Param
+type test struct {
+	method *method
+	params []param
 }
 
-// Pos reports local methods at their declaration, and imported methods at
+// pos reports local methods at their declaration, and imported methods at
 // the local suite that exposes them. Dependency files are outside this pass.
-func (m *Method) Pos(suite *Suite) token.Pos {
-	if m.Func.Pkg() != suite.Type.Obj().Pkg() || !m.Func.Pos().IsValid() {
-		return suite.Type.Obj().Pos()
+func (m *method) pos(suite *suite) token.Pos {
+	if m.fn.Pkg() != suite.typ.Obj().Pkg() || !m.fn.Pos().IsValid() {
+		return suite.typ.Obj().Pos()
 	}
-	return m.Func.Pos()
+	return m.fn.Pos()
 }
 
-func (t *Test) Func() *types.Func {
-	return t.Method.Func
+func (t *test) fn() *types.Func {
+	return t.method.fn
 }
 
-// validParams reports whether parameter checks have a meaningful runtime target.
-func (t *Test) validParams(suite *Suite) bool {
-	sig := t.Func().Type().(*types.Signature)
-	return isValidPrefixedName(t.Func().Name(), "Test") &&
-		sig.Params().Len() == 2 && !sig.Variadic() && sig.Results().Len() == 0 &&
-		types.Identical(sig.Params().At(0).Type(), suite.TType) &&
-		isStructType(sig.Params().At(1).Type())
-}
-
-// RunKind identifies a Testo suite execution entry point.
-type RunKind uint8
+// runKind identifies a Testo suite execution entry point.
+type runKind uint8
 
 const (
-	RunSuite RunKind = iota
-	RunSubSuite
+	runSuite runKind = iota
+	runSubSuite
 )
 
-// RunCall retains source expressions and the suite's static argument type.
-// SuiteType may be nil when type information is incomplete.
-type RunCall struct {
-	Kind      RunKind
-	Call      *ast.CallExpr
-	SuiteExpr ast.Expr
-	SuiteType types.Type
-	// EnclosingFunc is nil for calls in function literals or package initializers.
-	EnclosingFunc *ast.FuncDecl
-	// SuiteValue is SuiteExpr, or the initializer of an unchanged local
+// runCall retains source expressions and the suite's static argument type.
+// suiteType may be nil when type information is incomplete.
+type runCall struct {
+	kind      runKind
+	call      *ast.CallExpr
+	suiteExpr ast.Expr
+	suiteType types.Type
+	// enclosingFunc is nil for calls in function literals or package initializers.
+	enclosingFunc *ast.FuncDecl
+	// suiteValue is suiteExpr, or the initializer of an unchanged local
 	// variable used directly as the argument. Nil denotes its zero value.
 	// Initializers are resolved only one level; their type may differ from
-	// SuiteType because of implicit conversions in the declaration.
-	SuiteValue ast.Expr
+	// suiteType because of implicit conversions in the declaration.
+	suiteValue ast.Expr
 }

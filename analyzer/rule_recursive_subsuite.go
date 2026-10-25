@@ -9,16 +9,16 @@ import (
 	"golang.org/x/tools/go/analysis"
 )
 
-func checkRecursiveSubSuite(p *analysis.Pass, call *RunCall) {
-	if call.Kind != RunSubSuite || call.SuiteType == nil || p.TypesInfo == nil || len(call.Call.Args) != 2 {
+func checkRecursiveSubSuite(p *analysis.Pass, call *runCall) {
+	if call.kind != runSubSuite || call.suiteType == nil || p.TypesInfo == nil || len(call.call.Args) != 2 {
 		return
 	}
-	decl := call.EnclosingFunc
+	decl := call.enclosingFunc
 	if decl == nil || decl.Recv == nil || decl.Body == nil || len(decl.Body.List) != 1 {
 		return
 	}
 	stmt, ok := decl.Body.List[0].(*ast.ExprStmt)
-	if !ok || ast.Unparen(stmt.X) != call.Call {
+	if !ok || ast.Unparen(stmt.X) != call.call {
 		return
 	}
 	fn, ok := p.TypesInfo.ObjectOf(decl.Name).(*types.Func)
@@ -35,11 +35,11 @@ func checkRecursiveSubSuite(p *analysis.Pass, call *RunCall) {
 
 	// The parent must be this method's Testo parameter. A receiver or parent
 	// obtained from a function, field, or local alias needs additional reasoning.
-	parent, ok := ast.Unparen(call.Call.Args[0]).(*ast.Ident)
+	parent, ok := ast.Unparen(call.call.Args[0]).(*ast.Ident)
 	if !ok || p.TypesInfo.ObjectOf(parent) != sig.Params().At(0) {
 		return
 	}
-	receiver := ast.Unparen(call.SuiteExpr)
+	receiver := ast.Unparen(call.suiteExpr)
 	if unary, ok := receiver.(*ast.UnaryExpr); ok && (unary.Op == token.AND || unary.Op == token.MUL) {
 		receiver = ast.Unparen(unary.X)
 	}
@@ -50,7 +50,7 @@ func checkRecursiveSubSuite(p *analysis.Pass, call *RunCall) {
 
 	// Use the argument's actual method set, not the pointer method set used by
 	// suite-level rules. Passing a value can remove the current pointer method.
-	methodSet := types.NewMethodSet(call.SuiteType)
+	methodSet := types.NewMethodSet(call.suiteType)
 	selected := methodSet.Lookup(p.Pkg, fn.Name())
 	if selected == nil {
 		return
@@ -66,7 +66,7 @@ func checkRecursiveSubSuite(p *analysis.Pass, call *RunCall) {
 	if !directRecurrenceSuite(methodSet, fn, tType) {
 		return
 	}
-	p.Reportf(call.Call.Pos(), "TESTO013: recursive RunSubSuite invocation")
+	p.Reportf(call.call.Pos(), "TESTO013: recursive RunSubSuite invocation")
 }
 
 // directRecurrenceSuite rejects collection failures and execution paths that

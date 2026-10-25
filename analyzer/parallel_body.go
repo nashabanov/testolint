@@ -18,27 +18,27 @@ type parallelBodyParser struct {
 	events         []parallelEvent
 }
 
-func parseParallelBody(p *analysis.Pass, suite *Suite, method *Method) ([]parallelEvent, bool) {
-	sig := method.Func.Type().(*types.Signature)
-	if !validParallelSignature(sig, suite.TType, method.Func.Name()) {
+func parseParallelBody(p *analysis.Pass, suite *suite, method *method) ([]parallelEvent, bool) {
+	sig := method.fn.Type().(*types.Signature)
+	if !validParallelSignature(sig, suite.tType, method.fn.Name()) {
 		return nil, false
 	}
-	if method.Func.Pkg().Path() == testoImportPath {
+	if method.fn.Pkg().Path() == testoImportPath {
 		return nil, true // Testo's inherited hooks have no relevant events.
 	}
-	if method.Decl == nil || method.Decl.Body == nil || sig.Recv() == nil {
+	if method.decl == nil || method.decl.Body == nil || sig.Recv() == nil {
 		return nil, false
 	}
 	ptr, ok := types.Unalias(sig.Recv().Type()).(*types.Pointer)
-	shared := ok && types.Identical(ptr.Elem(), suite.Type)
-	if !shared && !types.Identical(sig.Recv().Type(), suite.Type) {
+	shared := ok && types.Identical(ptr.Elem(), suite.typ)
+	if !shared && !types.Identical(sig.Recv().Type(), suite.typ) {
 		return nil, false // A promoted body operates on a different receiver.
 	}
 	parser := parallelBodyParser{
 		info: p.TypesInfo, receiver: sig.Recv(), context: sig.Params().At(0),
 		sharedReceiver: shared,
 	}
-	if !parser.statements(method.Decl.Body.List, false) {
+	if !parser.statements(method.decl.Body.List, false) {
 		return nil, false
 	}
 	return parser.events, true
@@ -49,14 +49,14 @@ func parseParallelBody(p *analysis.Pass, suite *Suite, method *Method) ([]parall
 // events. Any receiver reference or context escape (which can expose the suite via
 // testo.Reflect) makes its field effects unknown. Global aliases and helper
 // bodies are not inferred.
-func parallelBodyFacts(p *analysis.Pass, suite *Suite, method *Method) parallelBody {
+func parallelBodyFacts(p *analysis.Pass, suite *suite, method *method) parallelBody {
 	events, understood := parseParallelBody(p, suite, method)
 	body := parallelBody{events: events, understood: understood}
 	if understood {
 		return body
 	}
-	sig := method.Func.Type().(*types.Signature)
-	if method.Decl == nil || method.Decl.Body == nil || sig.Recv() == nil {
+	sig := method.fn.Type().(*types.Signature)
+	if method.decl == nil || method.decl.Body == nil || sig.Recv() == nil {
 		body.unknownReceiverAccess = true
 		return body
 	}
@@ -64,11 +64,11 @@ func parallelBodyFacts(p *analysis.Pass, suite *Suite, method *Method) parallelB
 	if ptr, ok := types.Unalias(receiverType).(*types.Pointer); ok {
 		receiverType = ptr.Elem()
 	}
-	if !types.Identical(receiverType, suite.Type) {
+	if !types.Identical(receiverType, suite.typ) {
 		body.unknownReceiverAccess = true
 		return body
 	}
-	ast.Inspect(method.Decl.Body, func(node ast.Node) bool {
+	ast.Inspect(method.decl.Body, func(node ast.Node) bool {
 		if body.unknownReceiverAccess {
 			return false
 		}
@@ -108,22 +108,6 @@ func isolatedContextSelector(info *types.Info, sel *ast.SelectorExpr, context *t
 		return method.Pkg().Path() == "testing" || method.Pkg().Path() == testoImportPath
 	}
 	return false
-}
-
-func validParallelSignature(sig *types.Signature, context types.Type, name string) bool {
-	if sig.Variadic() || sig.Results().Len() != 0 {
-		return false
-	}
-	switch sig.Params().Len() {
-	case 1:
-	case 2:
-		if !isValidPrefixedName(name, "Test") || !isStructType(sig.Params().At(1).Type()) {
-			return false
-		}
-	default:
-		return false
-	}
-	return types.Identical(sig.Params().At(0).Type(), context)
 }
 
 func (b *parallelBodyParser) isObject(expr ast.Expr, object types.Object) bool {

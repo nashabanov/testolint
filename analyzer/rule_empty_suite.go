@@ -2,12 +2,12 @@ package analyzer
 
 import "golang.org/x/tools/go/analysis"
 
-func checkEmptySuite(p *analysis.Pass, suite *Suite) {
-	for _, test := range suite.Tests {
-		if isValidPrefixedName(test.Func().Name(), "Test") {
+func checkEmptySuite(p *analysis.Pass, suite *suite) {
+	for _, test := range suite.tests {
+		if isValidPrefixedName(test.fn().Name(), "Test") {
 			return
 		}
 	}
-	obj := suite.Type.Obj()
+	obj := suite.typ.Obj()
 	p.Reportf(obj.Pos(), "TESTO011: suite %q contains no tests", obj.Name())
 }

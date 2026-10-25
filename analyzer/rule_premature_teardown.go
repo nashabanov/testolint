@@ -12,32 +12,32 @@ import (
 // os.File.Close makes subsequent Read, Write and Stat fail. A single regular
 // test, default surrounding hooks and complete tiny bodies establish identity
 // and ordering without assuming what arbitrary Close methods or helpers do.
-func checkPrematureTeardown(p *analysis.Pass, suite *Suite) {
-	if !standardTestoT(suite.TType) || len(suite.Tests) != 1 || len(suite.Cases) != 0 {
+func checkPrematureTeardown(p *analysis.Pass, suite *suite) {
+	if !standardTestoT(suite.tType) || len(suite.tests) != 1 || len(suite.cases) != 0 {
 		return
 	}
-	var after *Method
-	for _, hook := range suite.Hooks {
-		if !validParallelSignature(hook.Func.Type().(*types.Signature), suite.TType, hook.Func.Name()) {
+	var after *method
+	for _, hook := range suite.hooks {
+		if !validParallelSignature(hook.fn.Type().(*types.Signature), suite.tType, hook.fn.Name()) {
 			return
 		}
-		if hook.Func.Name() == "AfterEach" {
+		if hook.fn.Name() == "AfterEach" {
 			after = hook
-		} else if hook.Func.Pkg().Path() != testoImportPath {
+		} else if hook.fn.Pkg().Path() != testoImportPath {
 			return
 		}
 	}
-	test := suite.Tests[0].Method
-	if after == nil || !isValidPrefixedName(test.Func.Name(), "Test") ||
+	test := suite.tests[0].method
+	if after == nil || !isValidPrefixedName(test.fn.Name(), "Test") ||
 		!teardownMethod(suite, test) || !teardownMethod(suite, after) {
 		return
 	}
-	closeCall := discardedCall(after.Decl.Body.List[0])
+	closeCall := discardedCall(after.decl.Body.List[0])
 	field := fileOperationField(p.TypesInfo, closeCall, after, "Close")
 	if field == nil || len(closeCall.Args) != 0 {
 		return
 	}
-	run := discardedCall(test.Decl.Body.List[0])
+	run := discardedCall(test.decl.Body.List[0])
 	if run == nil || len(run.Args) != 3 || run.Ellipsis.IsValid() {
 		return
 	}
@@ -47,7 +47,7 @@ func checkPrematureTeardown(p *analysis.Pass, suite *Suite) {
 		fn.Type().(*types.Signature).Recv() != nil {
 		return
 	}
-	if !sameObject(p.TypesInfo, run.Args[0], test.Func.Type().(*types.Signature).Params().At(0)) ||
+	if !sameObject(p.TypesInfo, run.Args[0], test.fn.Type().(*types.Signature).Params().At(0)) ||
 		p.TypesInfo.Types[run.Args[1]].Value == nil {
 		return
 	}
@@ -85,19 +85,19 @@ func checkPrematureTeardown(p *analysis.Pass, suite *Suite) {
 	p.Reportf(closeCall.Pos(), "TESTO020: AfterEach closes file %q before its parallel subtest uses it; close the file in Cleanup", field.Name())
 }
 
-func teardownMethod(suite *Suite, method *Method) bool {
-	if method.Decl == nil || method.Decl.Body == nil || len(method.Decl.Body.List) != 1 {
+func teardownMethod(suite *suite, method *method) bool {
+	if method.decl == nil || method.decl.Body == nil || len(method.decl.Body.List) != 1 {
 		return false
 	}
-	sig := method.Func.Type().(*types.Signature)
-	if sig.Recv() == nil || sig.Params().Len() != 1 || !validParallelSignature(sig, suite.TType, method.Func.Name()) {
+	sig := method.fn.Type().(*types.Signature)
+	if sig.Recv() == nil || sig.Params().Len() != 1 || !validParallelSignature(sig, suite.tType, method.fn.Name()) {
 		return false
 	}
 	receiver := sig.Recv().Type()
 	if ptr, ok := types.Unalias(receiver).(*types.Pointer); ok {
 		receiver = ptr.Elem()
 	}
-	return types.Identical(receiver, suite.Type)
+	return types.Identical(receiver, suite.typ)
 }
 
 // Only synchronous calls whose results are discarded have no intervening flow
@@ -125,12 +125,7 @@ func discardedCall(stmt ast.Stmt) *ast.CallExpr {
 	return call
 }
 
-func sameObject(info *types.Info, expr ast.Expr, object types.Object) bool {
-	id, ok := ast.Unparen(expr).(*ast.Ident)
-	return ok && info.ObjectOf(id) == object
-}
-
-func fileOperationField(info *types.Info, call *ast.CallExpr, method *Method, names ...string) *types.Var {
+func fileOperationField(info *types.Info, call *ast.CallExpr, method *method, names ...string) *types.Var {
 	if call == nil {
 		return nil
 	}
@@ -154,7 +149,7 @@ func fileOperationField(info *types.Info, call *ast.CallExpr, method *Method, na
 		return nil
 	}
 	field, ok := ast.Unparen(sel.X).(*ast.SelectorExpr)
-	if !ok || !sameObject(info, field.X, method.Func.Type().(*types.Signature).Recv()) {
+	if !ok || !sameObject(info, field.X, method.fn.Type().(*types.Signature).Recv()) {
 		return nil
 	}
 	fs := info.Selections[field]
