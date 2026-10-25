@@ -1,5 +1,28 @@
 # Changelog
 
+## 0.6.0
+
+### Added
+
+- TESTO021: report exported non-pointer fields reached by custom T/plugin
+  wiring from typed Testo execution calls, including nested and imported types.
+- TESTO022: report active-path type cycles traversed by context initialization;
+  ignore inaccessible fields and container contents, and allow repeated types
+  on independent branches. Cycles suppress dependent field diagnostics.
+- Share construction-root discovery and type traversal for both checks, with
+  aliases, pointer/value contexts, concrete generics and local function aliases.
+  Skip unknown traversed type parameters and unexecuted Test adapters.
+
+### Tests and documentation
+
+- Add construction analyzer fixtures, generic/imported regression boundaries,
+  CLI/plugin diagnostic count and position assertions, and real-Testo runtime
+  failures plus safe construction cases.
+- Document construction semantics, diagnostic precedence and supported roots.
+- Defer experimental TESTO023 after feasibility review; it is outside v0.6.0.
+- Limit the roadmap to upcoming v0.7.0–v1.0.0 milestones and deferred work;
+  keep completed implementation and release history in the changelog.
+
 ## 0.5.0
 
 ### Added

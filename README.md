@@ -2,9 +2,10 @@
 
 A small Go linter for tests written with [Testo](https://github.com/ozontech/testo).
 It checks suite signatures, parameter providers, naming, suite execution, and
-conservative parallel lifecycle hazards, cleanup misuse and nil test callbacks
+conservative parallel lifecycle hazards, cleanup misuse, nil test callbacks
+and custom context/plugin construction errors
 without running tests.
-Both the standalone CLI and golangci-lint integration run the same twenty rules.
+Both the standalone CLI and golangci-lint integration run the same twenty-two rules.
 Runtime semantics were checked against Testo v1.8.0.
 
 ## Installation
@@ -121,6 +122,8 @@ The same installation and invocation commands work in CI.
 | `TESTO018` | Direct `testo.Run` on the cleanup context inside its Cleanup callback. |
 | `TESTO019` | Statically nil callbacks to `RunTest` or an immediately executed `Test` adapter. |
 | `TESTO020` | AfterEach closes an `*os.File` before a parallel child uses the same file. |
+| `TESTO021` | Exported fields traversed during custom T/plugin wiring must be pointers. |
+| `TESTO022` | Report a type cycle traversed during custom T/plugin initialization. |
 
 For `testo.Suite[T]`, tests have the form `TestX(t T)` or
 `TestX(t T, p struct{ Age int })`. Named structs and named slice returns are
@@ -273,6 +276,36 @@ func (s *Suite) AfterEach(t *testo.T) {
 }
 ```
 
+## Custom context and plugin construction
+
+Testo constructs a fresh custom T and fills its accessible pointer fields before
+wiring plugins. TESTO021 reports an exported non-pointer field reached during
+this wiring, including fields in nested structs that are not themselves plugins.
+Use an exported pointer for automatic initialization, or an unexported field
+with manual initialization when the field should remain outside automatic wiring.
+
+```go
+type CustomT struct {
+    *testo.T
+    Count int // TESTO021: exported fields must be pointers
+}
+func TestCustom(t *testing.T) {
+    testo.RunTest(t, func(ctx *CustomT) {})
+}
+```
+
+TESTO022 reports a cycle along the active initialization path, such as an
+exported `Next *Node` field on `Node` reached from a custom T. Testo cannot
+finish constructing this graph. Reusing a type on independent branches is safe.
+Keep intentional recursive data behind unexported fields and initialize it
+manually, or remove the recursive construction dependency.
+
+These are construction failures under Testo v1.8.0, rather than struct-style
+policies. Fill precedes plugin methods and suite hooks, so initializing an
+exported invalid/cyclic graph in those methods cannot fix the construction
+failure. A cycle takes precedence over TESTO021 for the same context. TESTO023
+is deferred and is not enabled or included in this release.
+
 ## Scope and limitations
 
 - Suite discovery uses Testo v1.8.0's private marker and recognizes package-level
@@ -386,6 +419,30 @@ func (s *Suite) AfterEach(t *testo.T) {
 - Other lifecycle checks, plugin hooks and broader provider logic are outside
   this release's scope. No SSA or
   interprocedural analysis is used.
+- TESTO021/022 start from typed RunSuite/RunSubSuite calls, RunTest, Run and
+  immediately executed Test adapters (direct invocation or direct testing.T.Run
+  callback). Import aliases, explicit/inferred generics and unchanged direct
+  local function aliases are supported. Unused suite/context declarations and
+  stored Test adapters do not establish construction roots. A call need not be
+  proven reachable: diagnostics describe its construction graph if executed.
+- Construction follows pointers (including named pointers) and exported struct
+  fields. Fill also traverses exported value structs, so their cycles can take
+  precedence over a non-pointer-field error. Wiring stops at the actual testo.T;
+  user types with a similar name receive no special treatment. Unexported fields
+  and contents of arrays, slices, maps, channels, functions and interfaces are
+  not traversed. Pointer fields leading to those containers are valid.
+  Repeated acyclic types are cached independently of active-path cycle detection.
+- Known concrete generic instantiations are checked; unknown traversed type
+  parameters suppress field checks. Interface contexts with unknown concrete
+  runtime types, wrappers, indirect adapters and alias chains remain unsupported.
+  Only the first encountered cycle per context is reported; shared cycles and
+  identical local-field diagnostics are deduplicated. Local diagnostics point
+  to the offending field, imported fields to the first local construction call
+  for that context. Fixing a reported obstruction may reveal another one.
+  Ordinary struct cycles produce Testo's recursion panic; pointer-only cycles
+  also prevent initialization from terminating, without promising that specific
+  panic. Plugin method bodies, their overrides, manually initialized hidden
+  dependencies and general nilness are not analyzed.
 
 ## Development
 

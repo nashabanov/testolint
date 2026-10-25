@@ -3,8 +3,8 @@
 ## Overview and project principles
 
 testolint is a specialized static analyzer for
-[Testo](https://github.com/ozontech/testo). This roadmap starts at v0.3.0 and
-describes a path to v1.0.0 for a project maintained by one developer. Versions
+[Testo](https://github.com/ozontech/testo). This roadmap covers upcoming work from v0.7.0 to v1.0.0
+for a project maintained by one developer. Versions
 express an intended order, without dates or a promise to ship every candidate.
 Small, useful releases take precedence over completing a rule quota.
 
@@ -29,268 +29,37 @@ adding an overlapping one. Add model fields or discovery support only when a
 concrete rule needs them; SSA, interprocedural analysis, and a general data-flow
 framework require evidence that simpler approaches cannot solve a valuable case.
 
-## Current status
+## Planning baseline
 
-The v0.5.0 implementation adds TESTO018–020 (20 default rules total);
-see [changelog](CHANGELOG.md).
-Published versions are listed on the
-[releases page](https://github.com/nashabanov/testolint/releases).
-Release **v0.4.2** includes **TESTO001–TESTO017**,
-all enabled by default. TESTO014–017 use the conservative subset documented in
-the README; helper internals, custom contexts and unknown schedules remain excluded.
-v0.4.2 extends partial lifecycle evidence across unsupported teardown or
-receiver-independent sibling bodies while retaining the documented limits.
-The [README](README.md) is the detailed reference for existing rules and limits.
+Implemented rules and limitations are documented in the [README](README.md);
+completed work and release history belong in the [changelog](CHANGELOG.md).
+The baseline for future work is Go 1.27.1, Testo v1.8.0 and golangci-lint v2.14.0.
+Broader compatibility requires explicit verification.
 
-Already implemented:
-
-- Test and lifecycle signatures, Testo naming, parameter field visibility,
-  field-name providers, assignability, unused providers, and narrowly provable
-  empty providers and suites.
-- Indirect suite embedding, aliases, pointer embedding, promoted and imported
-  methods, and Go method-set shadowing and ambiguity handling. Generic suite
-  declarations remain excluded from suite checks.
-- Typed discovery of RunSuite/RunSubSuite, including generic calls and unchanged
-  direct local function aliases; conservative nil-suite and direct receiver
-  recursion checks, including instantiated run arguments.
-- Shared suite/run diagnostic deduplication, regression fixtures, a reusable
-  go/analysis analyzer, CLI, golangci-lint v2 module plugin, real-Testo fixtures,
-  and CI integration. Determinism already has pipeline regression coverage.
-
-These are foundations to preserve, not new deliverables. Current models retain
-suite types, T, method sets and optional local method bodies, plus suite run
-calls and limited local initializers. Parallel checks retain narrow local
-lifecycle order, direct field ownership and Cleanup reads; they do not provide
-general scheduling, alias analysis or standalone Testo execution-API modeling.
-The plugin currently ignores settings; per-rule configuration is not implemented.
-The declared baseline is Go 1.27.1, Testo v1.8.0 in integration fixtures, and
-golangci-lint v2.14.0 in CI. Broader compatibility is not implied.
-
-### Testo semantic baseline
-
-Planning was checked against actual v1.8.0 source:
-
-- [suite.go](https://github.com/ozontech/testo/blob/v1.8.0/suite.go) and
-  [runner.go](https://github.com/ozontech/testo/blob/v1.8.0/runner.go): BeforeEach
-  does not construct a fresh suite. A pointer suite shares its instance; value
-  receivers copy values but can still share referenced data. Each test gets a
-  constructed T; BeforeEach, test, and AfterEach use that test's context.
-  BeforeAll/AfterAll use the suite context. AfterEach is deferred and can precede
-  completion of parallel subtests.
-- [collector.go](https://github.com/ozontech/testo/blob/v1.8.0/collector.go) and
-  runner.go: providers are evaluated after BeforeAll and before BeforeEach;
-  annotations are read during collection before the plugin plan is applied.
-  Dynamic providers and dependencies on BeforeAll are supported.
-- [construct.go](https://github.com/ozontech/testo/blob/v1.8.0/construct.go) and
-  [reflectutil](https://github.com/ozontech/testo/blob/v1.8.0/internal/reflectutil/reflect.go):
-  construction fills settable fields recursively and wires exported pointer
-  fields, with special handling for testo.T. Exported non-pointer fields on
-  traversed custom T/plugin structures can panic; unexported fields are skipped.
-  Recursion follows traversed fields, not every reference in a Go type graph.
-- runner.go accepts nil callbacks for **Run**, replacing them with a no-op.
-  RunTest/Test use a different singleton path. Run during Cleanup is explicitly
-  documented as panicking.
-- [plugin contract](https://github.com/ozontech/testo/blob/v1.8.0/testoplugin/plugin.go):
-  at the suite root, Plugin receives a non-nil interface containing a typed nil
-  pointer of its own plugin type; nested contexts receive the parent instance.
-- [options.go](https://github.com/ozontech/testo/blob/v1.8.0/options.go) and
-  [annotations.go](https://github.com/ozontech/testo/blob/v1.8.0/annotations.go):
-  registration uses synchronized process-global storage. Late calls can affect
-  future runs; synchronization does not provide test isolation. BeforeAll is
-  not automatically too late for annotations.
-
-These source observations guide candidates; runtime reproductions remain an
-acceptance prerequisite. Reports must distinguish runtime failures, framework
-warnings (including strict-mode escalation), and optional linter policy.
+Use the pinned Testo source when evaluating candidates, especially
+[collector.go](https://github.com/ozontech/testo/blob/v1.8.0/collector.go),
+[runner.go](https://github.com/ozontech/testo/blob/v1.8.0/runner.go),
+[construct.go](https://github.com/ozontech/testo/blob/v1.8.0/construct.go),
+[the plugin contract](https://github.com/ozontech/testo/blob/v1.8.0/testoplugin/plugin.go),
+[options.go](https://github.com/ozontech/testo/blob/v1.8.0/options.go) and
+[annotations.go](https://github.com/ozontech/testo/blob/v1.8.0/annotations.go).
+Runtime reproductions remain an acceptance prerequisite. Distinguish runtime
+failures, framework warnings and optional linter policy.
 
 ## Release overview
 
-Counts below are candidate counts, not promised totals. All IDs after TESTO020
+Counts below are candidate counts, not promised totals. All IDs after TESTO022
 are provisional and must be rechecked before implementation; implemented IDs
 must never be reassigned.
 
 | Version | Focus | Planned new rules | Experimental candidates | Other work |
 | --- | --- | --- | --- | --- |
-| v0.3.0 | Execution Discovery — released | 13 implemented overall | — | Preserve current behavior |
-| v0.4.0 | Shared State & Parallel Safety — released | 4 implemented | 0 | Conservative concurrency evidence |
-| v0.4.1 | Parallel Analysis Coverage Fixes — released | 0 | 0 | Serial interference, partial paths and case counts |
-| v0.4.2 | Parallel Lifecycle Analysis Fixes — released | 0 | 0 | Independent hook and sibling lifecycle facts |
-| v0.5.0 | Execution & Lifecycle Safety — implemented | 3 implemented | 0 | Shared typed call facts |
-| v0.6.0 | Custom T & Plugin Validation | 2 | 1 | Match reflection traversal |
 | v0.7.0 | Providers & Annotations | 3 | 2 | Optional TESTO010 extension |
 | v0.8.0 | Configuration & Developer Experience | 0 | 0 | Rule selection, defaults, diagnostic usability |
 | v0.9.0 | Hardening & Compatibility | 0 | 0 | Corpus audits, compatibility, benchmarks |
 | v1.0.0 | Stable Release | 0 | 0 | Explicit stability contract |
 
 ## Detailed version milestones
-
-### v0.3.0 — Execution Discovery (released)
-
-TESTO001–TESTO013 cover the existing suite validation and execution checks
-summarized above. This release added typed execution discovery, statically nil
-suite arguments, and narrowly defined direct RunSubSuite receiver recursion.
-
-**Definition of Done:** historical baseline is the v0.3.0 tag and changelog;
-future changes preserve its fixtures or explicitly document accepted behavior
-changes. No additional work is assigned to this released version.
-
-### v0.4.0 — Shared State & Parallel Safety
-
-**Released.** TESTO014–017 cover local
-straight-line lifecycle/test bodies with standard `*testo.T` context identity.
-Shared-field checks require direct pointer receiver fields, BeforeEach writes
-before suspension and two known parallel executions. Constant literal providers
-can establish parameterized multiplicity. Cleanup diagnostics take precedence
-over TESTO014; context fields use TESTO016. Unknown calls, branches, aliases,
-imported/promoted bodies and additional test/AfterEach writes are conservatively
-excluded. Unknown provider counts suppress shared-field checks; TESTO017 only
-requires an established execution of its own test, independently of sibling
-counts. Runtime reproductions and CLI/plugin fixtures
-exercise the accepted subset. The 0.4.1 patch expanded this initial scope; see
-README for current boundaries and CHANGELOG for the preserved release history.
-
-**Required:** define context identity, receiver sharing, direct field accesses,
-and execution ordering for each supported pattern before writing diagnostics.
-Establish parallelism through resolved calls on the relevant Testo context;
-do not infer it from names, pointer receivers, or a Parallel call on an unrelated
-context. Begin with local bodies and simple unconditional paths. Skip unknown
-aliases, synchronization, plugin overrides, helper behavior, and branching when
-they prevent a defensible conclusion. Account for multiple parameterized
-executions and the order of writes relative to Parallel suspension.
-
-#### TESTO014 — SharedBeforeEachWrite
-
-**P1 · Planned.** Detect a direct BeforeEach write to a shared receiver field
-followed by use in a parallel test, where another execution can overwrite that
-field before the use. Testo-specific value comes from combining shared suite
-identity with hook/test ordering. Scope: proven shared storage, matching field
-objects, and locally established overlapping executions. Risks: serial tests,
-copies, captured per-test values, synchronization, and writes that occur outside
-the overlap. A suite-field assignment alone is insufficient evidence.
-
-#### TESTO015 — SharedFixtureCleanup
-
-**P1 · Planned.** Detect a Cleanup callback that reads a mutable suite field
-whose value another execution can replace before cleanup. Testo's reused
-receiver makes an apparently per-test fixture reference point at another test's
-resource. Scope: direct closures, resolved Cleanup, and a proven overwrite
-window. Risks: immutable shared fixtures, protected fields, serial execution,
-and callbacks using a captured local resource rather than re-reading the field.
-Report the cleanup hazard without duplicating TESTO014 for the same cause.
-
-#### TESTO016 — SharedTestContext
-
-**P1 · Planned.** Detect storing a test-scoped T into shared suite state and
-using that field from an execution that can observe a different test's context.
-This depends on Testo's per-test T construction versus suite lifetime. Scope:
-direct assignments of the hook/test parameter and direct field uses with proven
-overlap or lifetime mismatch. Risks: a serial store used only by the same test,
-suite-scoped BeforeAll T, per-test local copies, and intentional context storage.
-Do not report every field of type T or every assignment to it.
-
-#### TESTO017 — DuplicateParallelLifecycle
-
-**P1 · Planned.** Detect duplicate Parallel calls across Testo lifecycle and
-test bodies that execute on the same underlying test context. Scope: direct,
-unconditional calls across BeforeEach/test/AfterEach, with context identity and
-reachability established. Testo-specific value is cross-hook reasoning beyond
-generic duplicate-call checks. Risks: separate suite/test/subtest contexts,
-exclusive branches, early termination, and plugin overrides. Do not equate
-BeforeAll and test T or count unrelated subtest calls together.
-
-**Optional:** more local receiver/callback forms after precision is demonstrated.
-**Research:** synchronization recognition or helper analysis; no framework is
-required merely to enlarge coverage.
-
-**Definition of Done:** accepted rules have runtime reproductions, serial and
-parallel negative fixtures, documented scheduling assumptions, and integration
-coverage. Ship only independently accepted rules; reclassify any candidate
-without a precise strategy as Experimental rather than delaying the release.
-
-### v0.5.0 — Execution & Lifecycle Safety
-
-**Required:** extend typed call discovery only for APIs needed by accepted rules;
-preserve import aliases, generics, unrelated-symbol exclusion and deduplication.
-
-#### TESTO018 — RunInCleanup
-
-**P1 · Implemented for v0.5.0.** Detect testo.Run executed directly inside a registered Cleanup
-callback, matching Testo's documented cleanup restriction. Scope: resolved Testo
-Run calls in direct cleanup closures with the relevant context established.
-Risks: helper registration that does not execute the call, unrelated Cleanup
-methods, and nested closures only invoked later. Do not broaden this to every
-function whose name starts with Run or duplicate generic testing.Run checks.
-
-#### TESTO019 — NilTestCallback
-
-**P1 · Implemented for v0.5.0.** Detect statically nil function callbacks supplied to RunTest
-or Test; their singleton execution path invokes the callback. Scope: explicit
-nil, typed nil conversions, and unchanged local zero/nil function variables.
-For Test, explain that failure occurs when the returned adapter is executed.
-Risks: reassignment, unknown function values and adapters never invoked.
-Explicitly exclude testo.Run, which supports nil as a no-op callback.
-The accepted subset checks Test adapters only when immediately invoked or passed
-as the direct callback to testing.T.Run; stored/unused adapters remain unknown.
-
-#### TESTO020 — PrematureTeardown
-
-**P2 · Implemented for v0.5.0, narrow os.File subset.** Detect
-AfterEach closing a direct `*os.File` field that a parallel child subsequently
-uses through Read, Write or Stat. Resolved os.File methods establish the resource
-contract; direct field objects and complete small bodies establish identity.
-The supported suite has one regular test, no providers, default surrounding
-hooks and a sole direct Run whose callback calls Parallel followed by the file
-operation. AfterEach contains only Close. Type aliases and pointer/value suite
-receivers are supported. See README for the full limits.
-
-The real-Testo `TestClosedFile` reproduction confirms os.ErrClosed for all three
-operations; safe serial and Cleanup variants pass. `TestPremature` separately
-confirms lifecycle ordering. Arbitrary Close-like methods, wrappers, joins,
-multiple tests, unknown field mutation and helper behavior remain outside scope.
-Broader resource analysis needs independent evidence before expansion.
-
-**Definition of Done:** TESTO018–020 pass acceptance and execution-API boundary
-tests, with real-Testo reproductions, documented limits and CLI/plugin coverage.
-Preserve the nil-Run exception. TESTO020 uses the accepted narrow strategy above.
-
-### v0.6.0 — Custom T & Plugin Validation
-
-**Required:** derive reachable construction roots from actual Testo use, then
-mirror Fill/setPlugins traversal, visibility and testo.T exceptions. Avoid
-validating arbitrary structs merely because they resemble a plugin.
-
-#### TESTO021 — InvalidCustomTField
-
-**P1 · Planned.** Detect exported non-pointer fields reached by Testo's custom
-T/plugin wiring where setPlugins requires pointers. Scope: known concrete roots
-and traversed nested structures, respecting aliases and special framework
-types. This is a reflection initialization failure, not a general struct style
-rule. Risks: unexported fields, structs outside the construction graph, and
-incorrectly treating testo.T internals as user fields. Suppress dependent reports.
-
-#### TESTO022 — RecursiveTGraph
-
-**P1 · Planned.** Detect a type cycle that Testo's recursive initialization
-actually traverses and cannot construct. Scope: concrete roots and an active
-traversal path matching Fill; report a useful field/type cycle. Risks: repeated
-types on independent branches, unexported fields and references through
-containers that Fill does not descend into. General recursive Go types are valid
-and are not sufficient evidence. Avoid a second report for the same cycle.
-
-#### TESTO023 — UninitializedPluginField
-
-**P2 · Experimental.** Investigate use of plugin fields skipped by automatic
-initialization, such as inaccessible fields, where initialization is demonstrably
-assumed. Testo's reflection visibility and plugin wiring provide the specific
-context. Scope must include a proven use and missing initialization; a nil field
-alone is insufficient. Risks: deliberate manual initialization, optional plugins,
-nil-safe methods and ordinary application fields. Exported pointer fields are
-normally filled; overlaps with TESTO021/022 should extend those rules instead.
-
-**Definition of Done:** TESTO021/022 agree with real construction reproductions,
-including visibility, nested pointers, harmless repeated types and framework
-exceptions. TESTO023 ships only if a distinct, maintainable failure pattern is
-established; otherwise retain research notes in the backlog.
 
 ### v0.7.0 — Providers & Annotations
 
@@ -441,12 +210,14 @@ Unresolved experimental proposals can remain outside the stable rule set.
 ## Deferred / experimental backlog
 
 Items here have no release commitment. Unnumbered ideas receive no diagnostic
-ID until their semantics are established. Milestone experiments TESTO023, TESTO025 and TESTO028 can move here without blocking delivery.
+ID until their semantics are established. TESTO023 is deferred here;
+milestone experiments TESTO025 and TESTO028 can also move here without blocking delivery.
 
 | Idea | Priority / status | Reason deferred and next evidence needed |
 | --- | --- | --- |
+| TESTO023 — UninitializedPluginField | P2 · Deferred | Skipped nil fields can be intentional, initialized manually or used by nil-safe methods. Gather real-project cases and establish a useful proof of missing initialization at use before adding a rule. |
 | SharedCollectionMutation | P2 · Deferred | Map/slice mutation needs alias, ownership and overlap evidence; first establish whether TESTO014/015 can cover useful direct patterns. |
-| ParallelSuiteMutation | P2 · Deferred | Broadly reporting receiver writes would resemble generic race detection and flag safe code; require a distinct Testo lifecycle failure beyond v0.4.0. |
+| ParallelSuiteMutation | P2 · Deferred | Broadly reporting receiver writes would resemble generic race detection and flag safe code; require a distinct Testo lifecycle failure beyond the existing shared-field checks. |
 | ExcessiveCaseCombinations | P2 · Deferred | Cartesian growth can be intentional; gather real costs and define opt-in thresholds before creating policy. |
 | IgnoredRunResult | P2 · Deferred | Testo returns success booleans, but failures already propagate through testing; ignoring a result is commonly valid. Require a concrete lost behavior beyond generic unchecked-result linting. |
 | Broader RunSubSuite recursion detection | P2 · Deferred | TESTO013 already covers narrow direct recurrence. Wrappers, multiple tests, options, filters and plugins complicate reachability; extend TESTO013 only for proven additional paths. |

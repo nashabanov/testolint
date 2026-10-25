@@ -39,7 +39,9 @@ func TestCLI(t *testing.T) {
 			"execution_test.go:10:36: TESTO019:",
 			"execution_test.go:11:23: TESTO018:",
 			"teardown_test.go:16:51: TESTO020:",
-		}, 3, 24},
+			"construction_test.go:11:2: TESTO021:",
+			"construction_test.go:15:2: TESTO022:",
+		}, 3, 26},
 		{"help", "-h", []string{"Usage: testolint"}, 0, 0},
 		{"long-help", "--help", []string{"Usage: testolint"}, 0, 0},
 	} {

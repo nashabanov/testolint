@@ -50,5 +50,6 @@ func runWithRules(p *analysis.Pass, suiteRules []Rule, runRules []RunRule) (any,
 	}
 
 	checkExecutionSafety(&pass, facts)
+	checkConstruction(&pass, facts)
 	return nil, nil
 }
