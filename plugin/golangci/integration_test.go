@@ -44,13 +44,19 @@ func TestIntegration(t *testing.T) {
 		{"TESTO020:", 1},
 		{"TESTO021:", 1},
 		{"TESTO022:", 1},
-		{"(testolint)", 26},
+		{"TESTO024:", 1},
+		{"TESTO010:", 1},
+		{"TESTO023:", 1},
+		{"(testolint)", 29},
 	} {
 		if count := strings.Count(string(output), diagnostic.id); count != diagnostic.count {
 			t.Errorf("%s count=%d, want %d\n%s", diagnostic.id, count, diagnostic.count, output)
 		}
 	}
 	for _, position := range []string{
+		"plugin_parent_test.go:11:5: TESTO024:",
+		"empty_make_test.go:8:23: TESTO010:",
+		"provider_test.go:13:15: TESTO023:",
 		"construction_test.go:11:2: TESTO021:",
 		"construction_test.go:15:2: TESTO022:",
 		"teardown_test.go:16:51: TESTO020:",

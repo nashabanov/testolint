@@ -69,15 +69,12 @@ func constantProviderSize(p *analysis.Pass, provider *method) int {
 	if !ok || len(ret.Results) != 1 {
 		return 0
 	}
+	if emptySliceExpr(p.TypesInfo, ret.Results[0]) {
+		return noExecutions
+	}
 	lit, ok := ast.Unparen(ret.Results[0]).(*ast.CompositeLit)
 	if !ok {
-		if id, ok := ast.Unparen(ret.Results[0]).(*ast.Ident); ok && p.TypesInfo.ObjectOf(id) == types.Universe.Lookup("nil") {
-			return noExecutions
-		}
 		return 0
-	}
-	if len(lit.Elts) == 0 {
-		return noExecutions
 	}
 	for _, element := range lit.Elts {
 		// Constants have no helper calls or side effects during collection.

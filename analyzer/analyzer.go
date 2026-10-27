@@ -2,6 +2,7 @@ package analyzer
 
 import (
 	"go/token"
+	"go/types"
 
 	"golang.org/x/tools/go/analysis"
 )
@@ -28,6 +29,19 @@ func runWithRules(p *analysis.Pass, rules ruleSet) (any, error) {
 	suites := discoverSuites(p)
 	facts := collectCallFacts(p)
 	runs := discoverRunsWithFacts(p, facts)
+	models := make(map[types.Type]*suite, len(suites))
+	for _, suite := range suites {
+		models[suite.typ] = suite
+	}
+	for _, call := range runs {
+		if call.suiteType != nil {
+			t := types.Unalias(call.suiteType)
+			if ptr, ok := t.(*types.Pointer); ok {
+				t = types.Unalias(ptr.Elem())
+			}
+			call.model = models[t]
+		}
+	}
 	pass := *p
 	type key struct {
 		pos     token.Pos

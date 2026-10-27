@@ -55,6 +55,7 @@ func runRules() []runRule {
 	return []runRule{
 		checkNilSuite,
 		checkRecursiveSubSuite,
+		checkProviderBeforeEachDependency,
 	}
 }
 
@@ -62,5 +63,6 @@ func packageRules() []packageRule {
 	return []packageRule{
 		checkExecutionSafety,
 		checkConstruction,
+		checkPluginParentNil,
 	}
 }

@@ -60,6 +60,8 @@ const (
 // runCall retains source expressions and the suite's static argument type.
 // suiteType may be nil when type information is incomplete.
 type runCall struct {
+	// model is linked to an exact local non-generic suite by the rule pipeline.
+	model     *suite
 	kind      runKind
 	call      *ast.CallExpr
 	suiteExpr ast.Expr

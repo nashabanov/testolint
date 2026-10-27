@@ -2,10 +2,10 @@
 
 A small Go linter for tests written with [Testo](https://github.com/ozontech/testo).
 It checks suite signatures, parameter providers, naming, suite execution, and
-conservative parallel lifecycle hazards, cleanup misuse, nil test callbacks
-and custom context/plugin construction errors
-without running tests.
-Both the standalone CLI and golangci-lint integration run the same twenty-two rules.
+conservative parallel lifecycle hazards, cleanup misuse, nil test callbacks,
+custom context/plugin construction errors and provider/plugin initialization
+misuse without running tests.
+Both the standalone CLI and golangci-lint integration run the same twenty-four rules.
 Runtime semantics were checked against Testo v1.8.0.
 
 ## Installation
@@ -111,7 +111,7 @@ The same installation and invocation commands work in CI.
 | `TESTO007` | After `Test`, the suffix is empty or begins with a non-lowercase Unicode rune. |
 | `TESTO008` | After `Cases`, the suffix is empty or begins with a non-lowercase Unicode rune. |
 | `TESTO009` | Parameter fields must be exported so reflection can set them. |
-| `TESTO010` | Providers whose body is a single return of `nil` or an empty slice literal always return an empty case set. |
+| `TESTO010` | Providers returning `nil`, an empty slice literal or built-in `make` with constant zero length always return an empty case set. |
 | `TESTO011` | Suite must contain at least one runnable Testo test. |
 | `TESTO012` | Report a statically nil suite argument to `RunSuite` or `RunSubSuite`. |
 | `TESTO013` | Report a directly recursive `RunSubSuite` invocation on the current receiver. |
@@ -124,6 +124,8 @@ The same installation and invocation commands work in CI.
 | `TESTO020` | AfterEach closes an `*os.File` before a parallel child uses the same file. |
 | `TESTO021` | Exported fields traversed during custom T/plugin wiring must be pointers. |
 | `TESTO022` | Report a type cycle traversed during custom T/plugin initialization. |
+| `TESTO023` | A provider dereferences a fresh suite’s nil field before BeforeEach initializes it. |
+| `TESTO024` | A Plugin parent interface compared with nil cannot identify the suite root. |
 
 For `testo.Suite[T]`, tests have the form `TestX(t T)` or
 `TestX(t T, p struct{ Age int })`. Named structs and named slice returns are
@@ -303,8 +305,52 @@ manually, or remove the recursive construction dependency.
 These are construction failures under Testo v1.8.0, rather than struct-style
 policies. Fill precedes plugin methods and suite hooks, so initializing an
 exported invalid/cyclic graph in those methods cannot fix the construction
-failure. A cycle takes precedence over TESTO021 for the same context. TESTO023
-is deferred and is not enabled or included in this release.
+failure. A cycle takes precedence over TESTO021 for the same context. Detecting
+uninitialized plugin fields remains deferred and is not included in this release.
+
+## Provider and plugin initialization
+
+Testo evaluates parameter providers after BeforeAll and before BeforeEach.
+Dynamic providers and state prepared in BeforeAll are valid. TESTO023 reports a
+narrow proven failure: a direct `RunSuite(t, &Suite{})` or `RunSubSuite(t, &Suite{})`
+uses a fresh zero-initialized suite with exactly one provider, BeforeEach
+assigns `new(T)` to a pointer
+field, but a provider first returns a slice containing `*s.field`.
+Move the initialization into BeforeAll or initialize the suite before running it.
+The diagnostic points to the provider's dereference, once even across repeated runs.
+
+```go
+func (s *Suite) BeforeEach(t *testo.T) { s.value = new(int) }
+func (s *Suite) CasesValue() []int {
+    return []int{*s.value} // TESTO023 when RunSuite uses &Suite{}
+}
+```
+
+TESTO024 checks plugin initialization. Testo supplies a typed nil parent at the
+suite root: the interface itself is non-nil. A direct `if parent == nil` or
+`if parent != nil` cannot distinguish that root from a child. Assert the plugin's
+concrete pointer first, then compare that pointer with nil:
+
+```go
+func (p *Plugin) Plugin(parent testoplugin.Plugin, options ...testoplugin.Option) testoplugin.Spec {
+    previous := parent.(*Plugin)
+    if previous == nil {
+        // Initialize the suite root.
+    }
+    return testoplugin.Spec{}
+}
+```
+
+This checks the framework's parent contract, rather than proving that the branch
+will fail a test. Manual Plugin calls can legitimately pass a nil interface;
+explicit references to the implementation method in the analyzed package
+suppress this check. External manual calls are not inferred.
+
+`testo.Options` intentionally appends process-global configuration for later
+suite initializations. It does not update an existing context's option snapshot.
+Registration from a running test can deliberately configure a later RunSubSuite
+or RunTest; it is not diagnosed. A global-options policy remains deferred and
+is not included in the rule count.
 
 ## Scope and limitations
 
@@ -329,8 +375,10 @@ is deferred and is not enabled or included in this release.
   `BeforeAll`/`BeforeEach` are inherited defaults. Other execution paths, imported
   bodies, plugins and runtime filters are outside this check's scope.
 - `TESTO010` checks valid local providers whose sole statement returns nil or an
-  empty slice literal, including named slices and aliases. Imported bodies and
-  other expressions or control flow are skipped. Invalid signatures/names
+  empty slice literal, or built-in `make` with constant zero length and an
+  omitted or constant nonnegative capacity, including named slices and aliases.
+  Shadowed make functions, unknown length/capacity, local slice variables, imported
+  bodies and other expressions or control flow are skipped. Invalid signatures/names
   suppress this check; malformed parameterized tests make orphan checks conservative.
 - TESTO014–017 support the actual `*testo.T` type (including aliases), local
   straight-line bodies, resolved direct calls on the context parameter, and
@@ -416,6 +464,30 @@ is deferred and is not enabled or included in this release.
   field replacement and custom surrounding hooks remain unknown. The model
   assumes no external mutation of the suite field or custom runtime scheduling.
   It is a narrow file-lifetime check, not general resource or race analysis.
+- TESTO023 requires a local non-generic suite with standard `*testo.T`, a direct
+  empty address-of suite literal, no run options and a default BeforeAll reached
+  through value embeddings. Exactly one provider is allowed, so another provider
+  cannot initialize the field during earlier collection. All test/hook/provider
+  signatures and parameter bindings must be valid. BeforeEach must be a local pointer method whose sole
+  statement assigns built-in `new(T)` to a direct pointer field; the provider
+  must be a local pointer method whose sole return is a one-element slice literal
+  containing a direct dereference of that field. Aliases are accepted. Unknown
+  instance history, nonempty literals, custom BeforeAll, pointer embeddings on the
+  BeforeAll path, promoted bodies, helper calls, other expressions and flow are
+  skipped. Default runtime behavior is assumed; filters/plugins may prevent
+  execution. A declaration or a valid zero-value read alone is never an error.
+- TESTO024 uses the same concrete execution roots as construction checks and
+  follows exported pointer fields through valid acyclic construction graphs.
+  It checks direct local implementations of the actual testoplugin.Plugin
+  interface, including concrete generic instances and pointer/value receivers.
+  The context type itself is not a plugin. Invalid/unknown construction graphs,
+  imported or promoted implementation bodies, inaccessible fields, container
+  contents and unexecuted adapters do not establish checked implementations.
+  Only a direct if-condition comparison of the unchanged parent parameter with
+  the actual nil identifier is supported, with either operand order and
+  parentheses. Reassignment, address-taking or explicit local method references
+  suppress inference. Parent aliases, compound conditions, nested closures,
+  wrappers and external manual invocations are not analyzed.
 - Other lifecycle checks, plugin hooks and broader provider logic are outside
   this release's scope. No SSA or
   interprocedural analysis is used.

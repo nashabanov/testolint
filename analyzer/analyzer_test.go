@@ -12,6 +12,8 @@ import (
 
 func TestAnalyzer(t *testing.T) {
 	tests := []string{
+		"plugin_parent_nil",
+		"provider_before_each",
 		"construction",
 		"execution_safety",
 		"premature_teardown",
@@ -34,6 +36,7 @@ func TestAnalyzer(t *testing.T) {
 		"recursive_subsuite",
 		"promotion",
 		"empty_cases",
+		"empty_make_shadow",
 		"empty_suite",
 	}
 

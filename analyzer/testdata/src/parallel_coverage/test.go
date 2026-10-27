@@ -329,3 +329,16 @@ type ContextAlias struct {
 func (s *ContextAlias) BeforeEach(t *testo.T) { s.resource = new(int) }
 func (s *ContextAlias) TestA(t *testo.T)      { t.Parallel(); t.Log(s.resource) }
 func (*ContextAlias) TestB(t *testo.T)        { alias := t; modify(alias) }
+
+// An empty make provider excludes an opaque receiver-using sibling entirely.
+type EmptyMakeSibling struct {
+	testo.Suite[*testo.T]
+	resource *int
+}
+
+func (s *EmptyMakeSibling) BeforeEach(t *testo.T)               { s.resource = new(int) }
+func (s *EmptyMakeSibling) TestA(t *testo.T)                    { t.Parallel(); t.Log(s.resource) } // want "TESTO014:"
+func (*EmptyMakeSibling) TestB(t *testo.T)                      {}
+func (s *EmptyMakeSibling) TestC(t *testo.T, p struct{ N int }) { opaqueResource(s.resource) }
+func (*EmptyMakeSibling) CasesN() []int                         { return make([]int, 0, 7) } // want "TESTO010:"
+func opaqueResource(*int)                                       {}

@@ -41,7 +41,10 @@ func TestCLI(t *testing.T) {
 			"teardown_test.go:16:51: TESTO020:",
 			"construction_test.go:11:2: TESTO021:",
 			"construction_test.go:15:2: TESTO022:",
-		}, 3, 26},
+			"plugin_parent_test.go:11:5: TESTO024:",
+			"empty_make_test.go:8:23: TESTO010:",
+			"provider_test.go:13:15: TESTO023:",
+		}, 3, 29},
 		{"help", "-h", []string{"Usage: testolint"}, 0, 0},
 		{"long-help", "--help", []string{"Usage: testolint"}, 0, 0},
 	} {

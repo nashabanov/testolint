@@ -3,7 +3,7 @@
 ## Overview and project principles
 
 testolint is a specialized static analyzer for
-[Testo](https://github.com/ozontech/testo). This roadmap covers upcoming work from v0.7.0 to v1.0.0
+[Testo](https://github.com/ozontech/testo). This roadmap covers upcoming work from v0.8.0 to v1.0.0
 for a project maintained by one developer. Versions
 express an intended order, without dates or a promise to ship every candidate.
 Small, useful releases take precedence over completing a rule quota.
@@ -33,6 +33,7 @@ framework require evidence that simpler approaches cannot solve a valuable case.
 
 Implemented rules and limitations are documented in the [README](README.md);
 completed work and release history belong in the [changelog](CHANGELOG.md).
+The unreleased v0.7.0 implementation scope is recorded in the changelog.
 The baseline for future work is Go 1.27.1, Testo v1.8.0 and golangci-lint v2.14.0.
 Broader compatibility requires explicit verification.
 
@@ -48,94 +49,17 @@ failures, framework warnings and optional linter policy.
 
 ## Release overview
 
-Counts below are candidate counts, not promised totals. All IDs after TESTO022
-are provisional and must be rechecked before implementation; implemented IDs
-must never be reassigned.
+Counts below are candidate counts, not promised totals. Implemented rules use
+TESTO001–TESTO024. Future candidates receive no ID until accepted for
+implementation; published diagnostic IDs must never be reassigned.
 
 | Version | Focus | Planned new rules | Experimental candidates | Other work |
 | --- | --- | --- | --- | --- |
-| v0.7.0 | Providers & Annotations | 3 | 2 | Optional TESTO010 extension |
 | v0.8.0 | Configuration & Developer Experience | 0 | 0 | Rule selection, defaults, diagnostic usability |
 | v0.9.0 | Hardening & Compatibility | 0 | 0 | Corpus audits, compatibility, benchmarks |
 | v1.0.0 | Stable Release | 0 | 0 | Explicit stability contract |
 
 ## Detailed version milestones
-
-### v0.7.0 — Providers & Annotations
-
-**Required:** preserve support for dynamic Cases and BeforeAll initialization.
-Use resolved provider fields and annotation targets rather than method names
-alone to infer dependencies or timing.
-
-#### TESTO024 — ProviderBeforeEachDependency
-
-**P1 · Planned.** Detect a provider relying on state initialized only in
-BeforeEach, although collection happens earlier. Scope: direct provider field
-reads, direct hook initialization and a demonstrable required value, with no
-known earlier initialization. Testo-specific value is collection order.
-Risks: constructor initialization, valid zero values, BeforeAll writes and
-intentional reads of initial state. Reading a field also written in BeforeEach
-is not itself a violation; skip cases needing unknown call-site history.
-
-#### TESTO025 — LateAnnotation
-
-**P2 · Experimental.** Investigate For/ForEach calls whose target's annotations
-have already been read for the current plan. Scope: locally resolved targets
-and proven registration/collection ordering. Risks: calls configuring a future
-suite run, other suites, and legitimate BeforeAll registration. Testo snapshots
-annotations during collection; registration in a test cannot retroactively
-change that plan but may intentionally affect a later run. Establish an
-unambiguous misuse pattern before treating it as a correctness diagnostic.
-
-#### TESTO026 — PluginParentNilCheck
-
-**P1 · Planned.** Detect direct comparisons of a framework-supplied Plugin
-parent interface with nil when used to distinguish the root. Testo supplies a
-typed nil at the root, so that comparison cannot identify it. Scope: resolved
-Plugin implementations reachable from Testo construction and the unchanged
-parent parameter. Risks: reassigned parameters, manually invoked Plugin methods
-and comparisons serving another purpose. Comparing an asserted concrete pointer
-with nil is valid and must remain silent.
-
-#### TESTO027 — GlobalOptionsInTest
-
-**P1 · Planned.** Detect testo.Options registration during Testo execution when
-its process-global append can leak configuration into a subsequent initialization.
-Scope: resolved calls in tests/hooks and a supported, demonstrable later run;
-skip uncertain ordering. This is Testo configuration isolation, not an
-unsynchronized-memory warning: Options uses a mutex. Risks: deliberate setup for
-a child suite, process-isolated tests and intentional global configuration.
-Package initialization remains valid; decide whether ambiguous patterns belong
-to opt-in policy before enabling diagnostics by default.
-
-#### TESTO028 — StaticCasesOnly
-
-**P2 · Experimental; optional policy, opt-in only.** Investigate reproducible
-case discovery as a user-selected restriction; dynamic Cases are valid Testo.
-Define a published expression whitelist: slice literals with supported elements,
-compile-time constants used in cases, and simple local values proven unchanged
-and composed of supported expressions. Go has no constant slices; constants may
-supply elements or bounds. Explicitly support further provable expressions only
-with fixtures.
-
-Diagnose only established disallowed dependencies, such as recognized external
-service/database calls or environment reads that determine cases. Arbitrary
-helper calls are unknown, not automatically nondeterministic. Skip unknown
-expressions and report the checked subset clearly. Risks include intentional
-integration discovery, deterministic helpers and hidden mutation. Do not promise
-complete enforcement without interprocedural analysis. Delivery depends on rule
-selection support; move to v0.8.0 or later if that prerequisite is unavailable.
-
-**Optional enhancement:** extend TESTO010, without a new ID, to additional
-provably empty providers, starting with built-in make of a slice with constant
-zero length and simple unchanged empty locals. Resolve built-ins by type/object
-identity; skip mutations, escapes and unknown flow. Preserve current checks and
-add false-positive fixtures before expanding accepted expressions.
-
-**Definition of Done:** TESTO024/026/027 pass acceptance with initialization,
-timing and intentional-use negatives. TESTO025/028 remain research unless precise
-semantics are established; TESTO028 cannot ship enabled by default. Any TESTO010
-extension has its own red/green evidence and documented limits.
 
 ### v0.8.0 — Configuration & Developer Experience
 
@@ -148,7 +72,7 @@ extension has its own red/green evidence and documented limits.
 - Classify rules as correctness or policy. TESTO006 is already policy;
   TESTO012 also includes intentional nil-safe suites. Classification must reflect
   existing behavior. Document migration if defaults change; do not silently
-  disable existing rules. New optional policy such as TESTO028 stays opt-in.
+  disable existing rules. New optional policy stays opt-in.
 - Document defaults, precedence, unsupported patterns and actionable diagnostics.
   Verify stable IDs, positions, suppression of cascading reports and CLI errors.
 
@@ -209,13 +133,15 @@ Unresolved experimental proposals can remain outside the stable rule set.
 
 ## Deferred / experimental backlog
 
-Items here have no release commitment. Unnumbered ideas receive no diagnostic
-ID until their semantics are established. TESTO023 is deferred here;
-milestone experiments TESTO025 and TESTO028 can also move here without blocking delivery.
+Items here have no release commitment. Ideas receive no diagnostic ID until
+their semantics are established and they are accepted for implementation.
 
 | Idea | Priority / status | Reason deferred and next evidence needed |
 | --- | --- | --- |
-| TESTO023 — UninitializedPluginField | P2 · Deferred | Skipped nil fields can be intentional, initialized manually or used by nil-safe methods. Gather real-project cases and establish a useful proof of missing initialization at use before adding a rule. |
+| GlobalOptionsInTest | P2 · Deferred policy | Testo intentionally appends global configuration. Runtime evidence covers deliberate registration in a test for a later RunSubSuite/RunTest, while existing context snapshots remain unchanged. A later run alone does not establish misuse; require a justified opt-in policy and rule-selection support. |
+| Broader TESTO023 coverage | P2 · Deferred | Current proof requires a fresh empty suite literal, a direct pointer dereference and a sole BeforeEach allocation. Gather examples justifying constructor/history or helper analysis without flagging valid zero values or BeforeAll setup. |
+| Broader TESTO010 empty expressions | P2 · Deferred | Unknown capacities and unchanged empty locals need independent precision/escape evidence and fixture-first acceptance. |
+| UninitializedPluginField | P2 · Deferred | Skipped nil fields can be intentional, initialized manually or used by nil-safe methods. Gather real-project cases and establish a useful proof of missing initialization at use before adding a rule. |
 | SharedCollectionMutation | P2 · Deferred | Map/slice mutation needs alias, ownership and overlap evidence; first establish whether TESTO014/015 can cover useful direct patterns. |
 | ParallelSuiteMutation | P2 · Deferred | Broadly reporting receiver writes would resemble generic race detection and flag safe code; require a distinct Testo lifecycle failure beyond the existing shared-field checks. |
 | ExcessiveCaseCombinations | P2 · Deferred | Cartesian growth can be intentional; gather real costs and define opt-in thresholds before creating policy. |
@@ -294,4 +220,4 @@ Follow [AGENTS.md](AGENTS.md) for every rule or discovery change:
 The practical release strategy is to complete one rule at a time, defer research
 that cannot meet precision requirements, and advance configuration work earlier
 if an optional rule needs it. v1.0.0 depends on confidence in the supported
-subset, not on shipping every provisional ID above.
+subset, not on shipping every candidate above.

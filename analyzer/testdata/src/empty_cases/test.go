@@ -12,6 +12,7 @@ type Suite struct{ testo.Suite[T] }
 
 func (Suite) TestAll(t T, p struct {
 	Nil, Empty, NonEmpty, Call, Variable, Named, Alias, Made, Flow, Shadow string
+	Capacity, Constant, NamedMake, NonZero, UnknownLength, UnknownCapacity string
 }) {
 }
 
@@ -26,7 +27,16 @@ func (Suite) CasesVariable() []string {
 	var roles []string
 	return roles
 }
-func (Suite) CasesMade() []string { return make([]string, 0) }
+func (Suite) CasesMade() []string     { return make([]string, 0) }    // want "TESTO010: CasesMade"
+func (Suite) CasesCapacity() []string { return make([]string, 0, 8) } // want "TESTO010: CasesCapacity"
+const zero = 2 - 2
+
+func (Suite) CasesConstant() []string        { return make([]string, zero) } // want "TESTO010: CasesConstant"
+func (Suite) CasesNamedMake() NamesAlias     { return make(NamesAlias, 0) }  // want "TESTO010: CasesNamedMake"
+func (Suite) CasesNonZero() []string         { return make([]string, 1) }
+func (Suite) CasesUnknownLength() []string   { return make([]string, size()) }
+func (Suite) CasesUnknownCapacity() []string { return make([]string, 0, size()) }
+func size() int                              { return 1 }
 func (Suite) CasesFlow() []string {
 	if true {
 		return nil
@@ -77,3 +87,12 @@ type Imported struct {
 }
 
 func (Imported) TestRole(t T, p struct{ Role string }) {}
+
+// An unrelated helper returning a nonempty slice stays outside the whitelist.
+type ShadowMake struct{ testo.Suite[T] }
+
+func (ShadowMake) TestValue(t T, p struct{ Value string }) {}
+func (ShadowMake) CasesValue() []string {
+	return makeStrings(0)
+}
+func makeStrings(int) []string { return []string{"safe"} }

@@ -1,5 +1,39 @@
 # Changelog
 
+## 0.7.0
+
+### Added
+
+- TESTO023: report a used provider dereferencing a fresh suite’s nil pointer
+  field before its direct BeforeEach allocation; require a default, zero-safe
+  BeforeAll path, one provider and valid collection signatures. Preserve dynamic providers,
+  constructor initialization, earlier provider setup, unknown instance history
+  and BeforeAll setup.
+- TESTO024: report direct nil comparisons on unchanged Plugin parent interfaces
+  in local implementations reached by valid Testo construction roots. Support
+  concrete generics and pointer/value implementations; skip explicit local
+  method references, reassigned/address-taken parameters and unknown graphs.
+
+### Changed
+
+- Extend TESTO010 to built-in make of slices with constant zero length and an
+  omitted or constant nonnegative capacity. Share proven emptiness with parallel
+  lifecycle multiplicity; preserve silence for unknown lengths/capacities.
+- Link run calls to exact local suite models without broadening suite discovery.
+
+### Tests and documentation
+
+- Add provider_before_each, plugin_parent_nil and empty_make_shadow analyzer
+  fixtures; extend empty_cases and parallel_coverage with regression boundaries.
+- Add real-Testo provider panic, constructor/BeforeAll initialization, typed-nil
+  root/child parent and intentional future global Options reproductions. Extend
+  CLI/plugin assertions to 29 diagnostics with exact positions and clean cases.
+- Document supported patterns, remedies and limitations; defer the ambiguous
+  global-options policy without assigning it a diagnostic ID.
+- Remove LateAnnotation and StaticCasesOnly from the roadmap. Number the new,
+  unpublished rules consecutively as TESTO023/024; leave deferred ideas unnumbered
+  and preserve all published diagnostic IDs.
+
 ## 0.6.1
 
 ### Refactoring
