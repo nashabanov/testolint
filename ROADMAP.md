@@ -43,7 +43,7 @@ class or an implicit enablement setting.
 
 Implemented rules and limitations are documented in the [README](README.md);
 completed work and release history belong in the [changelog](CHANGELOG.md).
-The unreleased v0.7.0 implementation scope is recorded in the changelog.
+The v0.7.0 implementation scope is recorded in the changelog.
 The baseline for future work is Go 1.27.1, Testo v1.8.0 and golangci-lint v2.14.0.
 Broader compatibility requires explicit verification.
 

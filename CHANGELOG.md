@@ -33,6 +33,9 @@
 - Remove LateAnnotation and StaticCasesOnly from the roadmap. Number the new,
   unpublished rules consecutively as TESTO023/024; leave deferred ideas unnumbered
   and preserve all published diagnostic IDs.
+- Expand the v0.8.0–v1.0.0 roadmap with a static rule registry, standardized
+  diagnostics, configuration, measured architecture hardening, an opt-in quality
+  research milestone at v0.10.0, and an explicit stability contract.
 
 ## 0.6.1
 
