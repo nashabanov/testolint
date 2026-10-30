@@ -66,7 +66,8 @@ func checkRecursiveSubSuite(p *analysis.Pass, call *runCall) {
 	if !directRecurrenceSuite(methodSet, fn, tType) {
 		return
 	}
-	p.Reportf(call.call.Pos(), "TESTO013: recursive RunSubSuite invocation")
+	reportf(p, "TESTO013", call.call.Pos(),
+		"recursive RunSubSuite invocation")
 }
 
 // directRecurrenceSuite rejects collection failures and execution paths that

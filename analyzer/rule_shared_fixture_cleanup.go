@@ -8,8 +8,8 @@ func checkSharedFixtureCleanup(p *analysis.Pass, model *parallelModel) {
 		if read.storesContext || !read.event.inCleanup {
 			continue
 		}
-		p.Reportf(read.event.pos,
-			"TESTO015: Cleanup reads shared field %q after another execution can replace it; capture a local value",
+		reportf(p, "TESTO015", read.event.pos,
+			"Cleanup reads shared field %q after another execution can replace it; capture a local value",
 			read.event.field.Name())
 	}
 }

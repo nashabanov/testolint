@@ -12,9 +12,8 @@ func checkMalformedTestName(p *analysis.Pass, suite *suite) {
 			continue
 		}
 
-		p.Reportf(
-			test.method.pos(suite),
-			"TESTO007: malformed test name %q: suffix must be empty or start with a non-lowercase rune",
+		reportf(p, "TESTO007", test.method.pos(suite),
+			"malformed test name %q: suffix must be empty or start with a non-lowercase rune",
 			name,
 		)
 	}
@@ -28,9 +27,8 @@ func checkMalformedCasesName(p *analysis.Pass, suite *suite) {
 			continue
 		}
 
-		p.Reportf(
-			provider.pos(suite),
-			"TESTO008: malformed cases provider name %q: suffix must be empty or start with a non-lowercase rune",
+		reportf(p, "TESTO008", provider.pos(suite),
+			"malformed cases provider name %q: suffix must be empty or start with a non-lowercase rune",
 			name,
 		)
 	}

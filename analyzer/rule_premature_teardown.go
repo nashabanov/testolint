@@ -82,7 +82,8 @@ func checkPrematureTeardown(p *analysis.Pass, suite *suite) {
 			return
 		}
 	}
-	p.Reportf(closeCall.Pos(), "TESTO020: AfterEach closes file %q before its parallel subtest uses it; close the file in Cleanup", field.Name())
+	reportf(p, "TESTO020", closeCall.Pos(),
+		"AfterEach closes file %q before its parallel subtest uses it; close the file in Cleanup", field.Name())
 }
 
 func teardownMethod(suite *suite, method *method) bool {

@@ -24,9 +24,8 @@ func checkMissingCaseProvider(p *analysis.Pass, suite *suite) {
 			if !pos.IsValid() {
 				pos = test.method.pos(suite)
 			}
-			p.Reportf(
-				pos,
-				"TESTO003: parameter %q requires Cases%s",
+			reportf(p, "TESTO003", pos,
+				"parameter %q requires Cases%s",
 				param.name,
 				param.name,
 			)

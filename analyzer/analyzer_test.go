@@ -88,7 +88,7 @@ func TestAnalyzer(t *testing.T) {
 							p.Reportf(call.suiteExpr.Pos(), "TESTO_RUN_PIPELINE: run")
 							// The same diagnostic is also emitted by a suite rule.
 							if named, ok := call.suiteType.(*types.Named); ok && named.Obj().Name() == "Empty" {
-								p.Reportf(named.Obj().Pos(), "TESTO011: suite %q contains no tests", "Empty")
+								reportf(p, "TESTO011", named.Obj().Pos(), "suite %q contains no tests", "Empty")
 							}
 						}
 						reportOther := func(p *analysis.Pass, call *runCall) {
@@ -191,6 +191,21 @@ func TestAnalyzer(t *testing.T) {
 						return nil, nil
 					},
 				}
+			}
+			if analyzer == Analyzer {
+				wrapped := *analyzer
+				wrapped.Run = func(p *analysis.Pass) (any, error) {
+					pass := *p
+					pass.Report = func(d analysis.Diagnostic) {
+						id, _, _ := strings.Cut(d.Message, ": ")
+						if d.Category != id || d.URL != registry[ruleID(id)].DocURL {
+							t.Errorf("diagnostic metadata: Category=%q URL=%q for %s", d.Category, d.URL, id)
+						}
+						p.Report(d)
+					}
+					return run(&pass)
+				}
+				analyzer = &wrapped
 			}
 			analysistest.Run(
 				t,

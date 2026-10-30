@@ -18,7 +18,8 @@ func checkNilSuite(p *analysis.Pass, call *runCall) {
 		return
 	}
 	if call.suiteValue == nil || nilPointerExpr(p.TypesInfo, call.suiteValue) {
-		p.Reportf(call.suiteExpr.Pos(), "TESTO012: suite argument is statically nil")
+		reportf(p, "TESTO012", call.suiteExpr.Pos(),
+			"suite argument is statically nil")
 	}
 }
 

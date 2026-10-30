@@ -41,11 +41,11 @@ func checkExecutionSafety(p *analysis.Pass, facts *callFacts) {
 			if value != nil && !nilCallbackExpr(p.TypesInfo, value) {
 				continue
 			}
-			message := "TESTO019: RunTest callback is statically nil; supply a non-nil function"
+			message := "RunTest callback is statically nil; supply a non-nil function"
 			if index == 0 {
-				message = "TESTO019: Test callback is statically nil; executing the adapter invokes it; supply a non-nil function"
+				message = "Test callback is statically nil; executing the adapter invokes it; supply a non-nil function"
 			}
-			p.Reportf(arg.Pos(), "%s", message)
+			reportf(p, "TESTO019", arg.Pos(), "%s", message)
 		}
 	}
 }
@@ -114,7 +114,8 @@ func checkRunInCleanup(p *analysis.Pass, facts *callFacts, call *ast.CallExpr) {
 	// outside the supported straight-line prefix.
 	for _, preceding := range block.List {
 		if preceding == stmt {
-			p.Reportf(call.Pos(), "TESTO018: testo.Run on this context during Cleanup panics; run subtests before cleanup")
+			reportf(p, "TESTO018", call.Pos(),
+				"testo.Run on this context during Cleanup panics; run subtests before cleanup")
 			return
 		}
 		switch preceding.(type) {

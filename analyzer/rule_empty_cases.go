@@ -25,8 +25,8 @@ func checkEmptyCases(p *analysis.Pass, suite *suite) {
 			continue
 		}
 		if emptySliceExpr(p.TypesInfo, ret.Results[0]) {
-			p.Reportf(provider.pos(suite),
-				"TESTO010: %s always returns an empty case set", provider.fn.Name())
+			reportf(p, "TESTO010", provider.pos(suite),
+				"%s always returns an empty case set", provider.fn.Name())
 		}
 	}
 }

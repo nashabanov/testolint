@@ -74,7 +74,8 @@ func checkProviderBeforeEachDependency(p *analysis.Pass, call *runCall) {
 		}
 		read, ok := ast.Unparen(cases.Elts[0]).(*ast.StarExpr)
 		if ok && receiverPointerField(p.TypesInfo, read.X, provider) == field {
-			p.Reportf(read.Pos(), "TESTO023: provider dereferences nil field %q before BeforeEach initializes it; initialize it before collection, for example in BeforeAll", field.Name())
+			reportf(p, "TESTO023", read.Pos(),
+				"provider dereferences nil field %q before BeforeEach initializes it; initialize it before collection, for example in BeforeAll", field.Name())
 		}
 	}
 }

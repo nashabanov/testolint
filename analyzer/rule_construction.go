@@ -39,8 +39,8 @@ func checkConstruction(p *analysis.Pass, facts *callFacts) {
 				cycleFields[graph.field.Pos()] = true
 			}
 			if !duplicate {
-				p.Reportf(constructionPos(p, graph.field, call.Pos()),
-					"TESTO022: recursive initialization through field %q: %s", graph.field.Name(), graph.path)
+				reportf(p, "TESTO022", constructionPos(p, graph.field, call.Pos()),
+					"recursive initialization through field %q: %s", graph.field.Name(), graph.path)
 			}
 			continue
 		}
@@ -174,8 +174,8 @@ func checkConstructionFields(p *analysis.Pass, t types.Type, fallback token.Pos,
 			continue
 		}
 		if _, ok := types.Unalias(field.Type()).Underlying().(*types.Pointer); !ok {
-			p.Reportf(constructionPos(p, field, fallback),
-				"TESTO021: exported field %q must be a pointer for Testo initialization", field.Name())
+			reportf(p, "TESTO021", constructionPos(p, field, fallback),
+				"exported field %q must be a pointer for Testo initialization", field.Name())
 			continue
 		}
 		checkConstructionFields(p, field.Type(), fallback, seen)

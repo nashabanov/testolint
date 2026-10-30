@@ -7,7 +7,8 @@ import (
 func checkCasesSignature(p *analysis.Pass, suite *suite) {
 	for _, cases := range suite.cases {
 		if _, problem := casesSignature(cases.fn.Type()); problem != "" {
-			p.Reportf(cases.pos(suite), "TESTO005: %s", problem)
+			reportf(p, "TESTO005", cases.pos(suite),
+				"%s", problem)
 		}
 	}
 }

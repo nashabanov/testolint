@@ -33,9 +33,8 @@ func checkOrphanCasesProvider(p *analysis.Pass, suite *suite) {
 			continue
 		}
 
-		p.Reportf(
-			provider.pos(suite),
-			"TESTO006: Cases%s is not used by any test parameter",
+		reportf(p, "TESTO006", provider.pos(suite),
+			"Cases%s is not used by any test parameter",
 			name,
 		)
 	}

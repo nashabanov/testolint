@@ -15,8 +15,8 @@ func checkDuplicateParallelLifecycle(p *analysis.Pass, model *parallelModel) {
 				continue
 			}
 			if seen {
-				p.Reportf(event.pos,
-					"TESTO017: Parallel called again on the same test context across lifecycle/test bodies")
+				reportf(p, "TESTO017", event.pos,
+					"Parallel called again on the same test context across lifecycle/test bodies")
 			}
 			seen = true
 		}

@@ -31,9 +31,8 @@ func checkCaseTypeMismatch(p *analysis.Pass, suite *suite) {
 				continue
 			}
 
-			p.Reportf(
-				provider.pos(suite),
-				"TESTO004: Cases%s provides %s, but parameter %q expects %s",
+			reportf(p, "TESTO004", provider.pos(suite),
+				"Cases%s provides %s, but parameter %q expects %s",
 				param.name,
 				slice.Elem(),
 				param.name,

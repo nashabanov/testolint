@@ -66,7 +66,8 @@ func checkPluginParentNil(p *analysis.Pass, facts *callFacts) {
 				}
 				if (sameObject(p.TypesInfo, comparison.X, parent) && isNil(comparison.Y)) ||
 					(sameObject(p.TypesInfo, comparison.Y, parent) && isNil(comparison.X)) {
-					p.Reportf(comparison.Pos(), "TESTO024: Plugin parent interface cannot identify the root with nil; compare the asserted concrete pointer with nil")
+					reportf(p, "TESTO024", comparison.Pos(),
+						"Plugin parent interface cannot identify the root with nil; compare the asserted concrete pointer with nil")
 				}
 				return true
 			})

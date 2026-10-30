@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.8.0 (Unreleased)
+
+### Refactoring
+
+- Route all rule diagnostics through shared report/reportf helpers, deriving the
+  message prefix, Category and documentation URL from the rule registry. Preserve
+  existing messages, positions and caller-supplied diagnostic context.
+- Deduplicate complete diagnostics without discarding distinct ranges, related
+  locations or suggested fixes. Add helper tests and e2e metadata assertions;
+  document the category and documentation URL conventions.
+
+- Centralize all 24 rule metadata records and ordered checker registrations in
+  a static internal registry. Preserve execution groups and register multi-ID
+  checkers once, without changing diagnostics.
+- Check metadata, default enablement, unique registrations, emitted diagnostic
+  IDs and README rule coverage in registry tests.
+
 ## 0.7.0
 
 ### Added

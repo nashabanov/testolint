@@ -9,8 +9,8 @@ func checkSharedBeforeEachWrite(p *analysis.Pass, model *parallelModel) {
 		if read.storesContext || read.event.inCleanup || read.alsoReadInCleanup {
 			continue
 		}
-		p.Reportf(read.event.pos,
-			"TESTO014: shared BeforeEach field %q can be overwritten before parallel use; capture a local value",
+		reportf(p, "TESTO014", read.event.pos,
+			"shared BeforeEach field %q can be overwritten before parallel use; capture a local value",
 			read.event.field.Name())
 	}
 }

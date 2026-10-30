@@ -21,48 +21,51 @@ type ruleSet struct {
 }
 
 func suiteRules() []suiteRule {
-	return []suiteRule{
-		checkTestSignature,
-		checkHookSignature,
-		checkMissingCaseProvider,
-		checkCaseTypeMismatch,
-		checkCasesSignature,
-		checkOrphanCasesProvider,
-		checkMalformedTestName,
-		checkMalformedCasesName,
-		checkUnexportedParamField,
-		checkEmptyCases,
-		checkEmptySuite,
+	var checks []suiteRule
+	for _, registration := range registrations {
+		if registration.suite != nil {
+			checks = append(checks, registration.suite)
+		}
 	}
+	return checks
 }
 
 func afterParallelRules() []suiteRule {
-	return []suiteRule{
-		checkPrematureTeardown,
+	var checks []suiteRule
+	for _, registration := range registrations {
+		if registration.afterParallel != nil {
+			checks = append(checks, registration.afterParallel)
+		}
 	}
+	return checks
 }
 
 func parallelRules() []parallelRule {
-	return []parallelRule{
-		checkSharedBeforeEachWrite,
-		checkSharedFixtureCleanup,
-		checkSharedTestContext,
-		checkDuplicateParallelLifecycle,
+	var checks []parallelRule
+	for _, registration := range registrations {
+		if registration.parallel != nil {
+			checks = append(checks, registration.parallel)
+		}
 	}
+	return checks
 }
 
 func runRules() []runRule {
-	return []runRule{
-		checkNilSuite,
-		checkRecursiveSubSuite,
-		checkProviderBeforeEachDependency,
+	var checks []runRule
+	for _, registration := range registrations {
+		if registration.run != nil {
+			checks = append(checks, registration.run)
+		}
 	}
+	return checks
 }
 
 func packageRules() []packageRule {
-	return []packageRule{
-		checkExecutionSafety,
-		checkConstruction,
-		checkPluginParentNil,
+	var checks []packageRule
+	for _, registration := range registrations {
+		if registration.packageCheck != nil {
+			checks = append(checks, registration.packageCheck)
+		}
 	}
+	return checks
 }

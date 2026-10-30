@@ -9,5 +9,6 @@ func checkEmptySuite(p *analysis.Pass, suite *suite) {
 		}
 	}
 	obj := suite.typ.Obj()
-	p.Reportf(obj.Pos(), "TESTO011: suite %q contains no tests", obj.Name())
+	reportf(p, "TESTO011", obj.Pos(),
+		"suite %q contains no tests", obj.Name())
 }

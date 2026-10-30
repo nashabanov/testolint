@@ -1,7 +1,6 @@
 package analyzer
 
 import (
-	"go/token"
 	"go/types"
 
 	"golang.org/x/tools/go/analysis"
@@ -43,18 +42,7 @@ func runWithRules(p *analysis.Pass, rules ruleSet) (any, error) {
 		}
 	}
 	pass := *p
-	type key struct {
-		pos     token.Pos
-		message string
-	}
-	seen := make(map[key]bool)
-	pass.Report = func(d analysis.Diagnostic) {
-		k := key{d.Pos, d.Message}
-		if !seen[k] {
-			seen[k] = true
-			p.Report(d)
-		}
-	}
+	pass.Report = deduplicatingReporter(p.Report)
 
 	for _, suite := range suites {
 		for _, rule := range rules.suites {
