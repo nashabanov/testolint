@@ -50,16 +50,6 @@ func parallelRules() []parallelRule {
 	return checks
 }
 
-func runRules() []runRule {
-	var checks []runRule
-	for _, registration := range registrations {
-		if registration.run != nil {
-			checks = append(checks, registration.run)
-		}
-	}
-	return checks
-}
-
 func packageRules() []packageRule {
 	var checks []packageRule
 	for _, registration := range registrations {

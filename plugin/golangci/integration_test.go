@@ -78,3 +78,88 @@ func TestIntegration(t *testing.T) {
 		t.Fatalf("clean suite: %v\n%s", err, output)
 	}
 }
+
+func TestIntegrationConfiguration(t *testing.T) {
+	binary := os.Getenv("TESTOLINT_GOLANGCI_BINARY")
+	if binary == "" {
+		t.Skip("set TESTOLINT_GOLANGCI_BINARY to run configuration boundary tests")
+	}
+	binary, err := filepath.Abs(binary)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, tc := range []struct {
+		name, settings string
+		ids            []string
+		errorText      string
+	}{
+		{name: "defaults", ids: []string{"TESTO006", "TESTO012", "TESTO018", "TESTO019", "TESTO021", "TESTO022"}},
+		{name: "only callback", settings: "disable-all: true\n            enable: [TESTO019]", ids: []string{"TESTO019"}},
+		{name: "policy opt in", settings: "disable-all: true\n            enable: [TESTO006]", ids: []string{"TESTO006"}},
+		{name: "none", settings: "disable-all: true"},
+		{name: "empty lists", settings: "enable: []\n            disable: []", ids: []string{"TESTO006", "TESTO012", "TESTO018", "TESTO019", "TESTO021", "TESTO022"}},
+		{name: "only cleanup", settings: "disable: [TESTO006, TESTO012, TESTO019, TESTO021, TESTO022]", ids: []string{"TESTO018"}},
+		{name: "only fields", settings: "disable-all: true\n            enable: [TESTO021]", ids: []string{"TESTO021"}},
+		{name: "only cycles", settings: "disable-all: true\n            enable: [TESTO022]", ids: []string{"TESTO022"}},
+		{name: "unknown ID", settings: "enable: [TESTO999]", errorText: "unknown rule"},
+		{name: "conflict", settings: "enable: [TESTO019]\n            disable: [TESTO019]", errorText: "both enable and disable"},
+		{name: "duplicate", settings: "enable: [TESTO019, TESTO019]", errorText: "duplicate rule"},
+		{name: "wrong type", settings: "enable: TESTO019", errorText: "decoding settings"},
+		{name: "unknown setting", settings: "enabel: [TESTO019]", errorText: "unknown field"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			config := "version: \"2\"\nlinters:\n  default: none\n  enable: [testolint]\n  settings:\n    custom:\n      testolint:\n        type: module\n"
+			if tc.settings != "" {
+				config += "        settings:\n            " + tc.settings + "\n"
+			}
+			path := filepath.Join(t.TempDir(), "config.yml")
+			if err := os.WriteFile(path, []byte(config), 0600); err != nil {
+				t.Fatal(err)
+			}
+			target := "./testdata/selection"
+			if tc.errorText != "" {
+				target = "./does-not-exist"
+			}
+			cmd := exec.Command(binary, "run", "--max-same-issues=0", "--config", path, target)
+			cmd.Dir = "testdata/integration"
+			output, err := cmd.CombinedOutput()
+			if tc.errorText != "" {
+				if err == nil || !strings.Contains(string(output), tc.errorText) {
+					t.Fatalf("expected %q: %v\n%s", tc.errorText, err, output)
+				}
+				return
+			}
+			if len(tc.ids) == 0 {
+				if err != nil || strings.Contains(string(output), "TESTO") {
+					t.Fatalf("expected no diagnostics: %v\n%s", err, output)
+				}
+			} else {
+				var exit *exec.ExitError
+				if !errors.As(err, &exit) || exit.ExitCode() != 1 {
+					t.Fatalf("expected diagnostic exit: %v\n%s", err, output)
+				}
+				if strings.Count(string(output), "(testolint)") != len(tc.ids) {
+					t.Fatalf("unexpected diagnostic count\n%s", output)
+				}
+				for _, id := range tc.ids {
+					positions := map[string]string{
+						"TESTO006": "selection_test.go:12:10: ",
+						"TESTO012": "selection_test.go:27:20: ",
+						"TESTO018": "selection_test.go:29:23: ",
+						"TESTO019": "selection_test.go:28:22: ",
+						"TESTO021": "selection_test.go:16:2: ",
+						"TESTO022": "selection_test.go:18:19: ",
+					}
+					if !strings.Contains(string(output), positions[id]+id+":") {
+						t.Errorf("missing %s\n%s", id, output)
+					}
+				}
+			}
+			clean := exec.Command(binary, "run", "--config", path, "./clean")
+			clean.Dir = cmd.Dir
+			if output, err := clean.CombinedOutput(); err != nil {
+				t.Fatalf("clean: %v\n%s", err, output)
+			}
+		})
+	}
+}

@@ -13,13 +13,11 @@ var Analyzer = &analysis.Analyzer{
 }
 
 func run(p *analysis.Pass) (any, error) {
-	return runWithRules(p, ruleSet{
-		suites:        suiteRules(),
-		parallel:      parallelRules(),
-		afterParallel: afterParallelRules(),
-		runs:          runRules(),
-		packages:      packageRules(),
-	})
+	selected, err := resolveConfig(Config{})
+	if err != nil {
+		return nil, err
+	}
+	return runSelected(p, selected)
 }
 
 // runWithRules shares call facts and diagnostic deduplication across all rule

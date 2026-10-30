@@ -49,9 +49,27 @@ func TestRegistry(t *testing.T) {
 	for _, match := range regexp.MustCompile("(?m)^\\| `([A-Z]+[0-9]+)` ").FindAllSubmatch(readme, -1) {
 		documented[ruleID(match[1])] = true
 	}
+	examples, err := os.ReadFile("../docs/rules.md")
+	if err != nil {
+		t.Fatal(err)
+	}
 	for id, meta := range registry {
 		if !registered[id] {
 			t.Errorf("unregistered rule: %s", id)
+		}
+		row := fmt.Sprintf("| `%s` | `%s` | %s | enabled |", id, meta.Name, meta.Class)
+		if !strings.Contains(string(readme), row) {
+			t.Errorf("documentation metadata differs from registry: %s", id)
+		}
+		heading := "## " + string(id) + "\n"
+		_, section, ok := strings.Cut(string(examples), heading)
+		if !ok {
+			t.Errorf("missing rule examples: %s", id)
+		} else {
+			section, _, _ = strings.Cut(section, "\n## ")
+			if !strings.Contains(section, "Violation") || !strings.Contains(section, "Valid") {
+				t.Errorf("missing violation/valid example: %s", id)
+			}
 		}
 		if !documented[id] {
 			t.Errorf("undocumented rule: %s", id)

@@ -12,6 +12,7 @@ import (
 
 func TestAnalyzer(t *testing.T) {
 	tests := []string{
+		"config_selection", "config_reverse", "config_none",
 		"plugin_parent_nil",
 		"provider_before_each",
 		"construction",
@@ -43,6 +44,20 @@ func TestAnalyzer(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt, func(t *testing.T) {
 			analyzer := Analyzer
+			if strings.HasPrefix(tt, "config_") {
+				config := Config{DisableAll: true}
+				switch tt {
+				case "config_selection":
+					config.Enable = []string{"TESTO006", "TESTO019", "TESTO021"}
+				case "config_reverse":
+					config.Enable = []string{"TESTO012", "TESTO018", "TESTO022"}
+				}
+				var err error
+				analyzer, err = New(config)
+				if err != nil {
+					t.Fatal(err)
+				}
+			}
 			if tt == "discovery" {
 				// Observe suites with no declared methods through analysistest
 				// diagnostics, without adding a public rule for empty suites.

@@ -98,34 +98,108 @@ The standalone CLI exits with 0 for clean code, 3 for diagnostics, and a nonzero
 status for loading errors. `testolint -h` lists the standard go/analysis flags.
 The same installation and invocation commands work in CI.
 
+## Rule configuration (0.8.0 development)
+
+These settings are available in the current checkout for the unpublished 0.8.0;
+older releases do not support them. Build the CLI and custom plugin locally using
+the instructions above.
+
+Both integrations use the same selection model:
+
+1. Start with each rule's registry default. All current rules are enabled.
+2. With `disable-all`, start with no rules enabled instead.
+3. Apply explicit `enable` and `disable` lists. An ID in both lists is an error,
+   regardless of flag or YAML key order. Duplicate and unknown IDs are errors.
+
+IDs are case-sensitive (`TESTO019`). No class changes a rule's default. Empty
+lists preserve the starting selection; `disable-all` with no enabled IDs produces
+no diagnostics. A disabled prerequisite may still be analyzed to preserve
+suppression and diagnostic ownership. For example, disabling TESTO022 does not
+make TESTO021 report fields in a construction graph that contains a cycle.
+Selecting TESTO018 does not enable TESTO019, even though they share a checker.
+Disabling an owning diagnostic does not transfer its reports to another rule.
+
+CLI flags take comma-separated lists; whitespace around each ID is trimmed.
+Each list flag may appear once. A trailing comma or an empty list element is an
+error; `-enable=` and `-disable=` mean empty lists. Invalid settings fail during
+flag parsing, before package analysis.
+
+```sh
+# Preserve defaults except for two policy checks.
+./bin/testolint -disable=TESTO006,TESTO012 ./...
+# Opt in to the unused-provider policy alone.
+./bin/testolint -disable-all -enable=TESTO006 ./...
+# Run only nil-callback and construction-cycle checks.
+./bin/testolint -disable-all -enable=TESTO019,TESTO022 ./...
+```
+
+The equivalent plugin configuration goes under the custom linter's `settings`:
+
+```yaml
+version: "2"
+linters:
+  default: standard
+  enable: [testolint]
+  settings:
+    custom:
+      testolint:
+        type: module
+        settings:
+          disable-all: true
+          enable: [TESTO019, TESTO022]
+          disable: []
+```
+
+Plugin lists must be YAML sequences of exact IDs, and `disable-all` must be a
+boolean. Unknown setting names, invalid types, unknown/duplicate IDs and conflicts
+are rejected when the plugin is constructed. Each driver uses a separate analyzer
+instance. Go callers can use `analyzer.New(analyzer.Config{...})`; the existing
+`analyzer.Analyzer` retains default behavior and has no mutable selection flags.
+
+Migration from 0.7.0 requires no selection settings: diagnostics and all defaults
+are preserved. Tooling consuming analysis diagnostics now receives `Category`
+equal to the rule ID and a documentation URL from the registry. Messages have one
+`TESTO###: ` prefix. All URLs currently use the existing
+[Rules section](https://github.com/nashabanov/testolint#rules). Full reports preserve
+ranges, related locations and suggested fixes; only identical complete reports
+are deduplicated.
+
 ## Rules
 
-| ID | Purpose |
-| --- | --- |
-| `TESTO001` | Tests accept exactly the suite's `T`, optionally a struct, and return no values. |
-| `TESTO002` | `BeforeAll`, `BeforeEach`, `AfterEach`, `AfterAll` accept exactly `T` and return no values. |
-| `TESTO003` | Exported parameter fields require a `Cases<Field>` method. |
-| `TESTO004` | Provider slice elements must be assignable to the parameter field type. |
-| `TESTO005` | Providers accept no arguments and return exactly one slice. |
-| `TESTO006` | Policy: providers should be referenced by a test parameter; Testo permits unused providers. |
-| `TESTO007` | After `Test`, the suffix is empty or begins with a non-lowercase Unicode rune. |
-| `TESTO008` | After `Cases`, the suffix is empty or begins with a non-lowercase Unicode rune. |
-| `TESTO009` | Parameter fields must be exported so reflection can set them. |
-| `TESTO010` | Providers returning `nil`, an empty slice literal or built-in `make` with constant zero length always return an empty case set. |
-| `TESTO011` | Suite must contain at least one runnable Testo test. |
-| `TESTO012` | Report a statically nil suite argument to `RunSuite` or `RunSubSuite`. |
-| `TESTO013` | Report a directly recursive `RunSubSuite` invocation on the current receiver. |
-| `TESTO014` | BeforeEach writes a shared receiver field read after Parallel suspension. |
-| `TESTO015` | Cleanup re-reads a shared BeforeEach field that another execution can replace. |
-| `TESTO016` | A shared BeforeEach field can expose another execution's test context. |
-| `TESTO017` | Repeated Parallel calls on the same context across BeforeEach, test and AfterEach. |
-| `TESTO018` | Direct `testo.Run` on the cleanup context inside its Cleanup callback. |
-| `TESTO019` | Statically nil callbacks to `RunTest` or an immediately executed `Test` adapter. |
-| `TESTO020` | AfterEach closes an `*os.File` before a parallel child uses the same file. |
-| `TESTO021` | Exported fields traversed during custom T/plugin wiring must be pointers. |
-| `TESTO022` | Report a type cycle traversed during custom T/plugin initialization. |
-| `TESTO023` | A provider dereferences a fresh suite’s nil field before BeforeEach initializes it. |
-| `TESTO024` | A Plugin parent interface compared with nil cannot identify the suite root. |
+`correctness` covers Testo contract violations, missing execution and concrete
+lifecycle hazards. `policy` covers unused providers, possibly intentional nil
+suites and conservative shared-field ownership checks; it does not assert that
+every reported program fails. All 24 rules remain enabled by default.
+
+The table is checked against the authoritative registry. See the
+[per-rule examples and remedies](docs/rules.md) and the detailed limitations below.
+
+| ID | Name | Class | Default | Purpose |
+| --- | --- | --- | --- | --- |
+| `TESTO001` | `test-signature` | correctness | enabled | Tests accept exactly the suite's `T`, optionally a struct, and return no values. |
+| `TESTO002` | `hook-signature` | correctness | enabled | `BeforeAll`, `BeforeEach`, `AfterEach`, `AfterAll` accept exactly `T` and return no values. |
+| `TESTO003` | `missing-case-provider` | correctness | enabled | Exported parameter fields require a `Cases<Field>` method. |
+| `TESTO004` | `case-type-mismatch` | correctness | enabled | Provider slice elements must be assignable to the parameter field type. |
+| `TESTO005` | `cases-signature` | correctness | enabled | Providers accept no arguments and return exactly one slice. |
+| `TESTO006` | `orphan-cases-provider` | policy | enabled | Policy: providers should be referenced by a test parameter; Testo permits unused providers. |
+| `TESTO007` | `test-name` | correctness | enabled | After `Test`, the suffix is empty or begins with a non-lowercase Unicode rune. |
+| `TESTO008` | `cases-name` | correctness | enabled | After `Cases`, the suffix is empty or begins with a non-lowercase Unicode rune. |
+| `TESTO009` | `unexported-param-field` | correctness | enabled | Parameter fields must be exported so reflection can set them. |
+| `TESTO010` | `empty-cases` | correctness | enabled | Providers returning `nil`, an empty slice literal or built-in `make` with constant zero length always return an empty case set. |
+| `TESTO011` | `empty-suite` | correctness | enabled | Suite must contain at least one runnable Testo test. |
+| `TESTO012` | `nil-suite` | policy | enabled | Report a statically nil suite argument to `RunSuite` or `RunSubSuite`. |
+| `TESTO013` | `recursive-subsuite` | correctness | enabled | Report a directly recursive `RunSubSuite` invocation on the current receiver. |
+| `TESTO014` | `shared-before-each-write` | policy | enabled | BeforeEach writes a shared receiver field read after Parallel suspension. |
+| `TESTO015` | `shared-fixture-cleanup` | policy | enabled | Cleanup re-reads a shared BeforeEach field that another execution can replace. |
+| `TESTO016` | `shared-test-context` | policy | enabled | A shared BeforeEach field can expose another execution's test context. |
+| `TESTO017` | `duplicate-parallel-lifecycle` | correctness | enabled | Repeated Parallel calls on the same context across BeforeEach, test and AfterEach. |
+| `TESTO018` | `run-during-cleanup` | correctness | enabled | Direct `testo.Run` on the cleanup context inside its Cleanup callback. |
+| `TESTO019` | `nil-callback` | correctness | enabled | Statically nil callbacks to `RunTest` or an immediately executed `Test` adapter. |
+| `TESTO020` | `premature-teardown` | correctness | enabled | AfterEach closes an `*os.File` before a parallel child uses the same file. |
+| `TESTO021` | `construction-field` | correctness | enabled | Exported fields traversed during custom T/plugin wiring must be pointers. |
+| `TESTO022` | `construction-cycle` | correctness | enabled | Report a type cycle traversed during custom T/plugin initialization. |
+| `TESTO023` | `provider-before-each` | correctness | enabled | A provider dereferences a fresh suite’s nil field before BeforeEach initializes it. |
+| `TESTO024` | `plugin-parent-nil` | correctness | enabled | A Plugin parent interface compared with nil cannot identify the suite root. |
 
 For `testo.Suite[T]`, tests have the form `TestX(t T)` or
 `TestX(t T, p struct{ Age int })`. Named structs and named slice returns are
@@ -529,7 +603,7 @@ go mod tidy
 exit codes using real Testo fixtures. After building the custom binary:
 
 ```sh
-TESTOLINT_GOLANGCI_BINARY="$PWD/bin/golangci-lint" go test ./plugin/golangci -run '^TestIntegration$' -count=1 -v
+TESTOLINT_GOLANGCI_BINARY="$PWD/bin/golangci-lint" go test ./plugin/golangci -run '^TestIntegration' -count=1 -v
 (cd plugin/golangci/testdata/integration && go test ./clean)
 ```
 

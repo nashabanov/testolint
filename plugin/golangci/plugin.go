@@ -11,14 +11,22 @@ func init() {
 	register.Plugin("testolint", newPlugin)
 }
 
-type plugin struct{}
+type plugin struct{ analyzer *analysis.Analyzer }
 
-func newPlugin(_ any) (register.LinterPlugin, error) {
-	return &plugin{}, nil
+func newPlugin(settings any) (register.LinterPlugin, error) {
+	config, err := register.DecodeSettings[analyzer.Config](settings)
+	if err != nil {
+		return nil, err
+	}
+	a, err := analyzer.New(config)
+	if err != nil {
+		return nil, err
+	}
+	return &plugin{analyzer: a}, nil
 }
 
-func (*plugin) BuildAnalyzers() ([]*analysis.Analyzer, error) {
-	return []*analysis.Analyzer{analyzer.Analyzer}, nil
+func (p *plugin) BuildAnalyzers() ([]*analysis.Analyzer, error) {
+	return []*analysis.Analyzer{p.analyzer}, nil
 }
 
 func (*plugin) GetLoadMode() string {

@@ -19,6 +19,6 @@ jobs:
       - run: go vet ./...
       - run: go mod tidy && git diff --exit-code
       - run: golangci-lint custom -v
-      - run: TESTOLINT_GOLANGCI_BINARY="$PWD/bin/golangci-lint" go test ./plugin/golangci -run '^TestIntegration$' -count=1 -v
+      - run: TESTOLINT_GOLANGCI_BINARY="$PWD/bin/golangci-lint" go test ./plugin/golangci -run '^TestIntegration' -count=1 -v
       - run: go test ./clean
         working-directory: plugin/golangci/testdata/integration

@@ -2,6 +2,24 @@
 
 ## 0.8.0 (Unreleased)
 
+### Added
+
+- Add independent analyzer construction with validated enable/disable selections
+  and a disable-all opt-in mode. Reject unknown/duplicate IDs and conflicting
+  selections before package analysis through CLI flags and plugin settings.
+- Replace the unused runRules registration accessor with registry-based selection.
+- Select individual diagnostic IDs from shared execution/construction checkers,
+  running each selected checker once and retaining existing suppression and
+  diagnostic ownership. Keep all 24 rules enabled by default.
+- Add config_selection, config_reverse and config_none analyzer fixtures,
+  instance-isolation checks, and real-Testo CLI/plugin configuration tests.
+  Run the new custom-plugin configuration boundary tests in CI.
+- Document both configuration interfaces, migration, rule names/classes/defaults,
+  and per-rule violation/valid examples, remedies and precision limits. Check
+  documentation metadata and example coverage against the registry.
+- Classify TESTO012 and TESTO014–016 as policy to reflect their intentional-safe
+  and conservative ownership boundaries; retain their existing default enablement.
+
 ### Refactoring
 
 - Route all rule diagnostics through shared report/reportf helpers, deriving the
