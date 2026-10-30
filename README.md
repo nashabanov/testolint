@@ -98,7 +98,7 @@ The standalone CLI exits with 0 for clean code, 3 for diagnostics, and a nonzero
 status for loading errors. `testolint -h` lists the standard go/analysis flags.
 The same installation and invocation commands work in CI.
 
-## Rule configuration (0.8.0 development)
+## Rule configuration
 
 These settings are available in the current checkout for the unpublished 0.8.0;
 older releases do not support them. Build the CLI and custom plugin locally using
