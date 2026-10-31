@@ -599,6 +599,24 @@ go vet ./...
 go mod tidy
 ```
 
+Run analyzer benchmarks with `make bench`. They report time and allocations for
+packages without Testo, valid suites, invalid signatures, and embedded suites with
+promoted parameterized tests and case providers, each at sizes 1, 10 and 100.
+Complex workloads have one base and one derived suite per size unit. Inputs use
+the local Testo stub; source generation, package loading, type checking and an
+initial diagnostic-count check are excluded. Each measured iteration runs the
+complete default analyzer; diagnostic formatting and deduplication are included,
+while the report callback only counts diagnostics. CLI and golangci-lint startup,
+loading, and output rendering are not measured.
+
+For repeated samples or comparisons with `benchstat`:
+
+```sh
+make bench BENCH_ARGS='-count=5 -benchtime=1s' > before.txt
+# Repeat after the change, saving to after.txt.
+benchstat before.txt after.txt
+```
+
 `make lint` requires golangci-lint v2. Tests cover analyzer diagnostics and CLI
 exit codes using real Testo fixtures. After building the custom binary:
 

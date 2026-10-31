@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- Add analyzer benchmarks for no-Testo, valid, diagnostic-heavy and embedded
+  parameterized workloads at three sizes, excluding package loading and type
+  checking. Add `make bench` with `BENCH_ARGS` and comparison instructions.
+
 ## 0.8.0
 
 ### Added
