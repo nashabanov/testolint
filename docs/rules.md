@@ -1,8 +1,9 @@
 # Rule examples and remedies
 
 [The README registry table](../README.md#rules) lists every rule's name, class
-and default. All rules are enabled by default. Selection settings are documented
-in [Rule configuration](../README.md#rule-configuration-080-development).
+and default. Correctness/policy rules are enabled by default; style rules are
+opt-in. Selection settings are documented
+in [Rule configuration](../README.md#rule-configuration).
 
 Examples are replacement fragments, not complete packages. Assume `T` aliases
 `*testo.T`, `S` embeds `testo.Suite[T]`, and fields, imports and surrounding tests
@@ -282,6 +283,9 @@ graphs. Manual Plugin calls may legitimately pass a nil interface. A diagnostic
 does not prove that the branch will fail a test.
 
 ## TESTO025
+
+For the style examples, `T` is a custom Testo context embedding
+`*allure.PluginAllure` from `github.com/ozontech/testo-allure`.
 
 `blank-after-header` (style, disabled by default) requires a blank line after
 initial Allure metadata. Enable with `-enable=TESTO025`; use `-fix` to insert it.

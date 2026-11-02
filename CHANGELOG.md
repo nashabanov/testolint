@@ -4,6 +4,11 @@
 
 ### Added
 
+- Verify opt-in style diagnostics and golangci-lint auto-fixes against real
+  Testo v1.8.0 and Testo Allure v1.5.0 in a dedicated integration module.
+- Correct documentation rule counts, defaults and configuration links; document
+  style precision limits.
+
 - Make the Allure fixture module independently loadable with an explicit local
   Testo dependency, including editor import resolution.
 

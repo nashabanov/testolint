@@ -163,3 +163,72 @@ func TestIntegrationConfiguration(t *testing.T) {
 		})
 	}
 }
+
+// Check style diagnostics and fixes against the actual Allure plugin, not stubs.
+func TestIntegrationStyle(t *testing.T) {
+	binary := os.Getenv("TESTOLINT_GOLANGCI_BINARY")
+	if binary == "" {
+		t.Skip("set TESTOLINT_GOLANGCI_BINARY to run real-Allure style checks")
+	}
+	binary, err := filepath.Abs(binary)
+	if err != nil {
+		t.Fatal(err)
+	}
+	dir := t.TempDir()
+	if err := os.CopyFS(dir, os.DirFS("testdata/integration")); err != nil {
+		t.Fatal(err)
+	}
+	for _, tc := range []struct {
+		name, enable  string
+		header, steps int
+	}{
+		{"default", "", 0, 0},
+		{"header", "TESTO025", 1, 0},
+		{"steps", "TESTO026", 0, 2},
+		{"both", "TESTO025, TESTO026", 1, 2},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			config := "version: \"2\"\nlinters:\n  default: none\n  enable: [testolint]\n  settings:\n    custom:\n      testolint:\n        type: module\n"
+			if tc.enable != "" {
+				config += "        settings:\n          enable: [" + tc.enable + "]\n"
+			}
+			configPath := filepath.Join(t.TempDir(), "config.yml")
+			if err := os.WriteFile(configPath, []byte(config), 0600); err != nil {
+				t.Fatal(err)
+			}
+			run := func(fix bool) (string, error) {
+				args := []string{"run", "--max-same-issues=0", "--config", configPath}
+				if fix {
+					args = append(args, "--fix")
+				}
+				args = append(args, ".")
+				cmd := exec.Command(binary, args...)
+				cmd.Dir = filepath.Join(dir, "testdata", "style")
+				out, err := cmd.CombinedOutput()
+				return string(out), err
+			}
+			output, err := run(false)
+			if tc.header+tc.steps == 0 {
+				if err != nil {
+					t.Fatalf("default style: %v\n%s", err, output)
+				}
+			} else {
+				var exit *exec.ExitError
+				if !errors.As(err, &exit) || exit.ExitCode() != 1 {
+					t.Fatalf("expected diagnostics: %v\n%s", err, output)
+				}
+			}
+			if strings.Count(output, "TESTO025:") != tc.header || strings.Count(output, "TESTO026:") != tc.steps || strings.Count(output, "(testolint)") != tc.header+tc.steps {
+				t.Fatalf("unexpected diagnostics:\n%s", output)
+			}
+			if tc.name == "both" {
+				if out, err := run(true); err != nil {
+					t.Fatalf("fix: %v\n%s", err, out)
+				}
+				if out, err := run(false); err != nil || strings.Contains(out, "TESTO") {
+					t.Fatalf("after fix: %v\n%s", err, out)
+				}
+			}
+		})
+	}
+}

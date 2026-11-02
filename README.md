@@ -4,9 +4,10 @@ A small Go linter for tests written with [Testo](https://github.com/ozontech/tes
 It checks suite signatures, parameter providers, naming, suite execution, and
 conservative parallel lifecycle hazards, cleanup misuse, nil test callbacks,
 custom context/plugin construction errors and provider/plugin initialization
-misuse without running tests.
-Both the standalone CLI and golangci-lint integration run the same twenty-four rules.
-Runtime semantics were checked against Testo v1.8.0.
+misuse, plus optional Allure formatting, without running tests.
+Both the standalone CLI and golangci-lint integration run the same 26 rules.
+Runtime semantics were checked against Testo v1.8.0; style integration was checked
+against Testo Allure v1.5.0.
 
 ## Installation
 
@@ -222,8 +223,8 @@ Unexported fields receive only `TESTO009`, without missing/type provider
 messages. Invalid test signatures suppress dependent parameter checks; invalid
 provider signatures suppress type mismatch checks. Identical diagnostics at the
 same position are emitted once. Independent problems may still produce multiple
-messages. All rules are enabled; standalone rule selection and source-level
-suppression are not implemented.
+messages. Rule selection is available in both integrations; source-level
+suppression is not implemented.
 
 ## Example
 
@@ -431,6 +432,18 @@ or RunTest; it is not diagnosed. A global-options policy remains deferred and
 is not included in the rule count.
 
 ## Scope and limitations
+
+- TESTO025/026 are opt-in Allure formatting checks on valid local Testo test
+  bodies, including local promoted methods. Hooks, helpers and imported bodies
+  are skipped. Metadata is an initial sequence on the original context:
+  `Title`, `Titlef`, `Description`, `Descriptionf`, `Tags`, `ID`, `Labels`, `Links`,
+  `Owner`, `Severity`, `Epic`, `Feature`, `Story`, `Parameters`, `Flaky`, `Muted`,
+  `Known`, resolving to `github.com/ozontech/testo-allure`.
+- TESTO026 recognizes direct `allure.Step` calls in AST block statement lists,
+  including nested callbacks, aliases/dot imports and generic arguments. It skips
+  wrappers, function variables, Setup/TearDown and switch/select clause lists.
+  Another statement breaks adjacency. Comments do not count as blank lines.
+  Fixes preserve comments and LF/CRLF; same-line statements have no auto-fix.
 
 - Suite discovery uses Testo v1.8.0's private marker and recognizes package-level
   named structs embedding `testo.Suite[T]` directly or indirectly, including
