@@ -57,7 +57,11 @@ func TestRegistry(t *testing.T) {
 		if !registered[id] {
 			t.Errorf("unregistered rule: %s", id)
 		}
-		row := fmt.Sprintf("| `%s` | `%s` | %s | enabled |", id, meta.Name, meta.Class)
+		defaultState := "disabled"
+		if meta.EnableByDefault {
+			defaultState = "enabled"
+		}
+		row := fmt.Sprintf("| `%s` | `%s` | %s | %s |", id, meta.Name, meta.Class, defaultState)
 		if !strings.Contains(string(readme), row) {
 			t.Errorf("documentation metadata differs from registry: %s", id)
 		}
@@ -79,11 +83,11 @@ func TestRegistry(t *testing.T) {
 			t.Errorf("empty or duplicate name: %s", id)
 		}
 		names[meta.Name] = true
-		if meta.Class != correctness && meta.Class != policy {
+		if meta.Class != correctness && meta.Class != policy && meta.Class != style {
 			t.Errorf("invalid class: %s", id)
 		}
-		if !meta.EnableByDefault {
-			t.Errorf("existing rule disabled by default: %s", id)
+		if meta.EnableByDefault != (id != "TESTO025" && id != "TESTO026") {
+			t.Errorf("unexpected default enablement: %s", id)
 		}
 		if meta.DocURL != ruleDocURL {
 			t.Errorf("invalid documentation URL: %s", id)

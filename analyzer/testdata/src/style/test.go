@@ -1,0 +1,95 @@
+package style
+
+import (
+	"github.com/ozontech/testo"
+	a "github.com/ozontech/testo-allure"
+)
+
+type Context struct{ *a.PluginAllure }
+type T = *Context
+type Suite struct{ testo.Suite[T] }
+
+func (*Suite) TestBad(t T) {
+	t.Title("title")
+	t.Tags("smoke")
+	a.Step(t, "first", func(t T) { // want "TESTO025"
+		a.Step(t, "nested one", func(T) {})
+		a.Step(t, "nested two", func(T) {}) // want "TESTO026"
+	})
+	// Next step.
+	a.Step[T](t, "second", func(T) {}) // want "TESTO026"
+	a.Step(t, "third", func(T) {})     // want "TESTO026"
+}
+func (Suite) TestGood(t T) {
+	t.Title("title")
+	t.Tags("smoke")
+
+	a.Step(t, "first", func(T) {})
+
+	// Next step.
+	a.Step(t, "second", func(T) {})
+	t.Log("between")
+	a.Step(t, "third", func(T) {})
+}
+func (*Suite) TestHeaderOnly(t T) { t.Title("title") }
+func (*Suite) TestNoHeader(t T)   { t.Log("body") }
+func helper(t T) {
+	t.Title("ignored helper")
+	a.Step(t, "one", func(T) {})
+	a.Step(t, "two", func(T) {})
+}
+
+type Other struct{}
+
+func (Other) Title(string) {}
+func (*Suite) TestUnrelated(t T) {
+	Other{}.Title("unrelated")
+	t.Log("body")
+}
+func (*Suite) TestComment(t T) {
+	t.Description("description") // trailing
+	/* Leading comment. */
+	t.Log("body") // want "TESTO025"
+}
+func (*Suite) TestBlank(t T) {
+	t.Title("title")
+
+	// comment
+	t.Log("body")
+}
+
+type fakeSteps struct{}
+
+func (fakeSteps) Step(T, string, func(T)) {}
+func (*Suite) TestForeignSteps(t T) {
+	fake := fakeSteps{}
+	fake.Step(t, "one", func(T) {})
+	fake.Step(t, "two", func(T) {})
+}
+
+type NotASuite struct{}
+
+func (NotASuite) TestIgnored(t T) {
+	t.Title("ignored")
+	a.Step(t, "one", func(T) {})
+	a.Step(t, "two", func(T) {})
+}
+func (*Suite) TestLateMetadata(t T) {
+	t.Log("first")
+	t.Title("late")
+	t.Log("last")
+}
+
+func (*Suite) TestMultilineTrailing(t T) {
+	t.Title("title") /* trailing
+	continues */
+	// next body
+	t.Log("body") // want "TESTO025"
+}
+func (*Suite) TestCommentEmptyLine(t T) {
+	t.Title("title")
+	/* comment
+
+	continues */
+	t.Log("body") // want "TESTO025"
+}

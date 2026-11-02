@@ -106,7 +106,7 @@ the instructions above.
 
 Both integrations use the same selection model:
 
-1. Start with each rule's registry default. All current rules are enabled.
+1. Start with each rule's registry default. Correctness and policy rules are enabled; style rules are opt-in.
 2. With `disable-all`, start with no rules enabled instead.
 3. Apply explicit `enable` and `disable` lists. An ID in both lists is an error,
    regardless of flag or YAML key order. Duplicate and unknown IDs are errors.
@@ -169,7 +169,9 @@ are deduplicated.
 `correctness` covers Testo contract violations, missing execution and concrete
 lifecycle hazards. `policy` covers unused providers, possibly intentional nil
 suites and conservative shared-field ownership checks; it does not assert that
-every reported program fails. All 24 rules remain enabled by default.
+every reported program fails. All 24 correctness/policy rules remain enabled by default.
+`style` covers source formatting; its two rules are disabled by default.
+Enable them with `-enable=TESTO025,TESTO026` and apply fixes with `-fix`.
 
 The table is checked against the authoritative registry. See the
 [per-rule examples and remedies](docs/rules.md) and the detailed limitations below.
@@ -200,6 +202,8 @@ The table is checked against the authoritative registry. See the
 | `TESTO022` | `construction-cycle` | correctness | enabled | Report a type cycle traversed during custom T/plugin initialization. |
 | `TESTO023` | `provider-before-each` | correctness | enabled | A provider dereferences a fresh suite’s nil field before BeforeEach initializes it. |
 | `TESTO024` | `plugin-parent-nil` | correctness | enabled | A Plugin parent interface compared with nil cannot identify the suite root. |
+| `TESTO025` | `blank-after-header` | style | disabled | Separate initial Allure metadata from the test body with a blank line. |
+| `TESTO026` | `blank-between-steps` | style | disabled | Separate adjacent Allure Step statements with a blank line. |
 
 For `testo.Suite[T]`, tests have the form `TestX(t T)` or
 `TestX(t T, p struct{ Age int })`. Named structs and named slice returns are

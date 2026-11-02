@@ -280,3 +280,60 @@ supported local implementations reached from valid construction roots; it skips
 reassigned/address-taken parameters, explicit local method references and unknown
 graphs. Manual Plugin calls may legitimately pass a nil interface. A diagnostic
 does not prove that the branch will fail a test.
+
+## TESTO025
+
+`blank-after-header` (style, disabled by default) requires a blank line after
+initial Allure metadata. Enable with `-enable=TESTO025`; use `-fix` to insert it.
+
+Violation:
+
+```go
+func (*Suite) TestOrder(t T) {
+    t.Title("Order")
+    t.Tags("smoke")
+    allure.Step(t, "create", func(T) {})
+}
+```
+
+Valid:
+
+```go
+func (*Suite) TestOrder(t T) {
+    t.Title("Order")
+    t.Tags("smoke")
+
+    allure.Step(t, "create", func(T) {})
+}
+```
+
+A metadata-only body needs no separator. Only metadata on the original test
+context is recognized; see README for the supported methods and limitations.
+
+## TESTO026
+
+`blank-between-steps` (style, disabled by default) separates adjacent
+`github.com/ozontech/testo-allure.Step` statements in the same block.
+Enable with `-enable=TESTO026`; use `-fix` to insert separators.
+
+Violation:
+
+```go
+func (*Suite) TestOrder(t T) {
+    allure.Step(t, "create", func(T) {})
+    allure.Step(t, "check", func(T) {})
+}
+```
+
+Valid:
+
+```go
+func (*Suite) TestOrder(t T) {
+    allure.Step(t, "create", func(T) {})
+
+    allure.Step(t, "check", func(T) {})
+}
+```
+
+Nested blocks and callbacks are checked. Other statements break adjacency.
+Comments do not substitute for a blank line; fixes preserve their placement.

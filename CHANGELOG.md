@@ -1,8 +1,16 @@
 # Changelog
 
-## Unreleased
+## 0.8.1
 
 ### Added
+
+- Make the Allure fixture module independently loadable with an explicit local
+  Testo dependency, including editor import resolution.
+
+- Add opt-in style rules TESTO025 (blank-after-header) and TESTO026
+  (blank-between-steps) for Testo Allure tests, with suggested blank-line fixes
+  preserving comments and LF/CRLF. Add e2e diagnostic and golden fix fixtures,
+  configuration coverage, CLI `-fix` end-to-end coverage, and rule documentation.
 
 - Add analyzer benchmarks for no-Testo, valid, diagnostic-heavy and embedded
   parameterized workloads at three sizes, excluding package loading and type

@@ -12,6 +12,7 @@ import (
 
 func TestAnalyzer(t *testing.T) {
 	tests := []string{
+		"style",
 		"config_selection", "config_reverse", "config_none",
 		"plugin_parent_nil",
 		"provider_before_each",
@@ -44,6 +45,13 @@ func TestAnalyzer(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt, func(t *testing.T) {
 			analyzer := Analyzer
+			if tt == "style" {
+				var err error
+				analyzer, err = New(Config{Enable: []string{"TESTO025", "TESTO026"}})
+				if err != nil {
+					t.Fatal(err)
+				}
+			}
 			if strings.HasPrefix(tt, "config_") {
 				config := Config{DisableAll: true}
 				switch tt {

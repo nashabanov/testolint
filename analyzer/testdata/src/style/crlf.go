@@ -1,0 +1,11 @@
+package style
+
+import . "github.com/ozontech/testo-allure"
+
+func (*Suite) TestCRLF(t T) {
+ t.Title("multiline " +
+  "title")
+ t.Log("body") // want "TESTO025"
+ Step(t, "one", func(T) {})
+ Step(t, "two", func(T) {}) // want "TESTO026"
+}

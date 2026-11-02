@@ -7,6 +7,7 @@ type ruleClass string
 const (
 	correctness ruleClass = "correctness"
 	policy      ruleClass = "policy"
+	style       ruleClass = "style"
 )
 
 type ruleMeta struct {
@@ -16,7 +17,7 @@ type ruleMeta struct {
 	DocURL          string
 }
 
-// All rules are enabled by default, including policy checks. Class does not
+// Existing correctness and policy rules are enabled by default. Class does not
 // determine enablement. Documentation currently shares the README rules section.
 var registry = map[ruleID]ruleMeta{
 	"TESTO001": {Name: "test-signature", Class: correctness, EnableByDefault: true, DocURL: ruleDocURL},
@@ -43,6 +44,8 @@ var registry = map[ruleID]ruleMeta{
 	"TESTO022": {Name: "construction-cycle", Class: correctness, EnableByDefault: true, DocURL: ruleDocURL},
 	"TESTO023": {Name: "provider-before-each", Class: correctness, EnableByDefault: true, DocURL: ruleDocURL},
 	"TESTO024": {Name: "plugin-parent-nil", Class: correctness, EnableByDefault: true, DocURL: ruleDocURL},
+	"TESTO025": {Name: "blank-after-header", Class: style, DocURL: ruleDocURL},
+	"TESTO026": {Name: "blank-between-steps", Class: style, DocURL: ruleDocURL},
 }
 
 const ruleDocURL = "https://github.com/nashabanov/testolint#rules"
@@ -59,7 +62,6 @@ type ruleRegistration struct {
 }
 
 var registrations = []ruleRegistration{
-
 	{ids: []ruleID{"TESTO001"}, suite: checkTestSignature},
 	{ids: []ruleID{"TESTO002"}, suite: checkHookSignature},
 	{ids: []ruleID{"TESTO003"}, suite: checkMissingCaseProvider},
@@ -82,4 +84,5 @@ var registrations = []ruleRegistration{
 	{ids: []ruleID{"TESTO018", "TESTO019"}, packageCheck: checkExecutionSafety},
 	{ids: []ruleID{"TESTO021", "TESTO022"}, packageCheck: checkConstruction},
 	{ids: []ruleID{"TESTO024"}, packageCheck: checkPluginParentNil},
+	{ids: []ruleID{"TESTO025", "TESTO026"}, suite: checkStyle},
 }
