@@ -13,7 +13,7 @@ const pluginImportPath = testoImportPath + "/testoplugin"
 // Only inspect locally declared plugin methods reached by a concrete, valid
 // construction graph. Explicit method references may supply a genuine nil
 // interface, so they disable this inference for that method in this package.
-func checkPluginParentNil(p *analysis.Pass, facts *callFacts) {
+func checkPluginParentNil(p *analysis.Pass, facts *callFacts, _ []*suite) {
 	methods := make(map[*types.Func]bool)
 	for _, call := range facts.calls {
 		root := constructionRoot(p.TypesInfo, facts, call)

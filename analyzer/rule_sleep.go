@@ -75,8 +75,8 @@ func checkSleepCallbacks(p *analysis.Pass, facts *callFacts) {
 	}
 }
 
-func checkSleep(p *analysis.Pass, facts *callFacts) {
-	for _, s := range discoverSuites(p) {
+func checkSleep(p *analysis.Pass, facts *callFacts, suites []*suite) {
+	for _, s := range suites {
 		checkSleepSuite(p, s)
 	}
 	checkSleepCallbacks(p, facts)

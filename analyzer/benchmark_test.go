@@ -104,3 +104,52 @@ func (*Suite%d) BeforeEach(t T) {}
 	}
 	return src.String()
 }
+
+// BenchmarkPipelineSelections compares shared prerequisite costs across selections.
+func BenchmarkPipelineSelections(b *testing.B) {
+	pass := benchmarkPass(b, benchmarkSource("Complex", 100))
+	pass.Report = func(analysis.Diagnostic) {}
+	for _, tc := range []struct {
+		name   string
+		config Config
+	}{
+		{"Defaults", Config{}},
+		{"None", Config{DisableAll: true}},
+		{"Sleep", Config{DisableAll: true, Enable: []string{"TESTO027"}}},
+		{"Style", Config{DisableAll: true, Enable: []string{"TESTO025", "TESTO026"}}},
+	} {
+		b.Run(tc.name, func(b *testing.B) {
+			selected, err := resolveConfig(tc.config)
+			if err != nil {
+				b.Fatal(err)
+			}
+			b.ReportAllocs()
+			b.ResetTimer()
+			for i := 0; i < b.N; i++ {
+				if _, err := runSelected(pass, selected); err != nil {
+					b.Fatal(err)
+				}
+			}
+		})
+	}
+}
+
+func BenchmarkPipelinePrerequisites(b *testing.B) {
+	pass := benchmarkPass(b, benchmarkSource("Complex", 100))
+	facts := collectCallFacts(pass)
+	for _, tc := range []struct {
+		name string
+		run  func()
+	}{
+		{"Suites", func() { discoverSuites(pass) }},
+		{"Calls", func() { collectCallFacts(pass) }},
+		{"Runs", func() { discoverRunsWithFacts(pass, facts) }},
+	} {
+		b.Run(tc.name, func(b *testing.B) {
+			b.ReportAllocs()
+			for i := 0; i < b.N; i++ {
+				tc.run()
+			}
+		})
+	}
+}

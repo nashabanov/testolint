@@ -9,7 +9,7 @@ import (
 
 // Execution checks are independent of suite discovery: standalone APIs also
 // appear in ordinary testing functions. Names alone never identify an API.
-func checkExecutionSafety(p *analysis.Pass, facts *callFacts) {
+func checkExecutionSafety(p *analysis.Pass, facts *callFacts, _ []*suite) {
 	if p.TypesInfo == nil {
 		return
 	}

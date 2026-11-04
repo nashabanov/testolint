@@ -13,7 +13,7 @@ import (
 // Construction starts at concrete contexts used by Testo, never at arbitrary
 // type declarations. Fill runs before setPlugins, so cycles suppress field
 // diagnostics for that root. All caches belong to this analyzer invocation.
-func checkConstruction(p *analysis.Pass, facts *callFacts) {
+func checkConstruction(p *analysis.Pass, facts *callFacts, _ []*suite) {
 	var checked typeutil.Map
 	cycles := make(map[types.Type]bool)
 	cycleFields := make(map[token.Pos]bool)

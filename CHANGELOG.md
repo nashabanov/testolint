@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.9.0 (Unreleased)
+
+### Changed
+
+- Reuse pipeline suite models in TESTO027 without changing diagnostic order.
+- Skip analysis for empty rule selections and collect call facts/run models only
+  for execution groups that consume them.
+- Document pipeline prerequisites, diagnostic ownership and execution order; add
+  selection/prerequisite benchmarks and an empty-pipeline regression test.
+
 ## 0.8.2
 
 ### Added

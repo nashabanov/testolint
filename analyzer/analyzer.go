@@ -23,9 +23,18 @@ func run(p *analysis.Pass) (any, error) {
 // runWithRules shares call facts and diagnostic deduplication across all rule
 // groups. All state belongs to this invocation.
 func runWithRules(p *analysis.Pass, rules ruleSet) (any, error) {
+	if len(rules.suites)+len(rules.parallel)+len(rules.afterParallel)+len(rules.runs)+len(rules.packages) == 0 {
+		return nil, nil
+	}
 	suites := discoverSuites(p)
-	facts := collectCallFacts(p)
-	runs := discoverRunsWithFacts(p, facts)
+	var facts *callFacts
+	if len(rules.packages) > 0 || len(rules.runs) > 0 {
+		facts = collectCallFacts(p)
+	}
+	var runs []*runCall
+	if len(rules.runs) > 0 {
+		runs = discoverRunsWithFacts(p, facts)
+	}
 	models := make(map[types.Type]*suite, len(suites))
 	for _, suite := range suites {
 		models[suite.typ] = suite
@@ -65,7 +74,7 @@ func runWithRules(p *analysis.Pass, rules ruleSet) (any, error) {
 	}
 
 	for _, rule := range rules.packages {
-		rule(&pass, facts)
+		rule(&pass, facts, suites)
 	}
 	return nil, nil
 }

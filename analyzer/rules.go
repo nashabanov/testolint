@@ -6,8 +6,8 @@ type suiteRule func(*analysis.Pass, *suite)
 
 type runRule func(*analysis.Pass, *runCall)
 
-// packageRule checks package-wide calls independently of suite declarations.
-type packageRule func(*analysis.Pass, *callFacts)
+// packageRule checks package-wide calls and may reuse discovered suites.
+type packageRule func(*analysis.Pass, *callFacts, []*suite)
 
 type parallelRule func(*analysis.Pass, *parallelModel)
 
