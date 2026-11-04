@@ -93,3 +93,15 @@ func (*Suite) TestCommentEmptyLine(t T) {
 	continues */
 	t.Log("body") // want "TESTO025"
 }
+
+func (*Suite) TestParallelHeader(t T) {
+	t.Parallel()
+	t.Title("title")
+
+	t.Log("body")
+}
+
+func (*Suite) TestParallelOnly(t T) {
+	t.Parallel()
+	t.Log("body") // want "TESTO025"
+}

@@ -46,6 +46,7 @@ var registry = map[ruleID]ruleMeta{
 	"TESTO024": {Name: "plugin-parent-nil", Class: correctness, EnableByDefault: true, DocURL: ruleDocURL},
 	"TESTO025": {Name: "blank-after-header", Class: style, DocURL: ruleDocURL},
 	"TESTO026": {Name: "blank-between-steps", Class: style, DocURL: ruleDocURL},
+	"TESTO027": {Name: "no-sleep", Class: policy, DocURL: ruleDocURL},
 }
 
 const ruleDocURL = "https://github.com/nashabanov/testolint#rules"
@@ -73,6 +74,7 @@ var registrations = []ruleRegistration{
 	{ids: []ruleID{"TESTO009"}, suite: checkUnexportedParamField},
 	{ids: []ruleID{"TESTO010"}, suite: checkEmptyCases},
 	{ids: []ruleID{"TESTO011"}, suite: checkEmptySuite},
+	{ids: []ruleID{"TESTO027"}, packageCheck: checkSleep},
 	{ids: []ruleID{"TESTO014"}, parallel: checkSharedBeforeEachWrite},
 	{ids: []ruleID{"TESTO015"}, parallel: checkSharedFixtureCleanup},
 	{ids: []ruleID{"TESTO016"}, parallel: checkSharedTestContext},

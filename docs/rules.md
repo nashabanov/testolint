@@ -341,3 +341,9 @@ func (*Suite) TestOrder(t T) {
 
 Nested blocks and callbacks are checked. Other statements break adjacency.
 Comments do not substitute for a blank line; fixes preserve their placement.
+
+## TESTO027
+
+Violation: `time.Sleep(time.Second)` in a Testo test.
+
+Valid: poll the expected condition with a deadline.

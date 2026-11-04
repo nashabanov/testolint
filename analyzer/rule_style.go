@@ -69,6 +69,9 @@ func metadataStatement(p *analysis.Pass, stmt ast.Stmt, context types.Object) bo
 		return false
 	}
 	fn := selection.Obj()
+	if fn.Pkg() != nil && fn.Pkg().Path() == testoImportPath && fn.Name() == "Parallel" && len(call.Args) == 0 {
+		return true
+	}
 	if fn.Pkg() == nil || fn.Pkg().Path() != allureImportPath {
 		return false
 	}

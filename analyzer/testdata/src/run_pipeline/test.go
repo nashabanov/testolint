@@ -44,7 +44,9 @@ type Parallel struct { // want "TESTO_RUN_PIPELINE: before parallel" "TESTO_RUN_
 func (s *Parallel) BeforeEach(t T) { s.value = new(int) }
 func (s *Parallel) TestA(t T) {
 	t.Parallel()
+
 	t.Parallel()   // want "TESTO017"
+
 	t.Log(s.value) // want "TESTO014"
 }
 func (s *Parallel) TestB(t T) {}
@@ -61,6 +63,7 @@ type Teardown struct {
 func (s *Teardown) TestChild(t T) {
 	testo.Run(t, "child", func(t T) {
 		t.Parallel()
+
 		_, _ = s.file.Stat()
 	})
 }

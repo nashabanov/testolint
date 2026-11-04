@@ -27,9 +27,9 @@ func TestStyleSelection(t *testing.T) {
 			header, steps int
 		}{
 			{Config{}, 0, 0},
-			{Config{Enable: []string{"TESTO025"}}, 5, 0},
+			{Config{Enable: []string{"TESTO025"}}, 6, 0},
 			{Config{Enable: []string{"TESTO026"}}, 0, 4},
-			{Config{Enable: []string{"TESTO025", "TESTO026"}, DisableAll: true}, 5, 4},
+			{Config{Enable: []string{"TESTO025", "TESTO026"}, DisableAll: true}, 6, 4},
 		} {
 			a, err := New(tc.config)
 			if err != nil {

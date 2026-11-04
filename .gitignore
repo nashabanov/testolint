@@ -1,1 +1,5 @@
 /bin/
+
+# Local release review reports
+/docs/release-*-review.md
+/docs/release-review*.md

@@ -57,6 +57,11 @@ Use the pinned Testo source when evaluating candidates, especially
 Runtime reproductions remain an acceptance prerequisite. Distinguish runtime
 failures, framework warnings and optional linter policy.
 
+## TESTO027 default enablement — v0.9.0
+
+TESTO027 (`no-sleep`) ships disabled by default in v0.8.2. Enable it by
+default in v0.9.0 and document the migration and opt-out configuration.
+
 ## Release overview
 
 The implemented baseline remains TESTO001–TESTO024. No existing diagnostic ID

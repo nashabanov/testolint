@@ -73,3 +73,7 @@ Before recommending a release:
 6. Rebuild the custom golangci-lint binary from the reviewed checkout, then run `TestIntegration` with `TESTOLINT_GOLANGCI_BINARY` and run `go test ./clean -count=1` in the real-Testo integration module. An old binary does not verify current code. Where rules changed, check whether real-Testo integration covers them, in addition to analyzer fixtures.
 7. Check README installation/plugin versions, rule count and descriptions, compatibility requirements, limitations, and CI configuration against the target release. Verify that `changelog.md` records the changes since the previous tag under the target version and is included in the review before requesting commit approval. Do not describe an unpublished target tag as already installable.
 8. Save a review report containing scope, findings, Testo comparison, exact checks and outcomes, skipped checks, remaining release conditions, and a readiness recommendation. If code was fixed, include fixture names and observed red/green results. Present the report and documentation changes for user review before committing.
+
+Release review reports are local working artifacts and must not be committed.
+Save them outside the repository (for example, under /tmp), and present their
+findings in the work report. Do not add release-review files to git.

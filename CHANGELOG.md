@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.8.2
+
+### Added
+
+- Add opt-in TESTO027 (no-sleep), recommending polling or condition-based waiting
+  in Testo tests, hooks and inline callbacks. Default enablement is planned for 0.9.0.
+- Recognize t.Parallel() as TESTO025 header metadata.
+- Add regression fixtures, rule examples and documentation for these checks.
+- Keep local release review reports out of commits and ignore their filenames.
+
 ## 0.8.1
 
 ### Added

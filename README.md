@@ -5,7 +5,7 @@ It checks suite signatures, parameter providers, naming, suite execution, and
 conservative parallel lifecycle hazards, cleanup misuse, nil test callbacks,
 custom context/plugin construction errors and provider/plugin initialization
 misuse, plus optional Allure formatting, without running tests.
-Both the standalone CLI and golangci-lint integration run the same 26 rules.
+Both the standalone CLI and golangci-lint integration run the same 27 rules.
 Runtime semantics were checked against Testo v1.8.0; style integration was checked
 against Testo Allure v1.5.0.
 
@@ -101,7 +101,7 @@ The same installation and invocation commands work in CI.
 
 ## Rule configuration
 
-These settings are available in the current checkout for the unpublished 0.8.0;
+These settings are available since 0.8.0;
 older releases do not support them. Build the CLI and custom plugin locally using
 the instructions above.
 
@@ -170,7 +170,7 @@ are deduplicated.
 `correctness` covers Testo contract violations, missing execution and concrete
 lifecycle hazards. `policy` covers unused providers, possibly intentional nil
 suites and conservative shared-field ownership checks; it does not assert that
-every reported program fails. All 24 correctness/policy rules remain enabled by default.
+every reported program fails. The original 24 correctness/policy rules remain enabled by default; TESTO027 is opt-in.
 `style` covers source formatting; its two rules are disabled by default.
 Enable them with `-enable=TESTO025,TESTO026` and apply fixes with `-fix`.
 
@@ -204,6 +204,7 @@ The table is checked against the authoritative registry. See the
 | `TESTO023` | `provider-before-each` | correctness | enabled | A provider dereferences a fresh suite’s nil field before BeforeEach initializes it. |
 | `TESTO024` | `plugin-parent-nil` | correctness | enabled | A Plugin parent interface compared with nil cannot identify the suite root. |
 | `TESTO025` | `blank-after-header` | style | disabled | Separate initial Allure metadata from the test body with a blank line. |
+| `TESTO027` | `no-sleep` | policy | disabled | Avoid time.Sleep in Testo tests and hooks; use polling or condition-based waiting. |
 | `TESTO026` | `blank-between-steps` | style | disabled | Separate adjacent Allure Step statements with a blank line. |
 
 For `testo.Suite[T]`, tests have the form `TestX(t T)` or
@@ -649,3 +650,15 @@ standard `go/analysis` drivers.
 ## License
 
 [MIT](LICENSE).
+
+TESTO027 checks local valid Testo tests, lifecycle hooks and literal callbacks to
+`testo.Run`, `testo.RunTest` and `testo.Test`, including nested functions. It
+recognizes direct standard-library `time.Sleep` calls, including renamed and dot
+imports. Helpers, Cases providers, imported bodies and function-variable calls
+are outside its scope. No automatic replacement is offered.
+
+TESTO025 also accepts direct `t.Parallel()` on the original context as header
+metadata, alongside Allure metadata.
+
+TESTO027 is opt-in in 0.8.2 (`-enable=TESTO027`); default enablement is planned
+for 0.9.0.
