@@ -21,7 +21,7 @@ func report(p *analysis.Pass, id ruleID, diagnostic analysis.Diagnostic) {
 	if !ok {
 		panic(fmt.Sprintf("testolint: unknown diagnostic ID %q", id))
 	}
-	diagnostic.Message = string(id) + ": " + diagnostic.Message
+	diagnostic.Message = string(id) + ": " + diagnostic.Message + " (" + meta.DocURL + ")"
 	diagnostic.Category = string(id)
 	diagnostic.URL = meta.DocURL
 	p.Report(diagnostic)

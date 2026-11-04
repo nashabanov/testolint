@@ -12,7 +12,7 @@ import (
 
 func TestAnalyzer(t *testing.T) {
 	tests := []string{
-		"style", "no_sleep",
+		"style", "no_sleep", "message_links",
 		"config_selection", "config_reverse", "config_none",
 		"plugin_parent_nil",
 		"provider_before_each",
@@ -45,13 +45,6 @@ func TestAnalyzer(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt, func(t *testing.T) {
 			analyzer := Analyzer
-			if tt == "no_sleep" {
-				var err error
-				analyzer, err = New(Config{Enable: []string{"TESTO027"}})
-				if err != nil {
-					t.Fatal(err)
-				}
-			}
 			if tt == "style" {
 				var err error
 				analyzer, err = New(Config{Enable: []string{"TESTO025", "TESTO026"}})
@@ -228,7 +221,8 @@ func TestAnalyzer(t *testing.T) {
 					pass := *p
 					pass.Report = func(d analysis.Diagnostic) {
 						id, _, _ := strings.Cut(d.Message, ": ")
-						if d.Category != id || d.URL != registry[ruleID(id)].DocURL {
+						if d.Category != id || d.URL != registry[ruleID(id)].DocURL ||
+							!strings.HasSuffix(d.Message, " ("+d.URL+")") || strings.Count(d.Message, d.URL) != 1 || strings.Count(d.Message, id+": ") != 1 {
 							t.Errorf("diagnostic metadata: Category=%q URL=%q for %s", d.Category, d.URL, id)
 						}
 						p.Report(d)

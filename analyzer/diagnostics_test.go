@@ -18,7 +18,7 @@ func TestReport(t *testing.T) {
 	pass := &analysis.Pass{Report: func(d analysis.Diagnostic) { got = append(got, d) }}
 	report(pass, "TESTO004", original)
 	want := original
-	want.Message = "TESTO004: message"
+	want.Message = "TESTO004: message (https://github.com/nashabanov/testolint/blob/main/docs/rules/TESTO004.md)"
 	want.Category = "TESTO004"
 	want.URL = registry["TESTO004"].DocURL
 	if !reflect.DeepEqual(got, []analysis.Diagnostic{want}) {
@@ -28,7 +28,7 @@ func TestReport(t *testing.T) {
 		t.Fatal("input diagnostic mutated")
 	}
 	reportf(pass, "TESTO006", token.Pos(50), "unused %q", "provider")
-	if got[1].Message != `TESTO006: unused "provider"` || got[1].Category != "TESTO006" || got[1].URL != registry["TESTO006"].DocURL || got[1].Pos != 50 {
+	if got[1].Message != `TESTO006: unused "provider" (https://github.com/nashabanov/testolint/blob/main/docs/rules/TESTO006.md)` || got[1].Category != "TESTO006" || got[1].URL != registry["TESTO006"].DocURL || got[1].Pos != 50 {
 		t.Fatalf("reportf = %+v", got[1])
 	}
 }

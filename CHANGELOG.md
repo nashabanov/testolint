@@ -4,6 +4,17 @@
 
 ### Changed
 
+- Enable TESTO027 by default following the maintainer's project audit; document
+  CLI and plugin opt-out settings. TESTO025/026 remain opt-in.
+- Append a rule-specific documentation link to diagnostic messages and use the
+  same link in Diagnostic.URL, preserving IDs and structured report fields.
+- Move rule descriptions, examples, remedies and boundaries into 27 ID-based
+  documentation pages. Keep README and the old rule index as navigation entries.
+- Document the diagnostic/configuration contract, exit codes and 0.9.0 migration.
+- Add analyzer and real-Testo CLI/plugin regression coverage for links and sleep
+  defaults/opt-out, registry/documentation consistency checks, and verify repeated
+  style fixes leave source unchanged and the fixed real-Allure fixture runs.
+
 - Reuse pipeline suite models in TESTO027 without changing diagnostic order.
 - Skip analysis for empty rule selections and collect call facts/run models only
   for execution groups that consume them.

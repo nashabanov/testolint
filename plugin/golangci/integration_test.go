@@ -1,10 +1,12 @@
 package golangci_test
 
 import (
+	"bytes"
 	"errors"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 )
@@ -27,6 +29,12 @@ func TestIntegration(t *testing.T) {
 	var exitErr *exec.ExitError
 	if !errors.As(err, &exitErr) || exitErr.ExitCode() != 1 {
 		t.Fatalf("expected diagnostic exit code 1, got %v\n%s", err, output)
+	}
+	for _, match := range regexp.MustCompile(`(TESTO[0-9]{3}):[^\n]*`).FindAllStringSubmatch(string(output), -1) {
+		url := "https://github.com/nashabanov/testolint/blob/main/docs/rules/" + match[1] + ".md"
+		if strings.Count(match[0], url) != 1 || strings.Count(match[0], match[1]+":") != 1 {
+			t.Errorf("invalid diagnostic link: %s", match[0])
+		}
 	}
 	for _, diagnostic := range []struct {
 		id    string
@@ -228,7 +236,62 @@ func TestIntegrationStyle(t *testing.T) {
 				if out, err := run(false); err != nil || strings.Contains(out, "TESTO") {
 					t.Fatalf("after fix: %v\n%s", err, out)
 				}
+				source := filepath.Join(dir, "testdata", "style", "suite_test.go")
+				before, err := os.ReadFile(source)
+				if err != nil {
+					t.Fatal(err)
+				}
+				if out, err := run(true); err != nil {
+					t.Fatalf("second fix: %v\n%s", err, out)
+				}
+				after, err := os.ReadFile(source)
+				if err != nil {
+					t.Fatal(err)
+				}
+				if !bytes.Equal(before, after) {
+					t.Fatal("second fix changed source")
+				}
+				verify := exec.Command("go", "test", "./...", "-count=1")
+				verify.Dir = filepath.Dir(source)
+				if out, err := verify.CombinedOutput(); err != nil {
+					t.Fatalf("fixed runtime fixture: %v\n%s", err, out)
+				}
+
 			}
 		})
+	}
+}
+
+func TestIntegrationSleep(t *testing.T) {
+	binary := os.Getenv("TESTOLINT_GOLANGCI_BINARY")
+	if binary == "" {
+		t.Skip("set TESTOLINT_GOLANGCI_BINARY")
+	}
+	binary, err := filepath.Abs(binary)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, disabled := range []bool{false, true} {
+		config := "version: \"2\"\nlinters:\n  default: none\n  enable: [testolint]\n  settings:\n    custom:\n      testolint:\n        type: module\n"
+		if disabled {
+			config += "        settings:\n          disable: [TESTO027]\n"
+		}
+		path := filepath.Join(t.TempDir(), "config.yml")
+		if err := os.WriteFile(path, []byte(config), 0600); err != nil {
+			t.Fatal(err)
+		}
+		cmd := exec.Command(binary, "run", "--config", path, "./testdata/sleep")
+		cmd.Dir = "testdata/integration"
+		out, err := cmd.CombinedOutput()
+		if disabled {
+			if err != nil {
+				t.Fatalf("disabled: %v\n%s", err, out)
+			}
+			continue
+		}
+		var exit *exec.ExitError
+		if !errors.As(err, &exit) || exit.ExitCode() != 1 || strings.Count(string(out), "TESTO027:") != 1 || strings.Count(string(out), "(https://github.com/nashabanov/testolint/blob/main/docs/rules/TESTO027.md)") != 1 {
+			t.Fatalf("default: %v\n%s", err, out)
+		}
 	}
 }

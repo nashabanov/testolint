@@ -25,6 +25,8 @@ func TestCLI(t *testing.T) {
 		code, diagnostics int
 		flags             []string
 	}{
+		{"sleep-default", "./testdata/sleep", []string{"TESTO027:", "(https://github.com/nashabanov/testolint/blob/main/docs/rules/TESTO027.md)"}, 3, 1, nil},
+		{"sleep-disabled", "./testdata/sleep", nil, 0, 0, []string{"-disable=TESTO027"}},
 		{"clean", "./clean", nil, 0, 0, nil},
 		{"diagnostic", ".", []string{
 			"suite_test.go:8:14: TESTO001:",
@@ -67,6 +69,12 @@ func TestCLI(t *testing.T) {
 			}
 			if code != tc.code || len(tc.want) == 0 && len(out) != 0 {
 				t.Fatalf("exit=%d, want %d; output:\n%s", code, tc.code, out)
+			}
+			for _, match := range regexp.MustCompile(`(TESTO[0-9]{3}):[^\n]*`).FindAllStringSubmatch(string(out), -1) {
+				url := "https://github.com/nashabanov/testolint/blob/main/docs/rules/" + match[1] + ".md"
+				if strings.Count(match[0], url) != 1 || strings.Count(match[0], match[1]+":") != 1 {
+					t.Errorf("invalid diagnostic link: %s", match[0])
+				}
 			}
 			for _, want := range tc.want {
 				if !strings.Contains(string(out), want) {

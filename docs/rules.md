@@ -10,340 +10,112 @@ Examples are replacement fragments, not complete packages. Assume `T` aliases
 exist where used. “Valid” means valid for the illustrated rule. Runtime plugins,
 filtering and code outside the supported static patterns can change execution;
 these checks do not execute tests. The README's
-[limitations](../README.md#scope-and-limitations) describe the complete analysis boundaries.
+[limitations](analysis-scope.md) describe the complete analysis boundaries.
 
 ## TESTO001
 
-Violation: `func (S) TestValue() {}`.
-Valid: `func (S) TestValue(t T) {}`.
-
-Match the suite's exact T, optionally add a struct parameter, and return no
-values. Named structs and aliases are supported; unrelated T types are rejected.
-Invalid signatures suppress dependent parameter diagnostics.
+[test-signature — description, examples, remedies and limitations](rules/TESTO001.md)
 
 ## TESTO002
 
-Violation: `func (S) BeforeEach() {}`.
-Valid: `func (S) BeforeEach(t T) {}`.
-
-Use exactly one T parameter and no results for each lifecycle hook. Promoted
-methods are checked through the suite method set. Signature validity does not
-establish that an arbitrary hook body can be analyzed by lifecycle rules.
+[hook-signature — description, examples, remedies and limitations](rules/TESTO002.md)
 
 ## TESTO003
 
-Violation: `TestValue(t T, p struct{ Age int })` with no `CasesAge` method.
-Valid: add `func (S) CasesAge() []int { return []int{18} }`.
-
-Provide cases for each exported parameter field, matching the field name rather
-than the test name. Invalid test signatures and unexported fields suppress this
-check; a malformed existing provider is handled by its own signature check.
+[missing-case-provider — description, examples, remedies and limitations](rules/TESTO003.md)
 
 ## TESTO004
 
-Violation: an `Age int` parameter field with `CasesAge() []string`.
-Valid: `func (S) CasesAge() []int { return []int{18} }`.
-
-Return elements assignable to the field type under Go's assignability rules.
-For example, `[]int` can supply an `any` field. Invalid provider signatures and
-unexported parameter fields suppress this diagnostic.
+[case-type-mismatch — description, examples, remedies and limitations](rules/TESTO004.md)
 
 ## TESTO005
 
-Violation: `func (S) CasesAge(n int) []int { return []int{n} }`.
-Valid: `func (S) CasesAge() []int { return []int{18} }`.
-
-Providers take no arguments and return exactly one slice; named slices are
-supported. Methods not recognized as providers are handled by naming rules.
-Fix the signature before relying on provider type or emptiness diagnostics.
+[cases-signature — description, examples, remedies and limitations](rules/TESTO005.md)
 
 ## TESTO006
 
-Violation: `CasesUnused() []int` when no test parameter has an `Unused` field.
-Valid: remove the provider, or use `TestValue(t T, p struct{ Unused int })`.
-
-This is policy: Testo permits unused providers. Keep intentional providers by
-disabling TESTO006. Matching follows recognized test parameters, not arbitrary
-references to the provider method; invalid test signatures are not valid uses.
+[orphan-cases-provider — description, examples, remedies and limitations](rules/TESTO006.md)
 
 ## TESTO007
 
-Violation: `func (S) Testlower(t T) {}`.
-Valid: `func (S) TestLower(t T) {}`.
-
-Rename the method so the suffix after `Test` is empty or starts with a
-non-lowercase Unicode rune. This mirrors Testo's name validation, not an
-ASCII-only or uppercase-only convention. Unrelated methods are ignored.
+[test-name — description, examples, remedies and limitations](rules/TESTO007.md)
 
 ## TESTO008
 
-Violation: `func (S) Casesage() []int { return []int{18} }`.
-Valid: `func (S) CasesAge() []int { return []int{18} }` with a matching parameter.
-
-Apply Testo's non-lowercase suffix rule after `Cases`. Unicode is supported;
-the method named exactly `Cases` is ignored by Testo and by this check. A
-well-named provider can still have an invalid signature or be unused.
+[cases-name — description, examples, remedies and limitations](rules/TESTO008.md)
 
 ## TESTO009
 
-Violation: `TestValue(t T, p struct{ age int })`.
-Valid: `TestValue(t T, p struct{ Age int })` with a matching `CasesAge` provider.
-
-Export parameter fields so reflection can set them. Named structs are supported.
-The same unexported field does not also receive missing-provider or provider-type
-diagnostics. Invalid test signatures are handled first.
+[unexported-param-field — description, examples, remedies and limitations](rules/TESTO009.md)
 
 ## TESTO010
 
-Violation: `func (S) CasesAge() []int { return nil }` for a used provider.
-Valid: `func (S) CasesAge() []int { return []int{18} }`.
-
-Supply at least one case when the parameterized test should execute. Testo warns
-and skips the affected test for an empty case set; this is not a guaranteed
-runtime failure. Only supported single-return bodies prove emptiness: nil,
-empty slice literals and built-in make with proven zero length and valid capacity.
-Imported or more complex bodies are not inferred.
+[empty-cases — description, examples, remedies and limitations](rules/TESTO010.md)
 
 ## TESTO011
 
-Violation: `type S struct{ testo.Suite[T] }` with no recognized tests.
-Valid: add `func (S) TestValue(t T) {}`.
-
-Add a test or remove the unused suite. Hooks and providers alone do not run tests;
-Testo warns for an empty suite. Promoted tests count, and naming recognition is
-separate from signature validity: TESTO001 handles a recognized but invalid test.
+[empty-suite — description, examples, remedies and limitations](rules/TESTO011.md)
 
 ## TESTO012
 
-Violation: `testo.RunSuite(t, (*S)(nil))`.
-Valid: `testo.RunSuite(t, &S{})`.
-
-Pass an initialized suite. This policy includes intentionally nil-safe pointer
-suites, so a diagnostic is not a claim of an inevitable panic. Explicit and
-unchanged local nil pointers are supported; interface boxing and
-control-flow-dependent nilness are not inferred. Disable the rule when nil-safe
-suite execution is intentional.
+[nil-suite — description, examples, remedies and limitations](rules/TESTO012.md)
 
 ## TESTO013
 
-Violation in `BeforeAll`: `testo.RunSubSuite(t, s)` on the current receiver.
-Valid: `testo.RunSubSuite(t, &ChildSuite{})` for a separate child suite.
-
-Avoid directly collecting the same receiver recursively. Analysis covers
-BeforeAll and a sole regular test under documented default-hook conditions;
-arbitrary recursion graphs and different instances are not reported. Runtime
-filtering can stop execution, so the check does not guarantee infinite recursion.
+[recursive-subsuite — description, examples, remedies and limitations](rules/TESTO013.md)
 
 ## TESTO014
 
-With `BeforeEach` assigning `s.value` and another possible execution overwriting
-it, a Violation is:
-
-```go
-t.Parallel()
-t.Log(s.value)
-```
-
-Valid replacement:
-
-```go
-value := s.value
-t.Parallel()
-t.Log(value)
-```
-
-Capture the per-execution value before suspension. This ownership policy requires
-a proven local overwrite path, not merely a Parallel call. Unknown accesses can
-suppress the proof. Cleanup and stored-context hazards retain TESTO015/016
-ownership even when those diagnostics are disabled.
+[shared-before-each-write — description, examples, remedies and limitations](rules/TESTO014.md)
 
 ## TESTO015
 
-Violation for a replaceable BeforeEach field:
-`t.Cleanup(func() { t.Log(s.value) })` after parallel suspension.
-
-Valid: capture `value := s.value` before suspension, then register
-`t.Cleanup(func() { t.Log(value) })`.
-
-Capture the resource itself rather than re-reading shared receiver storage.
-This conservative ownership policy uses understood direct lifecycle operations;
-it does not analyze arbitrary closures or prove deep ownership. Stored T fields
-belong to TESTO016, and this check suppresses related TESTO014 reports.
+[shared-fixture-cleanup — description, examples, remedies and limitations](rules/TESTO015.md)
 
 ## TESTO016
 
-Violation: BeforeEach stores `s.ctx = t`, then a parallel test uses
-`s.ctx.Log("value")` after another execution can overwrite `s.ctx`.
-Valid: use the current test's `t.Log("value")` directly.
-
-Pass the current context explicitly, or capture it locally before suspension.
-This ownership policy checks direct shared fields with a proven local overwrite;
-it does not infer arbitrary context aliases, asynchronous ownership or
-plugin-defined scheduling.
+[shared-test-context — description, examples, remedies and limitations](rules/TESTO016.md)
 
 ## TESTO017
 
-Violation: `t.Parallel(); t.Parallel()` on a known lifecycle/test path.
-Valid: call `t.Parallel()` once across BeforeEach, the test and AfterEach.
-
-Remove the duplicate call at its owning stage. The rule considers understood
-paths and context identity under default Testo behavior; unsupported operations
-can block later proofs without erasing duplicates already established. Parallel
-calls on distinct contexts are not duplicates.
+[duplicate-parallel-lifecycle — description, examples, remedies and limitations](rules/TESTO017.md)
 
 ## TESTO018
 
-Violation: `t.Cleanup(func() { testo.Run(t, "child", nil) })`.
-Valid: call `testo.Run(t, "child", nil)` before registering cleanup.
-
-Start subtests before cleanup; use Cleanup for resource release. Nil is a valid
-callback for Run and is not the error here. Only supported direct calls on the
-unchanged cleanup context are checked; overridden Cleanup implementations and
-unknown registration graphs are outside the proof.
+[run-during-cleanup — description, examples, remedies and limitations](rules/TESTO018.md)
 
 ## TESTO019
 
-Violation: `testo.RunTest[T](t, nil)`.
-Valid: `testo.RunTest(t, func(t T) {})`.
-
-Supply a non-nil function, including for an intentionally empty test. The rule
-also checks immediately executed Test adapters and direct testing.T.Run use.
-Stored adapters, unknown callbacks and reassigned or escaped locals are not
-inferred. `testo.Run(t, "child", nil)` remains valid.
+[nil-callback — description, examples, remedies and limitations](rules/TESTO019.md)
 
 ## TESTO020
 
-Violation: AfterEach does `_ = s.file.Close()` before a parallel child calls
-`s.file.Stat()` on the same file.
-Valid replacement in AfterEach:
-
-```go
-file := s.file
-t.Cleanup(func() { _ = file.Close() })
-```
-
-Defer resource release until children finish, or keep the child serial. The
-proof is restricted to os.File Read/Write/Stat, one regular test and supported
-direct lifecycle bodies; arbitrary Close-like methods are not modeled. Ignoring
-an I/O error does not necessarily fail the test, but the file is already closed.
+[premature-teardown — description, examples, remedies and limitations](rules/TESTO020.md)
 
 ## TESTO021
 
-Violation in an executed custom context: `type C struct { *testo.T; Count int }`.
-Valid: `type C struct { *testo.T; Count *int }`.
-
-Use pointer fields for exported values reached by Testo initialization. Traversal
-starts at recognized execution roots and includes supported imported and generic
-types; unused contexts and container contents are not arbitrary roots. Cycles
-and unknown type parameters suppress dependent field diagnostics even when
-TESTO022 is disabled.
+[construction-field — description, examples, remedies and limitations](rules/TESTO021.md)
 
 ## TESTO022
 
-Violation: an executed context embeds `*Node` where
-`type Node struct { Next *Node }`.
-Valid: remove the initialization cycle, for example
-`type Node struct { Value *int }`.
-
-Use an acyclic structure for Testo's automatic initialization. The check follows
-active-path types; the same leaf type in independent branches is valid.
-Inaccessible fields, container contents and unknown traversed type parameters
-are not treated as definite cycles. Cycles take precedence over TESTO021.
+[construction-cycle — description, examples, remedies and limitations](rules/TESTO022.md)
 
 ## TESTO023
 
-Violation: `BeforeEach` initializes `s.value`, but collection first runs
-`func (s *S) CasesAge() []int { return []int{*s.value} }` on a fresh suite.
-Valid: move the necessary allocation into a supported `BeforeAll` path, or
-initialize the field in the suite passed to RunSuite.
-
-Initialize provider dependencies before collection, not only before each test.
-The rule requires a proven fresh nil field, a supported direct BeforeEach
-allocation, one provider and valid collection signatures. Constructors, earlier
-provider setup, BeforeAll setup, unknown histories and dynamic providers are
-preserved rather than guessed.
+[provider-before-each — description, examples, remedies and limitations](rules/TESTO023.md)
 
 ## TESTO024
 
-Violation inside a reached Plugin implementation: `if parent == nil { ... }`.
-Valid for the plugin's own concrete type `MyPlugin`:
-
-```go
-previous, _ := parent.(*MyPlugin)
-if previous == nil {
-    // Root initialization, or a different parent plugin type.
-}
-```
-
-Testo supplies a typed nil at the root, so the parent interface itself is non-nil.
-Assert the expected concrete type before comparing its pointer. The rule checks
-supported local implementations reached from valid construction roots; it skips
-reassigned/address-taken parameters, explicit local method references and unknown
-graphs. Manual Plugin calls may legitimately pass a nil interface. A diagnostic
-does not prove that the branch will fail a test.
+[plugin-parent-nil — description, examples, remedies and limitations](rules/TESTO024.md)
 
 ## TESTO025
 
-For the style examples, `T` is a custom Testo context embedding
-`*allure.PluginAllure` from `github.com/ozontech/testo-allure`.
-
-`blank-after-header` (style, disabled by default) requires a blank line after
-initial Allure metadata. Enable with `-enable=TESTO025`; use `-fix` to insert it.
-
-Violation:
-
-```go
-func (*Suite) TestOrder(t T) {
-    t.Title("Order")
-    t.Tags("smoke")
-    allure.Step(t, "create", func(T) {})
-}
-```
-
-Valid:
-
-```go
-func (*Suite) TestOrder(t T) {
-    t.Title("Order")
-    t.Tags("smoke")
-
-    allure.Step(t, "create", func(T) {})
-}
-```
-
-A metadata-only body needs no separator. Only metadata on the original test
-context is recognized; see README for the supported methods and limitations.
+[blank-after-header — description, examples, remedies and limitations](rules/TESTO025.md)
 
 ## TESTO026
 
-`blank-between-steps` (style, disabled by default) separates adjacent
-`github.com/ozontech/testo-allure.Step` statements in the same block.
-Enable with `-enable=TESTO026`; use `-fix` to insert separators.
-
-Violation:
-
-```go
-func (*Suite) TestOrder(t T) {
-    allure.Step(t, "create", func(T) {})
-    allure.Step(t, "check", func(T) {})
-}
-```
-
-Valid:
-
-```go
-func (*Suite) TestOrder(t T) {
-    allure.Step(t, "create", func(T) {})
-
-    allure.Step(t, "check", func(T) {})
-}
-```
-
-Nested blocks and callbacks are checked. Other statements break adjacency.
-Comments do not substitute for a blank line; fixes preserve their placement.
+[blank-between-steps — description, examples, remedies and limitations](rules/TESTO026.md)
 
 ## TESTO027
 
-Violation: `time.Sleep(time.Second)` in a Testo test.
-
-Valid: poll the expected condition with a deadline.
+[no-sleep — description, examples, remedies and limitations](rules/TESTO027.md)

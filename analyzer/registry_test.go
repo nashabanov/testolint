@@ -46,7 +46,7 @@ func TestRegistry(t *testing.T) {
 		t.Fatal(err)
 	}
 	documented := make(map[ruleID]bool)
-	for _, match := range regexp.MustCompile("(?m)^\\| `([A-Z]+[0-9]+)` ").FindAllSubmatch(readme, -1) {
+	for _, match := range regexp.MustCompile("(?m)^\\| \\[`([A-Z]+[0-9]+)`\\]").FindAllSubmatch(readme, -1) {
 		documented[ruleID(match[1])] = true
 	}
 	examples, err := os.ReadFile("../docs/rules.md")
@@ -61,19 +61,19 @@ func TestRegistry(t *testing.T) {
 		if meta.EnableByDefault {
 			defaultState = "enabled"
 		}
-		row := fmt.Sprintf("| `%s` | `%s` | %s | %s |", id, meta.Name, meta.Class, defaultState)
+		row := fmt.Sprintf("| [`%s`](docs/rules/%s.md) | `%s` | %s | %s |", id, id, meta.Name, meta.Class, defaultState)
 		if !strings.Contains(string(readme), row) {
 			t.Errorf("documentation metadata differs from registry: %s", id)
 		}
-		heading := "## " + string(id) + "\n"
-		_, section, ok := strings.Cut(string(examples), heading)
-		if !ok {
-			t.Errorf("missing rule examples: %s", id)
-		} else {
-			section, _, _ = strings.Cut(section, "\n## ")
-			if !strings.Contains(section, "Violation") || !strings.Contains(section, "Valid") {
-				t.Errorf("missing violation/valid example: %s", id)
-			}
+		page, err := os.ReadFile("../docs/rules/" + string(id) + ".md")
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !strings.Contains(string(page), "Violation") || !strings.Contains(string(page), "Valid") {
+			t.Errorf("missing examples: %s", id)
+		}
+		if !strings.Contains(string(examples), "rules/"+string(id)+".md") {
+			t.Errorf("missing index link: %s", id)
 		}
 		if !documented[id] {
 			t.Errorf("undocumented rule: %s", id)
@@ -86,10 +86,10 @@ func TestRegistry(t *testing.T) {
 		if meta.Class != correctness && meta.Class != policy && meta.Class != style {
 			t.Errorf("invalid class: %s", id)
 		}
-		if meta.EnableByDefault != (id != "TESTO025" && id != "TESTO026" && id != "TESTO027") {
+		if meta.EnableByDefault != (id != "TESTO025" && id != "TESTO026") {
 			t.Errorf("unexpected default enablement: %s", id)
 		}
-		if meta.DocURL != ruleDocURL {
+		if meta.DocURL != "https://github.com/nashabanov/testolint/blob/main/docs/rules/"+string(id)+".md" {
 			t.Errorf("invalid documentation URL: %s", id)
 		}
 	}
@@ -127,6 +127,34 @@ func TestRegistry(t *testing.T) {
 	for id := range registered {
 		if !emitted[id] {
 			t.Errorf("registered diagnostic has no implementation: %s", id)
+		}
+	}
+}
+
+// Published navigation entry points must continue to reach the per-rule pages.
+func TestDocumentationLinks(t *testing.T) {
+	files, err := filepath.Glob("../docs/rules/*.md")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(files) != len(registry) {
+		t.Fatalf("rule pages=%d, registry=%d", len(files), len(registry))
+	}
+	files = append(files, "../README.md", "../docs/rules.md", "../docs/contract.md", "../docs/analysis-scope.md")
+	for _, file := range files {
+		source, err := os.ReadFile(file)
+		if err != nil {
+			t.Fatal(err)
+		}
+		prose := regexp.MustCompile("(?s)```.*?```|`[^`]*`").ReplaceAllString(string(source), "")
+		for _, match := range regexp.MustCompile(`\[[^\]]*\]\(([^)]+)\)`).FindAllStringSubmatch(prose, -1) {
+			link, _, _ := strings.Cut(match[1], "#")
+			if link == "" || strings.Contains(link, "://") {
+				continue
+			}
+			if _, err := os.Stat(filepath.Join(filepath.Dir(file), link)); err != nil {
+				t.Errorf("%s: broken link %s: %v", file, link, err)
+			}
 		}
 	}
 }

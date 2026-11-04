@@ -29,7 +29,7 @@ broader compatibility must be verified before it is claimed.
 
 ## v0.9.0 — Hardening, architecture and compatibility
 
-**Status: planned.** Stabilize the existing 27 rules and gather the evidence
+**Status: in progress.** Stabilize the existing 27 rules and gather the evidence
 needed for v1.0.0. New rules, broader discovery and a new analysis framework are
 outside the required scope. Execute the following stages in order; documentation
 and compatibility work may proceed alongside corpus investigation once the
@@ -96,6 +96,11 @@ comparisons. Do not introduce a universal dependency graph, SSA, a public rules
 framework or package reorganization solely for hypothetical future needs.
 
 ### 4. Define the user-facing contract
+
+Implementation is complete, pending release review. TESTO027 is
+enabled by default based on the maintainer-reported project audit. See the
+[contract and migration notes](docs/contract.md) and [rule index](docs/rules.md).
+This does not establish completion of the full baseline or release review.
 
 - Document guarantees for IDs, names, classification, configuration validation,
   precedence, defaults, CLI exit codes, Category, URLs and SuggestedFixes.
