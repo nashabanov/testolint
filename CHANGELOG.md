@@ -1,6 +1,21 @@
 # Changelog
 
-## 0.9.0 (Unreleased)
+## 0.9.0
+
+### Fixed
+
+- Skip malformed test names in TESTO027 instead of treating them as hooks and
+  cascading after TESTO007. Add analyzer and real-Testo CLI/plugin regression
+  coverage, including sleep-only selection and runtime rejection by Testo.
+
+### Verification and documentation
+
+- Publish the verified Go/Testo/Allure/custom-plugin compatibility combination,
+  distinguishing minimum build requirements from verified versions.
+- Run uncached root and real-Testo clean tests, module tidy diff and module
+  verification explicitly in CI.
+- Remove the roadmap; retain supported behavior and compatibility in the rule
+  documentation and README.
 
 ### Changed
 

@@ -16,9 +16,11 @@ jobs:
         with:
           version: v2.14.0
       - run: make test
+      - run: go test ./... -count=1
       - run: go vet ./...
-      - run: go mod tidy && git diff --exit-code
+      - run: go mod tidy -diff
+      - run: go mod verify
       - run: golangci-lint custom -v
       - run: TESTOLINT_GOLANGCI_BINARY="$PWD/bin/golangci-lint" go test ./plugin/golangci -run '^TestIntegration' -count=1 -v
-      - run: go test ./clean
+      - run: go test ./clean -count=1
         working-directory: plugin/golangci/testdata/integration

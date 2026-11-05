@@ -45,7 +45,7 @@ func checkSleepSuite(p *analysis.Pass, s *suite) {
 			if sig.Params().Len() > 2 || (sig.Params().Len() == 2 && !isStructType(sig.Params().At(1).Type())) {
 				continue
 			}
-		} else if sig.Params().Len() != 1 {
+		} else if !isHookMethod(m.fn.Name()) || sig.Params().Len() != 1 {
 			continue
 		}
 		checkSleepBody(p, m.decl.Body)

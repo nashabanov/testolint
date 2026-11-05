@@ -284,13 +284,14 @@ func TestIntegrationSleep(t *testing.T) {
 		cmd.Dir = "testdata/integration"
 		out, err := cmd.CombinedOutput()
 		if disabled {
-			if err != nil {
+			var exit *exec.ExitError
+			if !errors.As(err, &exit) || exit.ExitCode() != 1 || strings.Count(string(out), "TESTO007:") != 1 || strings.Contains(string(out), "TESTO027:") {
 				t.Fatalf("disabled: %v\n%s", err, out)
 			}
 			continue
 		}
 		var exit *exec.ExitError
-		if !errors.As(err, &exit) || exit.ExitCode() != 1 || strings.Count(string(out), "TESTO027:") != 1 || strings.Count(string(out), "(https://github.com/nashabanov/testolint/blob/main/docs/rules/TESTO027.md)") != 1 {
+		if !errors.As(err, &exit) || exit.ExitCode() != 1 || strings.Count(string(out), "TESTO007:") != 1 || strings.Count(string(out), "TESTO027:") != 1 || strings.Count(string(out), "(https://github.com/nashabanov/testolint/blob/main/docs/rules/TESTO027.md)") != 1 {
 			t.Fatalf("default: %v\n%s", err, out)
 		}
 	}

@@ -11,7 +11,19 @@ against Testo Allure v1.5.0.
 
 ## Installation
 
-Requires Go 1.27.1 or newer. Installation examples use the latest published release.
+The module requires at least Go 1.27.1. Installation examples use the latest published release.
+
+### Verified compatibility
+
+The 0.9.0 checkout is verified with this combination:
+
+| Go | Testo | Testo Allure | Custom golangci-lint |
+| --- | --- | --- | --- |
+| 1.27.1 | 1.8.0 | 1.5.0 | 2.14.0 |
+
+CI uses this combination for the CLI, freshly built plugin and real-Testo/Allure
+integration checks. The minimum build requirement does not imply verification
+of every newer dependency or toolchain version. Other combinations are unverified.
 
 ### Standalone
 
@@ -175,7 +187,8 @@ and TESTO026 remain opt-in. Diagnostic messages now end with a rule-specific
 link: `TESTOxxx: message (https://github.com/nashabanov/testolint/blob/main/docs/rules/TESTOxxx.md)`.
 Update exact-message snapshots; the ID prefix remains unchanged and `Category`
 remains the ID. The structured `URL` now points to the same rule page.
-Version 0.9.0 is unreleased; build this checkout to use these changes.
+TESTO027 skips malformed test names: TESTO007 owns those diagnostics, even when
+TESTO007 is disabled. Valid tests and lifecycle hooks remain checked for sleep.
 
 ## Rules
 

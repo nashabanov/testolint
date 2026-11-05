@@ -23,3 +23,9 @@ func (*S) AfterAll(t *testo.T)  { time.Sleep(0) }              // want "TESTO027
 type Other struct{}
 
 func (Other) TestOther(t *testo.T) { time.Sleep(0) }
+
+// Invalid test names must not fall through to hook validation.
+func (*S) Testfoo(t *testo.T)            { time.Sleep(0) } // want "TESTO007"
+func (S) Testbar(t *testo.T)             { time.Sleep(0) } // want "TESTO007"
+func (*S) Test(t *testo.T)               { time.Sleep(0) } // want "TESTO027"
+func (*S) TestInvalid(t *testo.T, n int) { time.Sleep(0) } // want "TESTO001"

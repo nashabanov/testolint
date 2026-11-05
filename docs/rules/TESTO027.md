@@ -14,6 +14,10 @@ recognizes direct standard-library `time.Sleep` calls, including renamed and dot
 imports. Helpers, Cases providers, imported bodies and function-variable calls
 are outside its scope. No automatic replacement is offered.
 
+Malformed test names (such as `Testfoo`) are handled by TESTO007 and do not
+produce TESTO027, even when TESTO007 is disabled. Invalid test/hook signatures
+are also excluded from this check.
+
 Enabled by default since 0.9.0; disable with `-disable=TESTO027` or plugin
 `settings: {disable: [TESTO027]}`. This is policy, not proof of a runtime failure.
 

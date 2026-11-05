@@ -25,8 +25,9 @@ func TestCLI(t *testing.T) {
 		code, diagnostics int
 		flags             []string
 	}{
-		{"sleep-default", "./testdata/sleep", []string{"TESTO027:", "(https://github.com/nashabanov/testolint/blob/main/docs/rules/TESTO027.md)"}, 3, 1, nil},
-		{"sleep-disabled", "./testdata/sleep", nil, 0, 0, []string{"-disable=TESTO027"}},
+		{"sleep-default", "./testdata/sleep", []string{"TESTO007:", "TESTO027:", "(https://github.com/nashabanov/testolint/blob/main/docs/rules/TESTO027.md)"}, 3, 2, nil},
+		{"sleep-disabled", "./testdata/sleep", []string{"TESTO007:"}, 3, 1, []string{"-disable=TESTO027"}},
+		{"sleep-only", "./testdata/sleep", []string{"TESTO027:"}, 3, 1, []string{"-disable-all", "-enable=TESTO027"}},
 		{"clean", "./clean", nil, 0, 0, nil},
 		{"diagnostic", ".", []string{
 			"suite_test.go:8:14: TESTO001:",
