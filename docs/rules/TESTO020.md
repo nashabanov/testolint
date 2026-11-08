@@ -4,6 +4,10 @@ correctness; enabled by default.
 
 AfterEach closes an `*os.File` before a parallel child uses the same file.
 
+Examples use a suite embedding `testo.Suite[*testo.T]`; `t` is the
+current Testo context and `s` is the suite receiver. Other fields and helpers
+are omitted where they do not affect the illustrated rule.
+
 Violation: AfterEach does `_ = s.file.Close()` before a parallel child calls
 `s.file.Stat()` on the same file.
 Valid replacement in AfterEach:
@@ -12,11 +16,6 @@ Valid replacement in AfterEach:
 file := s.file
 t.Cleanup(func() { _ = file.Close() })
 ```
-
-Defer resource release until children finish, or keep the child serial. The
-proof is restricted to os.File Read/Write/Stat, one regular test and supported
-direct lifecycle bodies; arbitrary Close-like methods are not modeled. Ignoring
-an I/O error does not necessarily fail the test, but the file is already closed.
 
 TESTO020 detects premature teardown of an `*os.File`: AfterEach calls Close
 before a parallel child resumes and calls Read, Write or Stat on the same direct
@@ -38,7 +37,7 @@ func (s *Suite) AfterEach(t *testo.T) {
 }
 ```
 
-### Analysis boundaries
+## Analysis boundaries
 
 - TESTO020 requires one regular test, no case providers, standard `*testo.T`,
   default BeforeAll/BeforeEach/AfterAll, and local non-promoted test/AfterEach
@@ -55,4 +54,4 @@ func (s *Suite) AfterEach(t *testo.T) {
   assumes no external mutation of the suite field or custom runtime scheduling.
   It is a narrow file-lifetime check, not general resource or race analysis.
 
-[Rule index](../rules.md) · [Configuration](../../README.md#rule-configuration) · [Shared scope](../analysis-scope.md)
+[Rule index](../rules.md) · [Configuration](../configuration.md) · [Shared scope](../analysis-scope.md)

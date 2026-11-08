@@ -1,10 +1,10 @@
 # Shared analysis scope
 
-`testo.Options` intentionally appends process-global configuration for later
-suite initializations. It does not update an existing context's option snapshot.
-Registration from a running test can deliberately configure a later RunSubSuite
-or RunTest; it is not diagnosed. A global-options policy remains deferred and
-is not included in the rule count.
+These checks inspect supported source patterns without running tests. No SSA or
+interprocedural analysis is used. Rule pages describe narrower boundaries;
+a clean result is not proof of race freedom.
+
+## Suite discovery
 
 - Suite discovery uses Testo v1.8.0's private marker and recognizes package-level
   named structs embedding `testo.Suite[T]` directly or indirectly, including
@@ -15,13 +15,13 @@ is not included in the rule count.
   methods, respecting Go shadowing and ambiguity. Local diagnostics point to
   methods or fields; imported-method diagnostics point to the local suite type.
 
+## Run discovery
+
 - Run discovery uses Go types and supports import aliases, inferred/explicit
   generics and unchanged direct local function aliases. Globals, alias chains
   and wrappers are not resolved.
 
-- Other lifecycle checks, plugin hooks and broader provider logic are outside
-  this release's scope. No SSA or
-  interprocedural analysis is used.
+## Context and plugin construction
 
 - Construction follows pointers (including named pointers) and exported struct
   fields. Fill also traverses exported value structs, so their cycles can take
@@ -67,3 +67,9 @@ same position are emitted once. Independent problems may still produce multiple
 messages. Rule selection is available in both integrations; source-level
 suppression is not implemented.
 
+## Global options
+
+`testo.Options` intentionally appends process-global configuration for later
+suite initializations. It does not update an existing context's option snapshot.
+Registration from a running test can deliberately configure a later RunSubSuite
+or RunTest; it is not diagnosed.

@@ -4,6 +4,8 @@ policy; enabled by default.
 
 Policy: providers should be referenced by a test parameter; Testo permits unused providers.
 
+Examples use `T = *testo.T` and a suite `S` embedding `testo.Suite[T]`.
+
 Violation: `CasesUnused() []int` when no test parameter has an `Unused` field.
 Valid: remove the provider, or use `TestValue(t T, p struct{ Unused int })`.
 
@@ -11,4 +13,4 @@ This is policy: Testo permits unused providers. Keep intentional providers by
 disabling TESTO006. Matching follows recognized test parameters, not arbitrary
 references to the provider method; invalid test signatures are not valid uses.
 
-[Rule index](../rules.md) · [Configuration](../../README.md#rule-configuration) · [Shared scope](../analysis-scope.md)
+[Rule index](../rules.md) · [Configuration](../configuration.md) · [Shared scope](../analysis-scope.md)

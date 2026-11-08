@@ -6,7 +6,20 @@ Avoid time.Sleep in Testo tests and hooks; use polling or condition-based waitin
 
 Violation: `time.Sleep(time.Second)` in a Testo test.
 
-Valid: poll the expected condition with a deadline.
+Valid: wait for an explicit completion signal with a timeout. In this fragment,
+`done` is a channel closed by the operation when it finishes; `t` is the Testo context.
+
+```go
+select {
+case <-done:
+    // The operation completed; check its result.
+case <-time.After(time.Second):
+    t.Fatal("operation did not complete within one second")
+}
+```
+
+When no completion signal is available, poll the expected condition with a
+bounded timeout instead of assuming a fixed sleep is long enough.
 
 TESTO027 checks local valid Testo tests, lifecycle hooks and literal callbacks to
 `testo.Run`, `testo.RunTest` and `testo.Test`, including nested functions. It
@@ -21,4 +34,4 @@ are also excluded from this check.
 Enabled by default since 0.9.0; disable with `-disable=TESTO027` or plugin
 `settings: {disable: [TESTO027]}`. This is policy, not proof of a runtime failure.
 
-[Rule index](../rules.md) · [Configuration](../../README.md#rule-configuration) · [Shared scope](../analysis-scope.md)
+[Rule index](../rules.md) · [Configuration](../configuration.md) · [Shared scope](../analysis-scope.md)

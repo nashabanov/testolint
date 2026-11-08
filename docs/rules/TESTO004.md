@@ -4,6 +4,8 @@ correctness; enabled by default.
 
 Provider slice elements must be assignable to the parameter field type.
 
+Examples use `T = *testo.T` and a suite `S` embedding `testo.Suite[T]`.
+
 Violation: an `Age int` parameter field with `CasesAge() []string`.
 Valid: `func (S) CasesAge() []int { return []int{18} }`.
 
@@ -28,4 +30,4 @@ suite_test.go:8:14: TESTO004: CasesAge provides string, but parameter "Age" expe
 
 Return `[]int{18}` from `CasesAge` to satisfy the `Age int` parameter.
 
-[Rule index](../rules.md) · [Configuration](../../README.md#rule-configuration) · [Shared scope](../analysis-scope.md)
+[Rule index](../rules.md) · [Configuration](../configuration.md) · [Shared scope](../analysis-scope.md)

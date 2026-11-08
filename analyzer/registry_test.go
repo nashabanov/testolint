@@ -41,17 +41,13 @@ func TestRegistry(t *testing.T) {
 			}
 		}
 	}
-	readme, err := os.ReadFile("../README.md")
+	catalog, err := os.ReadFile("../docs/rules.md")
 	if err != nil {
 		t.Fatal(err)
 	}
 	documented := make(map[ruleID]bool)
-	for _, match := range regexp.MustCompile("(?m)^\\| \\[`([A-Z]+[0-9]+)`\\]").FindAllSubmatch(readme, -1) {
+	for _, match := range regexp.MustCompile("(?m)^\\| <a id=\"testo[0-9]+\"></a>\\[`([A-Z]+[0-9]+)`\\]").FindAllSubmatch(catalog, -1) {
 		documented[ruleID(match[1])] = true
-	}
-	examples, err := os.ReadFile("../docs/rules.md")
-	if err != nil {
-		t.Fatal(err)
 	}
 	for id, meta := range registry {
 		if !registered[id] {
@@ -61,8 +57,8 @@ func TestRegistry(t *testing.T) {
 		if meta.EnableByDefault {
 			defaultState = "enabled"
 		}
-		row := fmt.Sprintf("| [`%s`](docs/rules/%s.md) | `%s` | %s | %s |", id, id, meta.Name, meta.Class, defaultState)
-		if !strings.Contains(string(readme), row) {
+		row := fmt.Sprintf("| <a id=\"%s\"></a>[`%s`](rules/%s.md) | `%s` | %s | %s |", strings.ToLower(string(id)), id, id, meta.Name, meta.Class, defaultState)
+		if !strings.Contains(string(catalog), row) {
 			t.Errorf("documentation metadata differs from registry: %s", id)
 		}
 		page, err := os.ReadFile("../docs/rules/" + string(id) + ".md")
@@ -72,7 +68,7 @@ func TestRegistry(t *testing.T) {
 		if !strings.Contains(string(page), "Violation") || !strings.Contains(string(page), "Valid") {
 			t.Errorf("missing examples: %s", id)
 		}
-		if !strings.Contains(string(examples), "rules/"+string(id)+".md") {
+		if !strings.Contains(string(catalog), "rules/"+string(id)+".md") {
 			t.Errorf("missing index link: %s", id)
 		}
 		if !documented[id] {
@@ -140,7 +136,12 @@ func TestDocumentationLinks(t *testing.T) {
 	if len(files) != len(registry) {
 		t.Fatalf("rule pages=%d, registry=%d", len(files), len(registry))
 	}
-	files = append(files, "../README.md", "../docs/rules.md", "../docs/contract.md", "../docs/analysis-scope.md")
+	guides, err := filepath.Glob("../docs/*.md")
+	if err != nil {
+		t.Fatal(err)
+	}
+	files = append(files, guides...)
+	files = append(files, "../README.md", "../CONTRIBUTING.md")
 	for _, file := range files {
 		source, err := os.ReadFile(file)
 		if err != nil {

@@ -9,11 +9,6 @@ Violation: an executed context embeds `*Node` where
 Valid: remove the initialization cycle, for example
 `type Node struct { Value *int }`.
 
-Use an acyclic structure for Testo's automatic initialization. The check follows
-active-path types; the same leaf type in independent branches is valid.
-Inaccessible fields, container contents and unknown traversed type parameters
-are not treated as definite cycles. Cycles take precedence over TESTO021.
-
 TESTO022 reports a cycle along the active initialization path, such as an
 exported `Next *Node` field on `Node` reached from a custom T. Testo cannot
 finish constructing this graph. Reusing a type on independent branches is safe.
@@ -26,6 +21,9 @@ exported invalid/cyclic graph in those methods cannot fix the construction
 failure. A cycle takes precedence over TESTO021 for the same context. Detecting
 uninitialized plugin fields remains deferred and is not included in this release.
 
+Inaccessible fields, container contents and unknown traversed type parameters
+are not treated as definite cycles.
+
 See [shared construction boundaries](../analysis-scope.md) and [construction roots](TESTO021.md).
 
-[Rule index](../rules.md) · [Configuration](../../README.md#rule-configuration) · [Shared scope](../analysis-scope.md)
+[Rule index](../rules.md) · [Configuration](../configuration.md) · [Shared scope](../analysis-scope.md)

@@ -14,13 +14,6 @@ if previous == nil {
 }
 ```
 
-Testo supplies a typed nil at the root, so the parent interface itself is non-nil.
-Assert the expected concrete type before comparing its pointer. The rule checks
-supported local implementations reached from valid construction roots; it skips
-reassigned/address-taken parameters, explicit local method references and unknown
-graphs. Manual Plugin calls may legitimately pass a nil interface. A diagnostic
-does not prove that the branch will fail a test.
-
 TESTO024 checks plugin initialization. Testo supplies a typed nil parent at the
 suite root: the interface itself is non-nil. A direct `if parent == nil` or
 `if parent != nil` cannot distinguish that root from a child. Assert the plugin's
@@ -41,7 +34,7 @@ will fail a test. Manual Plugin calls can legitimately pass a nil interface;
 explicit references to the implementation method in the analyzed package
 suppress this check. External manual calls are not inferred.
 
-### Analysis boundaries
+## Analysis boundaries
 
 - TESTO024 uses the same concrete execution roots as construction checks and
   follows exported pointer fields through valid acyclic construction graphs.
@@ -58,4 +51,4 @@ suppress this check. External manual calls are not inferred.
 
 See [shared construction boundaries](../analysis-scope.md) and [construction roots](TESTO021.md).
 
-[Rule index](../rules.md) · [Configuration](../../README.md#rule-configuration) · [Shared scope](../analysis-scope.md)
+[Rule index](../rules.md) · [Configuration](../configuration.md) · [Shared scope](../analysis-scope.md)

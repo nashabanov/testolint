@@ -10,17 +10,8 @@ can reject intentional code; `style` concerns formatting. Classification does no
 implicitly enable or disable a rule.
 
 In 0.9.0, TESTO001–TESTO024 and TESTO027 are enabled by default. TESTO025 and
-TESTO026 are disabled. New optional policies start disabled. Default changes
-require explicit migration notes; TESTO027 is the only default change in 0.9.0.
-The maintainer confirmed a project audit before enabling it; this implementation
-session did not independently repeat that audit or record project revisions.
-
-Selection starts with defaults, or with no rules when `disable-all` is true,
-then applies explicit enable/disable lists. Order never resolves a conflict:
-unknown, duplicate, empty or overlapping IDs are errors. Empty lists preserve
-the starting set. CLI list flags trim whitespace and may each occur once; plugin
-lists contain exact IDs and reject unknown settings and invalid value types.
-See [configuration examples](../README.md#rule-configuration).
+TESTO026 are disabled. New optional policies start disabled. See [rule configuration](configuration.md) 
+for selection semantics, validation and migration instructions.
 
 A multi-ID checker executes once if any of its IDs is selected. Only selected
 IDs are reported. Disabling an owning rule does not transfer diagnostics to a

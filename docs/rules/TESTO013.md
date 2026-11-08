@@ -4,13 +4,12 @@ correctness; enabled by default.
 
 Report a directly recursive `RunSubSuite` invocation on the current receiver.
 
+Examples use a suite embedding `testo.Suite[*testo.T]`; `t` is the
+current Testo context and `s` is the suite receiver. Other fields and helpers
+are omitted where they do not affect the illustrated rule.
+
 Violation in `BeforeAll`: `testo.RunSubSuite(t, s)` on the current receiver.
 Valid: `testo.RunSubSuite(t, &ChildSuite{})` for a separate child suite.
-
-Avoid directly collecting the same receiver recursively. Analysis covers
-BeforeAll and a sole regular test under documented default-hook conditions;
-arbitrary recursion graphs and different instances are not reported. Runtime
-filtering can stop execution, so the check does not guarantee infinite recursion.
 
 `TESTO013` detects direct receiver recursion in a narrowly defined execution
 path, for example:
@@ -29,7 +28,7 @@ call. Different instances of the same type are not reported. Runtime plugins
 and filtering may interrupt execution; the message identifies direct recursion
 and does not claim that every run must loop forever.
 
-### Analysis boundaries
+## Analysis boundaries
 
 - `TESTO013` requires a sole `RunSubSuite` call without options, passing the
   method's own Testo parameter and receiver (or a value receiver's address).
@@ -38,4 +37,4 @@ and does not claim that every run must loop forever.
   `BeforeAll`/`BeforeEach` are inherited defaults. Other execution paths, imported
   bodies, plugins and runtime filters are outside this check's scope.
 
-[Rule index](../rules.md) · [Configuration](../../README.md#rule-configuration) · [Shared scope](../analysis-scope.md)
+[Rule index](../rules.md) · [Configuration](../configuration.md) · [Shared scope](../analysis-scope.md)

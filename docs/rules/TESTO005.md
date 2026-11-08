@@ -4,6 +4,8 @@ correctness; enabled by default.
 
 Providers accept no arguments and return exactly one slice.
 
+Examples use `T = *testo.T` and a suite `S` embedding `testo.Suite[T]`.
+
 Violation: `func (S) CasesAge(n int) []int { return []int{n} }`.
 Valid: `func (S) CasesAge() []int { return []int{18} }`.
 
@@ -11,4 +13,4 @@ Providers take no arguments and return exactly one slice; named slices are
 supported. Methods not recognized as providers are handled by naming rules.
 Fix the signature before relying on provider type or emptiness diagnostics.
 
-[Rule index](../rules.md) · [Configuration](../../README.md#rule-configuration) · [Shared scope](../analysis-scope.md)
+[Rule index](../rules.md) · [Configuration](../configuration.md) · [Shared scope](../analysis-scope.md)

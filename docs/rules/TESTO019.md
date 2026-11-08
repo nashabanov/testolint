@@ -4,13 +4,10 @@ correctness; enabled by default.
 
 Statically nil callbacks to `RunTest` or an immediately executed `Test` adapter.
 
+Examples use `T = *testo.T`; `t` is the parent testing context.
+
 Violation: `testo.RunTest[T](t, nil)`.
 Valid: `testo.RunTest(t, func(t T) {})`.
-
-Supply a non-nil function, including for an intentionally empty test. The rule
-also checks immediately executed Test adapters and direct testing.T.Run use.
-Stored adapters, unknown callbacks and reassigned or escaped locals are not
-inferred. `testo.Run(t, "child", nil)` remains valid.
 
 TESTO019 reports a statically nil function supplied to `testo.RunTest`. It also
 checks `testo.Test` when the returned adapter is immediately called or passed
@@ -28,7 +25,7 @@ These are runtime-failure checks under the default Testo behavior, verified
 against v1.8.0. Plugins can override Cleanup or filter singleton execution;
 such runtime changes are not inferred.
 
-### Analysis boundaries
+## Analysis boundaries
 
 - TESTO019 accepts explicit nil, function-type conversions of nil (including
   named function types and aliases), and unchanged local zero/nil initializers.
@@ -38,4 +35,4 @@ such runtime changes are not inferred.
   The rule supports custom Testo context types for RunTest/Test and does not
   require a suite declaration. It never rejects nil callbacks to Run.
 
-[Rule index](../rules.md) · [Configuration](../../README.md#rule-configuration) · [Shared scope](../analysis-scope.md)
+[Rule index](../rules.md) · [Configuration](../configuration.md) · [Shared scope](../analysis-scope.md)

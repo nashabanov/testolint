@@ -7,11 +7,6 @@ Direct `testo.Run` on the cleanup context inside its Cleanup callback.
 Violation: `t.Cleanup(func() { testo.Run(t, "child", nil) })`.
 Valid: call `testo.Run(t, "child", nil)` before registering cleanup.
 
-Start subtests before cleanup; use Cleanup for resource release. Nil is a valid
-callback for Run and is not the error here. Only supported direct calls on the
-unchanged cleanup context are checked; overridden Cleanup implementations and
-unknown registration graphs are outside the proof.
-
 TESTO018 reports a direct `testo.Run` inside `t.Cleanup(func() { ... })` when
 both operations use the same unchanged local `*testo.T` variable. Testo delegates
 Run to the underlying testing context, where running a subtest during Cleanup
@@ -23,7 +18,10 @@ t.Cleanup(func() {
 })
 ```
 
-### Analysis boundaries
+Overridden Cleanup implementations and unknown registration graphs are outside
+the proof.
+
+## Analysis boundaries
 
 - TESTO018 inspects direct synchronous expression statements in the straight-line
   prefix of a direct Cleanup closure. The context must be the same local variable
@@ -34,4 +32,4 @@ t.Cleanup(func() {
   statements, and go/defer Run calls are skipped. It does not analyze helper
   bodies or prove that registration/callback execution is reached.
 
-[Rule index](../rules.md) · [Configuration](../../README.md#rule-configuration) · [Shared scope](../analysis-scope.md)
+[Rule index](../rules.md) · [Configuration](../configuration.md) · [Shared scope](../analysis-scope.md)

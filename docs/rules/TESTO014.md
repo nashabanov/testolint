@@ -4,6 +4,10 @@ policy; enabled by default.
 
 BeforeEach writes a shared receiver field read after Parallel suspension.
 
+Examples use a suite embedding `testo.Suite[*testo.T]`; `t` is the
+current Testo context and `s` is the suite receiver. Other fields and helpers
+are omitted where they do not affect the illustrated rule.
+
 With `BeforeEach` assigning `s.value` and another possible execution overwriting
 it, a Violation is:
 
@@ -56,7 +60,7 @@ hooks and body. TESTO015 takes precedence over TESTO014 for the same field in
 the same execution; context fields use TESTO016. Shared hook diagnostics are
 reported once at each source position.
 
-### Analysis boundaries
+## Analysis boundaries
 
 - TESTO014–017 support the actual `*testo.T` type (including aliases), local
   straight-line bodies, resolved direct calls on the context parameter, and
@@ -84,6 +88,4 @@ reported once at each source position.
 
 See also [shared analysis boundaries](TESTO017.md).
 
-See [shared scope](../analysis-scope.md).
-
-[Rule index](../rules.md) · [Configuration](../../README.md#rule-configuration) · [Shared scope](../analysis-scope.md)
+[Rule index](../rules.md) · [Configuration](../configuration.md) · [Shared scope](../analysis-scope.md)

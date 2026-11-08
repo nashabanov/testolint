@@ -7,12 +7,6 @@ Exported fields traversed during custom T/plugin wiring must be pointers.
 Violation in an executed custom context: `type C struct { *testo.T; Count int }`.
 Valid: `type C struct { *testo.T; Count *int }`.
 
-Use pointer fields for exported values reached by Testo initialization. Traversal
-starts at recognized execution roots and includes supported imported and generic
-types; unused contexts and container contents are not arbitrary roots. Cycles
-and unknown type parameters suppress dependent field diagnostics even when
-TESTO022 is disabled.
-
 Testo constructs a fresh custom T and fills its accessible pointer fields before
 wiring plugins. TESTO021 reports an exported non-pointer field reached during
 this wiring, including fields in nested structs that are not themselves plugins.
@@ -29,9 +23,12 @@ func TestCustom(t *testing.T) {
 }
 ```
 
+Cycles and unknown type parameters suppress dependent field diagnostics even
+when TESTO022 is disabled.
+
 See [construction cycle precedence and runtime behavior](TESTO022.md).
 
-### Analysis boundaries
+## Analysis boundaries
 
 - TESTO021/022 start from typed RunSuite/RunSubSuite calls, RunTest, Run and
   immediately executed Test adapters (direct invocation or direct testing.T.Run
@@ -42,4 +39,4 @@ See [construction cycle precedence and runtime behavior](TESTO022.md).
 
 See [shared construction boundaries](../analysis-scope.md).
 
-[Rule index](../rules.md) · [Configuration](../../README.md#rule-configuration) · [Shared scope](../analysis-scope.md)
+[Rule index](../rules.md) · [Configuration](../configuration.md) · [Shared scope](../analysis-scope.md)

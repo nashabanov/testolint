@@ -4,9 +4,10 @@ style; disabled by default.
 
 Separate adjacent Allure Step statements with a blank line.
 
-`blank-between-steps` (style, disabled by default) separates adjacent
-`github.com/ozontech/testo-allure.Step` statements in the same block.
 Enable with `-enable=TESTO026`; use `-fix` to insert separators.
+
+Examples use a custom Testo context `T` embedding `*allure.PluginAllure`
+from `github.com/ozontech/testo-allure`.
 
 Violation:
 
@@ -30,7 +31,7 @@ func (*Suite) TestOrder(t T) {
 Nested blocks and callbacks are checked. Other statements break adjacency.
 Comments do not substitute for a blank line; fixes preserve their placement.
 
-### Analysis boundaries
+## Analysis boundaries
 
 - TESTO026 recognizes direct `allure.Step` calls in AST block statement lists,
   including nested callbacks, aliases/dot imports and generic arguments. It skips
@@ -40,4 +41,4 @@ Comments do not substitute for a blank line; fixes preserve their placement.
 
 See [Allure metadata scope](TESTO025.md).
 
-[Rule index](../rules.md) · [Configuration](../../README.md#rule-configuration) · [Shared scope](../analysis-scope.md)
+[Rule index](../rules.md) · [Configuration](../configuration.md) · [Shared scope](../analysis-scope.md)

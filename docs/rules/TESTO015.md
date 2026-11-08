@@ -4,6 +4,10 @@ policy; enabled by default.
 
 Cleanup re-reads a shared BeforeEach field that another execution can replace.
 
+Examples use a suite embedding `testo.Suite[*testo.T]`; `t` is the
+current Testo context and `s` is the suite receiver. Other fields and helpers
+are omitted where they do not affect the illustrated rule.
+
 Violation for a replaceable BeforeEach field:
 `t.Cleanup(func() { t.Log(s.value) })` after parallel suspension.
 
@@ -17,6 +21,4 @@ belong to TESTO016, and this check suppresses related TESTO014 reports.
 
 See [shared lifecycle semantics and diagnostic precedence](TESTO014.md).
 
-See [shared scope](../analysis-scope.md) and [parallel analysis boundaries](TESTO014.md).
-
-[Rule index](../rules.md) · [Configuration](../../README.md#rule-configuration) · [Shared scope](../analysis-scope.md)
+[Rule index](../rules.md) · [Configuration](../configuration.md) · [Shared scope](../analysis-scope.md)

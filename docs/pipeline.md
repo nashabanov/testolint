@@ -43,29 +43,9 @@ go test ./analyzer -run '^$' -bench '^BenchmarkPipelineSelections$' -benchmem -b
 go test ./analyzer -run '^$' -bench '^BenchmarkPipelinePrerequisites$' -benchmem -benchtime=300ms -count=3
 ```
 
-On Apple M4 / Go 1.27.1, the initial 100 embedded-suite scenario measured
-suite discovery at 0.516–0.604 ms and call collection at 0.527–0.630 ms.
-This justified skipping call collection for suite-only selections. Run discovery
-on this fixture has no calls to process, so its ~2 ns result does not establish
-performance on call-heavy packages. Its guard expresses the existing group
-prerequisite without introducing additional rule metadata. Defaults continue to
-use both prerequisites. These are synthetic measurements, not CLI latency claims
-or performance budgets.
+These benchmarks use synthetic preloaded packages, so they do not measure CLI
+latency. The embedded-suite fixture has no run calls; run discovery measurements
+on it do not establish performance on call-heavy packages. Record the checkout
+revisions, Go version, hardware and sampling parameters when comparing results.
 
-Median results over three 300 ms samples for this change:
-
-| Selection | Before, ns/op | After, ns/op | Before, B/op | After, B/op |
-| --- | ---: | ---: | ---: | ---: |
-| Defaults | 1,249,568 | 1,245,925 | 2,331,669 | 2,330,096 |
-| None | 1,084,507 | 248 | 2,173,698 | 248 |
-| TESTO027 only | 1,646,966 | 1,094,197 | 3,060,926 | 2,197,691 |
-| Style only | 1,100,817 | 553,275 | 2,175,830 | 873,447 |
-
-Existing analyzer fixtures passed before and after the refactor, including
-`no_sleep` and `run_pipeline`; no diagnostic expectations were changed. The
-initial sandboxed baseline failed on missing Go cache entries and passed on a
-retry with cache access. The CPU profile was captured, but the installed Go
-has no `pprof` tool; the prerequisite microbenchmarks above informed the decision.
-`make test`, `go vet ./...` and `make lint` passed on the final implementation.
-External custom golangci-lint integration was not run for this internal refactor;
-its skipped test is not evidence of external integration verification.
+See [Contributing](../CONTRIBUTING.md#benchmarks) for full analyzer benchmarks.

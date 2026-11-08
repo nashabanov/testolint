@@ -4,6 +4,10 @@ correctness; enabled by default.
 
 Repeated Parallel calls on the same context across BeforeEach, test and AfterEach.
 
+Examples use a suite embedding `testo.Suite[*testo.T]`; `t` is the
+current Testo context and `s` is the suite receiver. Other fields and helpers
+are omitted where they do not affect the illustrated rule.
+
 Violation: `t.Parallel(); t.Parallel()` on a known lifecycle/test path.
 Valid: call `t.Parallel()` once across BeforeEach, the test and AfterEach.
 
@@ -16,7 +20,7 @@ See [shared lifecycle semantics and diagnostic precedence](TESTO014.md).
 
 See also [shared analysis boundaries](TESTO014.md).
 
-### Analysis boundaries
+## Analysis boundaries
 
 - TESTO017 requires an established execution of the checked test: a regular
   method or a parameterized method with known non-empty constant cases. It does
@@ -55,4 +59,4 @@ See also [shared analysis boundaries](TESTO014.md).
 
 See [shared scope](../analysis-scope.md) and [parallel analysis boundaries](TESTO014.md).
 
-[Rule index](../rules.md) · [Configuration](../../README.md#rule-configuration) · [Shared scope](../analysis-scope.md)
+[Rule index](../rules.md) · [Configuration](../configuration.md) · [Shared scope](../analysis-scope.md)
