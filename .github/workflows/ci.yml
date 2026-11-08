@@ -16,7 +16,14 @@ jobs:
         with:
           version: v2.14.0
       - run: make test
-      - run: go test ./... -count=1
+      - name: Test with coverage (minimum 80%)
+        run: make test-cov
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage.out
+          disable_search: true
       - run: go vet ./...
       - run: go mod tidy -diff
       - run: go mod verify

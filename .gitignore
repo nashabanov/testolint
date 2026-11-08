@@ -1,4 +1,6 @@
 /bin/
+/coverage.out
+/coverage.txt
 
 # Local release review reports
 /docs/release-*-review.md

@@ -1,5 +1,10 @@
 # testolint
 
+[![CI](https://github.com/nashabanov/testolint/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/nashabanov/testolint/actions/workflows/ci.yml)
+[![Codecov](https://codecov.io/github/nashabanov/testolint/graph/badge.svg?branch=main)](https://codecov.io/github/nashabanov/testolint)
+[![Latest release](https://img.shields.io/github/v/release/nashabanov/testolint)](https://github.com/nashabanov/testolint/releases/latest)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 A Go linter for tests written with [Testo](https://github.com/ozontech/testo).
 It finds incorrect suite signatures, parameter providers and lifecycle usage
 without running tests, with optional formatting checks for Testo Allure.

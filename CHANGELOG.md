@@ -10,6 +10,9 @@
 
 ### Verification and documentation
 
+- Collect uncached Go statement coverage in CI and with `make test-cov`, enforce
+  an 80% overall threshold, and upload the profile to Codecov. Document setup
+  and the coverage limitations of subprocess integration tests.
 - Publish the verified Go/Testo/Allure/custom-plugin compatibility combination,
   distinguishing minimum build requirements from verified versions.
 - Run uncached root and real-Testo clean tests, module tidy diff and module

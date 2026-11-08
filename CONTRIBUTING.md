@@ -45,6 +45,32 @@ go mod tidy -diff
 exit codes using real Testo fixtures. The external plugin test is skipped unless
 `TESTOLINT_GOLANGCI_BINARY` is set; a skip does not verify integration.
 
+## Coverage
+
+```sh
+make test-cov
+go tool cover -html=coverage.out
+```
+
+`make test-cov` runs the root module's tests without caching, writes `coverage.out`
+and a per-function summary in `coverage.txt`, and requires at least **80% total
+statement coverage**. The threshold uses statement counts across all packages,
+not an average of package percentages or a rounded display value. Both reports
+are ignored by Git.
+
+CI runs the same target and uploads `coverage.out` using
+[Codecov's GitHub Action](https://github.com/codecov/codecov-action/tree/v5), as in
+conformly. To enable uploads, activate `nashabanov/testolint` in Codecov and add
+its upload token as the GitHub Actions secret `CODECOV_TOKEN`. Fork pull requests
+do not receive repository secrets; tokenless uploads depend on Codecov's settings.
+The local 80% gate runs independently of Codecov. Upload errors use the action's
+default non-blocking behavior.
+
+CLI tests build and execute a separate binary without coverage instrumentation,
+so `cmd/testolint` appears as 0% despite its end-to-end tests. Execution inside
+the external custom golangci-lint binary is also outside this profile. Those
+integration checks still run separately in CI; this report does not measure them.
+
 ## Plugin integration
 
 From the checkout root, install the bootstrap and build local sources using the
