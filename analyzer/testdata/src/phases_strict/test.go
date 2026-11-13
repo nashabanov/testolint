@@ -70,11 +70,30 @@ func (*Suite) TestShortCircuitOr(t T) {
 
 func (*Suite) TestLateRequestData(t T) {
 	action()
-	request := struct{ ID int }{ID: 42} // want "TESTO030"
+	request := struct{ ID int }{ID: 42}
 	action(request)
 }
 func (*Suite) TestRequestData(t T) {
 	request := struct{ ID int }{ID: 42}
 	action(request)
 	verify()
+}
+
+func (*Suite) TestNativeRequire(t T) {
+	t.Require().Equal(1, 1)
+	action() // want "TESTO030"
+}
+func (*Suite) TestNativeAssert(t T) {
+	checks := t.Assert().Masked()
+	checks.Equal(1, 1)
+	action() // want "TESTO030"
+}
+func (*Suite) TestNativeConstructor(t T) {
+	_ = t.Require().Hidden()
+	_ = t.Assert().Masked()
+	action()
+}
+func (*Suite) TestNativeSetup(t T) {
+	a.Setup(t, "precondition", func(t T) { t.Require().Equal(1, 1) })
+	action()
 }

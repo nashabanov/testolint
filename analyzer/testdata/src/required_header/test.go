@@ -3,6 +3,7 @@ package required_header
 import (
 	"github.com/ozontech/testo"
 	a "github.com/ozontech/testo-allure"
+	"required_header/lib"
 )
 
 type Context struct{ *a.PluginAllure }
@@ -54,3 +55,7 @@ func (*ConditionCall) BeforeEach(t T) {
 	}
 }
 func (*ConditionCall) TestUnknown(t T) {}
+
+type Imported struct{ lib.Base[T] }
+
+func (*Imported) TestUnknown(t T) {}

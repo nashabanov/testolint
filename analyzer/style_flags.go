@@ -50,7 +50,7 @@ type phaseStrictFlag struct{ state *styleFlags }
 
 func (f *phaseStrictFlag) String() string {
 	if f.state == nil || f.state.config.Style.Phases.Strict == nil {
-		return "true"
+		return "false"
 	}
 	return strconv.FormatBool(*f.state.config.Style.Phases.Strict)
 }

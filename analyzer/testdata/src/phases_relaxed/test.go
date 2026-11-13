@@ -58,7 +58,7 @@ func (*Suite) TestNeutral(t T)    { action(); verify(); x := 1; _ = x + 1 }
 
 func (*Suite) TestLateRequestData(t T) {
 	action()
-	request := struct{ ID int }{ID: 42} // want "TESTO030"
+	request := struct{ ID int }{ID: 42}
 	action(request)
 }
 func (*Suite) TestRequestData(t T) {

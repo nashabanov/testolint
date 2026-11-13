@@ -26,6 +26,7 @@ func New(config Config) (*analysis.Analyzer, error) {
 		config.Style.Phases.Strict = &value
 	}
 	config.Style.Header = config.Style.Header.clone()
+	config.Style.Ignore = append([]Symbol(nil), config.Style.Ignore...)
 	config.Style.Actions = append([]Symbol(nil), config.Style.Actions...)
 	config.Style.Assertions = append([]Symbol(nil), config.Style.Assertions...)
 	config.Enable = append([]string(nil), config.Enable...)
@@ -55,7 +56,7 @@ func resolveConfig(config Config) (map[ruleID]bool, error) {
 		return nil, err
 	}
 	seen := map[Symbol]bool{}
-	for _, symbols := range [][]Symbol{config.Style.Actions, config.Style.Assertions} {
+	for _, symbols := range [][]Symbol{config.Style.Actions, config.Style.Assertions, config.Style.Ignore} {
 		for _, symbol := range symbols {
 			if err := symbol.validate(); err != nil {
 				return nil, err
@@ -64,6 +65,18 @@ func resolveConfig(config Config) (map[ruleID]bool, error) {
 				return nil, fmt.Errorf("testolint: duplicate or conflicting operation: %+v", symbol)
 			}
 			seen[symbol] = true
+		}
+	}
+	groups := [][]Symbol{config.Style.Actions, config.Style.Assertions, config.Style.Ignore}
+	for i, left := range groups {
+		for j := i + 1; j < len(groups); j++ {
+			for _, a := range left {
+				for _, b := range groups[j] {
+					if a.specificity() == b.specificity() && symbolsOverlap(a, b) {
+						return nil, fmt.Errorf("testolint: conflicting operation patterns: %+v and %+v", a, b)
+					}
+				}
+			}
 		}
 	}
 	enable, err := validateIDs("enable", config.Enable)
@@ -194,6 +207,7 @@ func selectedRulesWithStyle(selected map[ruleID]bool, style StyleConfig) ruleSet
 					}
 					if walker == nil || walker.pass != p {
 						walker = newOperationWalker(p, style)
+						walker.collectPhases = selected["TESTO030"]
 					}
 					walker.checkSuite(s, style)
 				}

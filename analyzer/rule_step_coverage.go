@@ -5,6 +5,7 @@ import (
 	"go/ast"
 	"go/token"
 	"go/types"
+	"strings"
 
 	"golang.org/x/tools/go/analysis"
 )
@@ -19,9 +20,9 @@ type Symbol struct {
 }
 
 func (s Symbol) validate() error {
-	if s.Package == "" || (s.Function == "") == (s.Method == "") ||
-		(s.Function != "" && (s.Receiver != "" || !token.IsIdentifier(s.Function))) ||
-		(s.Method != "" && (!token.IsIdentifier(s.Receiver) || !token.IsIdentifier(s.Method))) {
+	if s.Package == "" || strings.Contains(strings.TrimSuffix(s.Package, "/..."), "*") || strings.Contains(strings.TrimSuffix(s.Package, "/..."), "...") || (s.Function == "") == (s.Method == "") ||
+		(s.Function != "" && (s.Receiver != "" || !operationIdentifier(s.Function))) ||
+		(s.Method != "" && (!operationIdentifier(s.Receiver) || !operationIdentifier(s.Method))) {
 		return fmt.Errorf("testolint: operation must specify package/function or package/receiver/method: %+v", s)
 	}
 	return nil
@@ -62,6 +63,7 @@ type operationWalker struct {
 	kinds          map[Symbol]ruleID
 	operations     []operation
 	events         []phaseEvent
+	collectPhases  bool
 	suppressPhases bool
 	helpers        map[*types.Func]helperFacts
 }
@@ -76,12 +78,15 @@ func checkStepCoverageWithConfig(p *analysis.Pass, s *suite, config StyleConfig)
 }
 
 func newOperationWalker(p *analysis.Pass, config StyleConfig) *operationWalker {
-	w := &operationWalker{pass: p, facts: collectCallFacts(p), declarations: map[*types.Func]*ast.FuncDecl{}, kinds: builtinAssertions(), helpers: map[*types.Func]helperFacts{}}
+	w := &operationWalker{pass: p, collectPhases: true, facts: collectCallFacts(p), declarations: map[*types.Func]*ast.FuncDecl{}, kinds: builtinAssertions(), helpers: map[*types.Func]helperFacts{}}
 	for _, symbol := range config.Assertions {
 		w.kinds[symbol] = "TESTO031"
 	}
 	for _, symbol := range config.Actions {
 		w.kinds[symbol] = "TESTO029"
+	}
+	for _, symbol := range config.Ignore {
+		w.kinds[symbol] = ""
 	}
 	for _, file := range p.Files {
 		for _, decl := range file.Decls {
@@ -104,7 +109,9 @@ func (w *operationWalker) checkSuite(s *suite, config StyleConfig) {
 		w.operations = nil
 		w.events = nil
 		w.walk(test.method.decl.Body, false, nil, 0)
-		reportPhases(p, w.events, config.Phases)
+		if w.collectPhases {
+			reportPhases(p, w.events, config.Phases)
+		}
 		reported := map[struct {
 			pos token.Pos
 			id  ruleID
@@ -144,11 +151,7 @@ func (w *operationWalker) walk(node ast.Node, covered bool, site *ast.CallExpr, 
 	ast.Inspect(node, func(n ast.Node) bool {
 		switch n := n.(type) {
 		case *ast.BlockStmt:
-			data := w.requestData(n)
 			for _, stmt := range n.List {
-				if data[stmt] {
-					w.event(phaseEvent{call: stmt, site: site, phase: arrangePhase})
-				}
 				w.walk(stmt, covered, site, depth)
 				if _, ok := stmt.(*ast.ReturnStmt); ok {
 					break
@@ -224,7 +227,11 @@ func (w *operationWalker) walk(node ast.Node, covered bool, site *ast.CallExpr, 
 					return false
 				}
 			}
-			if id := w.kinds[symbol]; id != "" {
+			id, classified := w.kind(symbol)
+			if classified && id == "" {
+				return false // Explicit ignore excludes the body, but arguments were visited above.
+			}
+			if id != "" {
 				w.operations = append(w.operations, operation{n, site, id, covered})
 				phase := actionPhase
 				if id == "TESTO031" {
@@ -271,4 +278,62 @@ func (w *operationWalker) helper(fn *types.Func, body *ast.BlockStmt, covered bo
 		event.site = site
 		w.event(event)
 	}
+}
+
+func operationIdentifier(s string) bool { return s == "*" || token.IsIdentifier(s) }
+
+// Exact symbols outrank patterns. Within patterns, more constrained fields win.
+func (s Symbol) specificity() int {
+	if !strings.HasSuffix(s.Package, "/...") && s.Function != "*" && s.Receiver != "*" && s.Method != "*" {
+		return 100
+	}
+	score := 0
+	if !strings.HasSuffix(s.Package, "/...") {
+		score += 4
+	}
+	if s.Receiver != "" && s.Receiver != "*" {
+		score += 2
+	}
+	if s.Function != "" && s.Function != "*" || s.Method != "" && s.Method != "*" {
+		score++
+	}
+	return score
+}
+func (s Symbol) matches(other Symbol) bool {
+	pkg := s.Package == other.Package
+	if root, ok := strings.CutSuffix(s.Package, "/..."); ok {
+		pkg = other.Package == root || strings.HasPrefix(other.Package, root+"/")
+	}
+	match := func(a, b string) bool { return a == b || a == "*" && b != "" }
+	return pkg && match(s.Function, other.Function) && match(s.Receiver, other.Receiver) && match(s.Method, other.Method)
+}
+func (w *operationWalker) kind(symbol Symbol) (ruleID, bool) {
+	best := -1
+	var result ruleID
+	for pattern, id := range w.kinds {
+		if pattern.matches(symbol) && pattern.specificity() > best {
+			best, result = pattern.specificity(), id
+		}
+	}
+	return result, best >= 0
+}
+
+func symbolsOverlap(a, b Symbol) bool {
+	candidate := a
+	// A shared package must be at the deeper root. Choosing only b's root
+	// misses intersections when a is the narrower subtree.
+	candidate.Package = strings.TrimSuffix(a.Package, "/...")
+	if root := strings.TrimSuffix(b.Package, "/..."); len(root) > len(candidate.Package) {
+		candidate.Package = root
+	}
+	if candidate.Function == "*" {
+		candidate.Function = b.Function
+	}
+	if candidate.Receiver == "*" {
+		candidate.Receiver = b.Receiver
+	}
+	if candidate.Method == "*" {
+		candidate.Method = b.Method
+	}
+	return a.matches(candidate) && b.matches(candidate)
 }

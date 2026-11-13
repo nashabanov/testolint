@@ -26,3 +26,12 @@ func returning(t T) bool { return check.Equal(t, 1, 1) }
 func (*Suite) TestReturningHelper(t T) {
 	_ = returning(t) // want "TESTO031"
 }
+
+func (*Suite) TestNative(t T) {
+	t.Require().Equal(1, 1) // want "TESTO031"
+	checks := t.Assert().Masked()
+	checks.Equal(1, 1) // want "TESTO031"
+	_ = t.Require().Hidden()
+	a.Step(t, "check", func(t T) { t.Require().Equal(1, 1) })
+	a.Setup(t, "precondition", func(t T) { t.Assert().Equal(1, 1) })
+}

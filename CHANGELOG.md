@@ -2,49 +2,54 @@
 
 ## 0.10.0 (Unreleased)
 
-### In progress
+### Added
 
-- Recognize literal input preparation passed directly to configured actions as
-  Data; preserve neutral result computations.
-- Track conditional header methods separately so uncertainty in one group does
-  not suppress independently proven missing groups.
+- Support grouped action/assertion symbols by receiver and package subtree,
+  exact ignore exceptions, and deterministic classification precedence.
+- Default TESTO030 to relaxed ordering and remove literal-input Data inference.
+  Update configuration, migration guidance and valid/invalid rule examples.
 
-- Stop phase inference across short-circuit boolean expressions, avoiding
-  false TESTO030 reports while preserving later proven order violations.
+- Add four independently opt-in style rules: TESTO028 required-test-header,
+  TESTO029 unreported-action, TESTO030 test-phase-order, and TESTO031
+  assert-inside-step. The catalog now contains 31 rules, including six style rules.
+- Share configurable header recognition between TESTO025/028, preserving existing
+  defaults, Parallel handling and safe fixes. Required metadata uses AND between
+  groups and OR within a group, with effective BeforeEach support.
+- Share typed action/assertion classification, Step/Setup traversal and one local
+  helper transition. Report helper violations at callsites with related locations.
+- Recognize native testo-allure t.Require()/t.Assert() checks first, plus direct
+  testify assertions and configurable user APIs. TESTO031 requires an outer
+  Step/Setup even for native assertions that already produce report entries.
+- Add strict and relaxed phase ordering, Setup preconditions,
+  explicit preparation phases, and conservative control-flow boundaries. No unsafe fixes.
+- Add shared CLI/plugin settings, CLI JSON style configuration and the independent
+  phase-order-strict flag, preserving explicit false and flag-order precedence.
 
-- Reuse structure-rule package facts across suites and cache one-level helper
-  summaries per analyzer invocation, rebasing diagnostics at each callsite.
+### Fixed
 
-- Check configured/assertion calls in helper return expressions; add an e2e
-  regression for TESTO031 callsite reporting.
-- Add a preloaded-package benchmark comparing defaults with enabled structure
-  rules when 1, 10 or 100 tests share a helper.
+- Reject equal-priority overlapping operation patterns in either subtree
+  direction, preventing nondeterministic Action/Assert/ignore classification.
+- Stop inspecting explicitly ignored local helper bodies while preserving
+  coverage and phase checks for evaluated arguments.
+- Add analyzer, real-Testo CLI and custom-plugin regression coverage for
+  exclusions and conflicting patterns; clarify rule examples and update
+  candidate compatibility documentation.
 
-- Add external custom-plugin checks for all four new style rules, including
-  strict and relaxed phase settings against real Testo/Allure fixtures.
+- Preserve independently proven missing header groups when other metadata is
+  conditional; treat unavailable hooks and opaque sources conservatively.
+- Inspect helper return expressions and avoid false phase ordering across
+  short-circuit expressions. Preserve native assertion accessor/modifier semantics.
 
-- Recognize testify v1.11.1 assert/require assertion functions and Assertions
-  methods by explicit typed identities, excluding constructors and utilities.
-  Add analyzer and real-Testo/Allure CLI regressions.
+### Performance, verification and documentation
 
-- Add CLI style JSON configuration and the independent phase-order-strict flag,
-  preserving explicit false with order-independent flag precedence. Add real
-  Testo/Allure CLI phase fixtures and plugin settings validation tests.
-
-- Add initial TESTO030 phase events to the shared coverage traversal, with
-  strict and relaxed modes, Setup semantics and conservative control-flow gaps.
-
-- Add the initial shared TESTO029/031 coverage walker with explicit typed symbol
-  matchers, Step/Setup containers, one local helper and callsite diagnostics.
-
-- Add opt-in TESTO028 for configured required Allure metadata, sharing the
-  TESTO025 recognizer and accounting for effective local BeforeEach hooks.
-  Unknown sources conservatively suppress missing-header reports.
-
-- Introduce shared header configuration and typed method recognition for
-  TESTO025, preserving default metadata, Parallel handling and safe fixes.
-- Add configurable-header analyzer regression coverage. Required metadata
-  groups are now checked by opt-in TESTO028; extended integration and analysis-boundary work remain pending.
+- Share structure-analysis package facts and cache one-level helper summaries
+  per invocation. Skip phase collection when TESTO030 is disabled.
+- Add analyzer and real-Testo/Allure CLI/custom-plugin regression coverage,
+  including imported/promoted/generic helpers, opaque APIs, independent selection,
+  explicit BeforeEach opt-out and both phase modes.
+- Add benchmarks for repeated helper use with structure rules enabled/disabled.
+- Document configuration and analysis boundaries; add invalid/valid Go examples
+  for all four new rules and require such examples in AGENTS.md.
 
 ## 0.9.0
 

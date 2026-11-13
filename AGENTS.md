@@ -55,6 +55,20 @@ Without this variable, `TestIntegration` is skipped; a skip does not count as su
 
 Keep diagnostic identifiers (`TESTOxxx`) stable. When public behavior changes, update the rule descriptions and limitations in `README.md`. In the work report, identify the added fixture, the red and green phase results, and the checks performed.
 
+## Rule Documentation Examples
+
+Every new rule and every public behavior change must include Go code examples
+in the rule's documentation page: at least one invalid example (Violation) and
+one valid example (Valid). This is required whenever a code example is possible,
+which is expected for essentially every rule. Mark the offending line with its
+TESTO ID and explain the relevant configuration, imports and context assumptions.
+Examples must agree with the implemented analysis boundaries; valid examples
+must be valid for the stated rule/configuration. Show configuration alternatives
+when they change validity (for example strict versus relaxed phase ordering).
+If an example genuinely cannot be provided, explain why in the rule page and
+work report rather than silently omitting it. Prose-only descriptions do not
+replace code examples. Keep examples consistent with regression fixtures.
+
 ## Review and Commit
 
 Before requesting approval to commit, update `changelog.md` with the changes being presented, including relevant features, fixes, refactoring, and documentation changes. Add them to the current unreleased version (or an `Unreleased` section if no target version is set), and include the changelog update in the review. Keep released version entries unchanged unless correcting a factual error. Do not mark a version as released or invent a release date before publication. If further changes are made after approval, update the changelog again before requesting renewed approval.

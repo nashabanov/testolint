@@ -98,9 +98,9 @@ Unknown methods, duplicates and empty groups are errors. Required methods must
 be recognized. Include-before-each defaults true. These settings do not enable
 rules: select TESTO025 and/or TESTO028 independently. CLI accepts the same style object as JSON through `-style-config`.
 
-### Operation symbols (implementation in progress)
+### Operation symbols
 
-`style.actions` and `style.assertions` are lists of exact symbols:
+`style.actions` and `style.assertions` accept exact symbols and operation patterns:
 
 ```yaml
 style:
@@ -116,10 +116,11 @@ style:
 Choose package/function or package/receiver/method. Receiver is the declared
 type name, without a pointer prefix. Import aliases do not change identity.
 Duplicate/conflicting classifications and malformed identifiers are rejected.
-Actions have no built-in defaults. Assertions include the explicit testify
-v1.11.1 assert/require assertion API; configured assertions extend that set. Rules remain independently opt-in.
+Actions have no built-in defaults. Assertions primarily include native testo-allure v1.5.0 Requirements/Assertions
+methods obtained through t.Require()/t.Assert(), plus the explicit testify
+v1.11.1 assert/require API; configured assertions extend that set. Rules remain independently opt-in.
 
-`style.phases.strict` defaults to true; false permits Assert → Action for
+`style.phases.strict` defaults to false; false permits Assert → Action for
 TESTO030. Returning to Setup remains invalid.
 
 ```sh
@@ -132,3 +133,37 @@ The explicit `-phase-order-strict` flag overrides JSON regardless of argument
 order. Both style flags may appear only once. Unknown JSON fields, wrong types,
 invalid symbol identities and invalid required groups are rejected. The phase
 flag affects only TESTO030; it does not enable it or change other rules.
+
+### Grouped operations
+
+Use `method: "*"` with a declared receiver to classify all its methods.
+`function: "*"` classifies package functions; `receiver: "*", method: "*"`
+classifies all methods. A package ending in `/...` includes that package and
+its descendants; other package paths match exactly. Partial name globs are
+unsupported. Patterns are supported in actions, assertions and ignore.
+
+```yaml
+style:
+  actions:
+    - {package: example.org/orders, receiver: Client, method: "*"}
+    - {package: example.org/testactions/..., function: "*"}
+  ignore:
+    - {package: example.org/orders, receiver: Client, method: Close}
+```
+
+Exact symbols override patterns. Among patterns, specificity is scored by exact
+package (4), exact receiver (2), and exact function/method (1). Overlapping
+patterns with equal specificity and different classifications are rejected.
+Ignore removes both coverage checks and phase events for the matched operation,
+including its local helper body. Arguments are still analyzed because they
+execute before the call. This applies equally to local and imported helpers.
+Overlapping subtree patterns are checked in both directions: an action matching
+`example.org/x/sub/...` conflicts with an assertion matching `example.org/x/...`
+at equal specificity, just as the reverse configuration does.
+Built-in assertions remain exact classifications unless explicitly overridden.
+These settings do not enable any rule.
+
+Relaxed phase ordering is now the default. Set `style.phases.strict: true`
+to retain strict AAA ordering. Literal input preparation no longer establishes
+a phase: moving construction between a literal and a factory does not change
+phase diagnostics. Explicit late Setup remains invalid.

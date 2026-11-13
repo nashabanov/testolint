@@ -310,10 +310,10 @@ func TestIntegrationStructure(t *testing.T) {
 		name, target, settings, id string
 		count                      int
 	}{
-		{"strict", "./phases", "phases: {strict: true}", "TESTO030", 2},
+		{"strict", "./phases", "phases: {strict: true}", "TESTO030", 4},
 		{"relaxed", "./phases", "phases: {strict: false}", "TESTO030", 1},
-		{"assertions", "./assertions", "phases: {strict: true}", "TESTO031", 2},
-		{"actions", "./phases", "phases: {strict: true}", "TESTO029", 2},
+		{"assertions", "./assertions", "phases: {strict: true}", "TESTO031", 4},
+		{"actions", "./phases", "phases: {strict: true}", "TESTO029", 4},
 		{"header", "./header", "header: {required: [[Title, Titlef]]}", "TESTO028", 1},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -344,6 +344,57 @@ linters:
 			out, err := cmd.CombinedOutput()
 			exit, ok := errors.AsType[*exec.ExitError](err)
 			if !ok || exit.ExitCode() != 1 || strings.Count(string(out), tc.id+":") != tc.count {
+				t.Fatalf("%v: %s", err, out)
+			}
+		})
+	}
+}
+
+func TestIntegrationOperationPatterns(t *testing.T) {
+	binary := os.Getenv("TESTOLINT_GOLANGCI_BINARY")
+	if binary == "" {
+		t.Skip("set TESTOLINT_GOLANGCI_BINARY to verify the external plugin")
+	}
+	binary, err := filepath.Abs(binary)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, tc := range []struct {
+		name, style string
+		conflict    bool
+	}{
+		{"ignore", `{"phases":{"strict":true},"actions":[{"package":"testolint-style-integration/operation_ignore","function":"action"},{"package":"testolint-style-integration/operation_ignore/remote/...","function":"*"}],"assertions":[{"package":"testolint-style-integration/operation_ignore","function":"verify"}],"ignore":[{"package":"testolint-style-integration/operation_ignore","function":"ignored"},{"package":"testolint-style-integration/operation_ignore/remote","function":"Ignored"}]}`, false},
+		{"narrow-wide", `{"actions":[{"package":"testolint-style-integration/operation_ignore/...","function":"*"}],"assertions":[{"package":"testolint-style-integration/...","function":"*"}]}`, true},
+		{"wide-narrow", `{"actions":[{"package":"testolint-style-integration/...","function":"*"}],"assertions":[{"package":"testolint-style-integration/operation_ignore/...","function":"*"}]}`, true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			config := `version: "2"
+linters:
+  default: none
+  enable: [testolint]
+  settings:
+    custom:
+      testolint:
+        type: module
+        settings:
+          disable-all: true
+          enable: [TESTO029, TESTO030, TESTO031]
+          style: ` + tc.style + "\n"
+			path := filepath.Join(t.TempDir(), "config.yml")
+			if err := os.WriteFile(path, []byte(config), 0600); err != nil {
+				t.Fatal(err)
+			}
+			cmd := exec.Command(binary, "run", "--max-same-issues=0", "--config", path, "./operation_ignore/...")
+			cmd.Dir = "testdata/integration/testdata/style"
+			out, err := cmd.CombinedOutput()
+			if tc.conflict {
+				if err == nil || !strings.Contains(string(out), "conflicting operation patterns") {
+					t.Fatalf("%v: %s", err, out)
+				}
+				return
+			}
+			exit, ok := errors.AsType[*exec.ExitError](err)
+			if !ok || exit.ExitCode() != 1 || strings.Count(string(out), "TESTO029:") != 3 || strings.Count(string(out), "TESTO030:") != 1 || strings.Contains(string(out), "TESTO031:") {
 				t.Fatalf("%v: %s", err, out)
 			}
 		})

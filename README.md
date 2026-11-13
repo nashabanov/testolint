@@ -90,6 +90,20 @@ Browse [parallel lifecycle](docs/rules/TESTO014.md),
 [context construction](docs/rules/TESTO021.md) and
 [provider initialization](docs/rules/TESTO023.md) checks in the catalog.
 
+In the unreleased 0.10.0 work, [TESTO028](docs/rules/TESTO028.md) checks configured
+required Allure metadata in valid local tests and their effective BeforeEach.
+Unknown sources suppress unproven absence; this is not a proof of runtime metadata.
+
+### Allure operation configuration
+
+Optional TESTO029/031 checks support groups of typed client methods and package
+functions, with exact exceptions that exclude local helper bodies but still
+analyze evaluated arguments; see [configuration](docs/configuration.md#grouped-operations).
+TESTO030 defaults to relaxed Action/Assert sequences; strict AAA is opt-in.
+Only explicit Setup establishes preparation order; literal and factory-based
+input construction is neutral. Coverage follows one local helper transition,
+so unclassified calls in deeper or imported helpers may remain unchecked.
+
 ## Scope and limitations
 
 Static checks cover supported source patterns and do not prove race freedom.
@@ -98,7 +112,7 @@ individual rule boundaries and the [diagnostic contract](docs/contract.md).
 
 ### Verified compatibility
 
-The 0.9.0 checkout is verified with:
+The unreleased 0.10.0 candidate is verified with:
 
 | Go | Testo | Testo Allure | Custom golangci-lint |
 | --- | --- | --- | --- |
@@ -116,7 +130,3 @@ and the [analyzer pipeline](docs/pipeline.md) for implementation details.
 ## License
 
 [MIT](LICENSE).
-
-In the unreleased 0.10.0 work, [TESTO028](docs/rules/TESTO028.md) checks configured
-required Allure metadata in valid local tests and their effective BeforeEach.
-Unknown sources suppress unproven absence; this is not a proof of runtime metadata.

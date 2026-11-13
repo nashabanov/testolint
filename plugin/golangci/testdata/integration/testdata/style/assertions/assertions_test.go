@@ -19,3 +19,12 @@ func (Suite) TestAssertions(t T) {
 	_ = assert.ObjectsAreEqual(1, 1)
 	a.Setup(t, "precondition", func(t T) { require.Equal(t, 1, 1) })
 }
+
+func (Suite) TestNative(t T) {
+	t.Require().Equal(1, 1)
+	checks := t.Assert().Masked()
+	checks.Equal(1, 1)
+	_ = t.Require().Hidden()
+	a.Step(t, "check", func(t T) { t.Require().Equal(1, 1) })
+	a.Setup(t, "precondition", func(t T) { t.Assert().Equal(1, 1) })
+}

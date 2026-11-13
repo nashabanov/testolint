@@ -10,6 +10,7 @@ type StyleConfig struct {
 	Phases     PhaseConfig  `json:"phases"`
 	Header     HeaderConfig `json:"header"`
 	Actions    []Symbol     `json:"actions"`
+	Ignore     []Symbol     `json:"ignore"`
 	Assertions []Symbol     `json:"assertions"`
 }
 
@@ -73,7 +74,7 @@ func (h HeaderConfig) clone() HeaderConfig {
 	return h
 }
 
-// PhaseConfig controls TESTO030; nil Strict means true.
+// PhaseConfig controls TESTO030; nil Strict means false.
 type PhaseConfig struct {
 	Strict *bool `json:"strict"`
 }

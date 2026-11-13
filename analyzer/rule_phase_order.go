@@ -22,13 +22,13 @@ type phaseEvent struct {
 }
 
 func (w *operationWalker) event(event phaseEvent) {
-	if !w.suppressPhases {
+	if w.collectPhases && !w.suppressPhases {
 		w.events = append(w.events, event)
 	}
 }
 
 func reportPhases(p *analysis.Pass, events []phaseEvent, config PhaseConfig) {
-	strict := config.Strict == nil || *config.Strict
+	strict := config.Strict != nil && *config.Strict
 	previous := unknownPhase
 	reported := map[token.Pos]bool{}
 	for _, event := range events {
@@ -45,7 +45,7 @@ func reportPhases(p *analysis.Pass, events []phaseEvent, config PhaseConfig) {
 				related = []analysis.RelatedInformation{{Pos: event.call.Pos(), End: event.call.End(), Message: "phase transition inside helper"}}
 			}
 			if !reported[call.Pos()] {
-				report(p, "TESTO030", analysis.Diagnostic{Pos: call.Pos(), End: call.End(), Message: "test phases must follow Data/Setup, Action, Assert order", Related: related})
+				report(p, "TESTO030", analysis.Diagnostic{Pos: call.Pos(), End: call.End(), Message: "test phases must follow Setup, Action, Assert order", Related: related})
 				reported[call.Pos()] = true
 			}
 		}

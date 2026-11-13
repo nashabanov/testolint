@@ -19,3 +19,11 @@ func (Suite) TestOrder(t T) {
 	action()
 	allure.Setup(t, "late setup", func(t T) {})
 }
+
+func (Suite) TestNativeAssertions(t T) {
+	t.Require().Equal(1, 1)
+	action()
+	checks := t.Assert().Masked()
+	checks.Equal(1, 1)
+	action()
+}

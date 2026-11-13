@@ -62,3 +62,6 @@ invocation. The walker collects call facts and local declarations once, then
 caches context-independent helper operations and phase events. Each use rebases
 the callsite and outer coverage without mutating the cached summary. No helper
 summary follows another helper. State is not shared between analyzer runs.
+
+When TESTO030 is disabled, the shared coverage walker does not collect phase
+events, including in cached helper summaries.

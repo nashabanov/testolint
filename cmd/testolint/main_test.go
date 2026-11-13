@@ -135,8 +135,8 @@ func TestPhaseCLI(t *testing.T) {
 		flags []string
 		count int
 	}{
-		{"default", nil, 2},
-		{"strict", []string{"-phase-order-strict=true"}, 2},
+		{"default", nil, 1},
+		{"strict", []string{"-phase-order-strict=true"}, 4},
 		{"relaxed", []string{"-phase-order-strict=false"}, 1},
 		{"json-relaxed", []string{"-style-config=" + strings.TrimSuffix(style, "}") + `,"phases":{"strict":false}}`}, 1},
 	} {
@@ -167,7 +167,38 @@ func TestAssertionCLI(t *testing.T) {
 	cmd.Dir = "../../plugin/golangci/testdata/integration/testdata/style"
 	out, err := cmd.CombinedOutput()
 	exit, ok := errors.AsType[*exec.ExitError](err)
-	if !ok || exit.ExitCode() != 3 || strings.Count(string(out), "TESTO031:") != 2 {
+	if !ok || exit.ExitCode() != 3 || strings.Count(string(out), "TESTO031:") != 4 {
 		t.Fatalf("%v: %s", err, out)
+	}
+}
+
+func TestOperationPatternsCLI(t *testing.T) {
+	binary := filepath.Join(t.TempDir(), "testolint")
+	build := exec.Command("go", "build", "-o", binary, ".")
+	if out, err := build.CombinedOutput(); err != nil {
+		t.Fatalf("%v: %s", err, out)
+	}
+	for _, tc := range []struct {
+		name, style string
+		conflict    bool
+	}{
+		{"ignore", `{"phases":{"strict":true},"actions":[{"package":"testolint-style-integration/operation_ignore","function":"action"},{"package":"testolint-style-integration/operation_ignore/remote/...","function":"*"}],"assertions":[{"package":"testolint-style-integration/operation_ignore","function":"verify"}],"ignore":[{"package":"testolint-style-integration/operation_ignore","function":"ignored"},{"package":"testolint-style-integration/operation_ignore/remote","function":"Ignored"}]}`, false},
+		{"conflict", `{"actions":[{"package":"testolint-style-integration/operation_ignore/...","function":"*"}],"ignore":[{"package":"testolint-style-integration/...","function":"*"}]}`, true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			cmd := exec.Command(binary, "-disable-all", "-enable=TESTO029,TESTO030,TESTO031", "-style-config="+tc.style, "./operation_ignore/...")
+			cmd.Dir = "../../plugin/golangci/testdata/integration/testdata/style"
+			out, err := cmd.CombinedOutput()
+			if tc.conflict {
+				if err == nil || !strings.Contains(string(out), "conflicting operation patterns") {
+					t.Fatalf("%v: %s", err, out)
+				}
+				return
+			}
+			exit, ok := errors.AsType[*exec.ExitError](err)
+			if !ok || exit.ExitCode() != 3 || strings.Count(string(out), "TESTO029:") != 3 || strings.Count(string(out), "TESTO030:") != 1 || strings.Contains(string(out), "TESTO031:") {
+				t.Fatalf("%v: %s", err, out)
+			}
+		})
 	}
 }

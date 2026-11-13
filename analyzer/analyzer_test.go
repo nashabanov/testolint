@@ -12,8 +12,20 @@ import (
 
 func TestAnalyzer(t *testing.T) {
 	tests := []string{
-		"assertions", "phases_strict", "phases_relaxed", "step_coverage", "required_header", "header_config", "style", "no_sleep", "message_links",
-		"config_selection", "config_reverse", "config_none",
+		"operation_ignore", "operation_patterns",
+		"header_no_hook",
+		"assertions",
+		"phases_strict",
+		"phases_relaxed",
+		"step_coverage",
+		"required_header",
+		"header_config",
+		"style",
+		"no_sleep",
+		"message_links",
+		"config_selection",
+		"config_reverse",
+		"config_none",
 		"plugin_parent_nil",
 		"provider_before_each",
 		"construction",
@@ -45,19 +57,48 @@ func TestAnalyzer(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt, func(t *testing.T) {
 			analyzer := Analyzer
+
+			if tt == "operation_ignore" {
+				strict := true
+				var err error
+				analyzer, err = New(Config{DisableAll: true, Enable: []string{"TESTO029", "TESTO030", "TESTO031"}, Style: StyleConfig{
+					Phases:     PhaseConfig{Strict: &strict},
+					Actions:    []Symbol{{Package: tt, Function: "action"}, {Package: tt + "/remote", Function: "*"}},
+					Assertions: []Symbol{{Package: tt, Function: "verify"}},
+					Ignore:     []Symbol{{Package: tt, Function: "ignored"}, {Package: tt + "/remote", Function: "Ignored"}},
+				}})
+				if err != nil {
+					t.Fatal(err)
+				}
+			}
+			if tt == "operation_patterns" {
+				var err error
+				analyzer, err = New(Config{DisableAll: true, Enable: []string{"TESTO029", "TESTO031"}})
+				if err != nil {
+					t.Fatal(err)
+				}
+				if err := analyzer.Flags.Set("style-config", `{"actions":[{"package":"operation_patterns/...","function":"*"},{"package":"operation_patterns","receiver":"Client","method":"*"}],"assertions":[{"package":"operation_patterns","function":"Check"}],"ignore":[{"package":"operation_patterns","receiver":"Client","method":"Close"}]}`); err != nil {
+					t.Fatal(err)
+				}
+			}
+
+			if tt == "header_no_hook" {
+				include := false
+				analyzer, _ = New(Config{DisableAll: true, Enable: []string{"TESTO028"}, Style: StyleConfig{Header: HeaderConfig{Required: [][]string{{"Tags"}}, IncludeBeforeEach: &include}}})
+			}
 			if tt == "assertions" {
 				analyzer, _ = New(Config{DisableAll: true, Enable: []string{"TESTO031"}})
 			}
 			if strings.HasPrefix(tt, "phases_") {
 				config := Config{DisableAll: true, Enable: []string{"TESTO030"}, Style: StyleConfig{Actions: []Symbol{{Package: tt, Function: "action"}}, Assertions: []Symbol{{Package: tt, Function: "verify"}}}}
-				if tt == "phases_relaxed" {
-					value := false
+				if tt == "phases_strict" {
+					value := true
 					config.Style.Phases.Strict = &value
 				}
 				analyzer, _ = New(config)
 			}
 			if tt == "step_coverage" {
-				analyzer, _ = New(Config{DisableAll: true, Enable: []string{"TESTO029", "TESTO031"}, Style: StyleConfig{Actions: []Symbol{{Package: "step_coverage", Function: "action"}}, Assertions: []Symbol{{Package: "step_coverage", Function: "verify"}}}})
+				analyzer, _ = New(Config{DisableAll: true, Enable: []string{"TESTO029", "TESTO031"}, Style: StyleConfig{Actions: []Symbol{{Package: "step_coverage", Function: "action"}, {Package: "step_coverage/remote", Receiver: "Client", Method: "Send"}, {Package: "step_coverage/remote", Function: "Send"}}, Assertions: []Symbol{{Package: "step_coverage", Function: "verify"}}}})
 			}
 			if tt == "required_header" {
 				analyzer, _ = New(Config{DisableAll: true, Enable: []string{"TESTO028"}, Style: StyleConfig{Header: HeaderConfig{Required: [][]string{{"Title", "Titlef"}, {"Tags"}}}}})
