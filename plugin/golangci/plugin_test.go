@@ -63,3 +63,37 @@ func TestIndependentPlugins(t *testing.T) {
 		t.Fatal("flag configuration leaked")
 	}
 }
+
+func TestStyleSettings(t *testing.T) {
+	factory, err := register.GetPlugin("testolint")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, strict := range []bool{true, false} {
+		plugin, err := factory(map[string]any{"enable": []string{"TESTO030"}, "style": map[string]any{"phases": map[string]any{"strict": strict}}})
+		if err != nil {
+			t.Fatal(err)
+		}
+		analyzers, err := plugin.BuildAnalyzers()
+		if err != nil {
+			t.Fatal(err)
+		}
+		want := "false"
+		if strict {
+			want = "true"
+		}
+		if got := analyzers[0].Flags.Lookup("phase-order-strict").Value.String(); got != want {
+			t.Fatalf("got %s want %s", got, want)
+		}
+	}
+	for _, style := range []any{
+		map[string]any{"unknown": true},
+		map[string]any{"phases": map[string]any{"strict": "false"}},
+		map[string]any{"header": map[string]any{"methods": []string{"Unknown"}}},
+		map[string]any{"actions": []any{map[string]any{"package": "x", "function": "x.y"}}},
+	} {
+		if _, err := factory(map[string]any{"style": style}); err == nil {
+			t.Errorf("accepted invalid style %+v", style)
+		}
+	}
+}

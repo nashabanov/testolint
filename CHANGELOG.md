@@ -4,6 +4,10 @@
 
 ### In progress
 
+- Add CLI style JSON configuration and the independent phase-order-strict flag,
+  preserving explicit false with order-independent flag precedence. Add real
+  Testo/Allure CLI phase fixtures and plugin settings validation tests.
+
 - Add initial TESTO030 phase events to the shared coverage traversal, with
   strict and relaxed modes, Setup semantics and conservative control-flow gaps.
 

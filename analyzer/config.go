@@ -34,6 +34,9 @@ func New(config Config) (*analysis.Analyzer, error) {
 		return nil, err
 	}
 	a := &analysis.Analyzer{Name: Analyzer.Name, Doc: Analyzer.Doc}
+	styleFlags := &styleFlags{config: &config}
+	a.Flags.Var(&styleJSONFlag{state: styleFlags}, "style-config", "style settings as a JSON object")
+	a.Flags.Var(&phaseStrictFlag{state: styleFlags}, "phase-order-strict", "require a single Action then Assert sequence for TESTO030")
 	a.Flags.BoolVar(&config.DisableAll, "disable-all", config.DisableAll, "start with all rules disabled; enable selected IDs with -enable")
 	a.Flags.Var(&selectionFlag{config: &config, enable: true}, "enable", "enable comma-separated rule IDs (for example TESTO006,TESTO019)")
 	a.Flags.Var(&selectionFlag{config: &config}, "disable", "disable comma-separated rule IDs (must not overlap -enable)")

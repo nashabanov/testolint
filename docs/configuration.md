@@ -96,8 +96,7 @@ style:
 empty; groups combine with AND, alternatives within a group with OR.
 Unknown methods, duplicates and empty groups are errors. Required methods must
 be recognized. Include-before-each defaults true. These settings do not enable
-rules: select TESTO025 and/or TESTO028 independently. CLI transport of structured
-header configuration is still pending in the 0.10.0 implementation.
+rules: select TESTO025 and/or TESTO028 independently. CLI accepts the same style object as JSON through `-style-config`.
 
 ### Operation symbols (implementation in progress)
 
@@ -117,8 +116,18 @@ style:
 Choose package/function or package/receiver/method. Receiver is the declared
 type name, without a pointer prefix. Import aliases do not change identity.
 Duplicate/conflicting classifications and malformed identifiers are rejected.
-These matchers currently have no built-in defaults; testify defaults and CLI
-transport are pending. Rules remain independently opt-in.
+These matchers currently have no built-in defaults; testify defaults are pending. Rules remain independently opt-in.
 
 `style.phases.strict` defaults to true; false permits Assert → Action for
-TESTO030. Returning to Setup remains invalid. CLI flag support is pending.
+TESTO030. Returning to Setup remains invalid.
+
+```sh
+testolint -disable-all -enable=TESTO028 \
+  -style-config='{"header":{"required":[["Title","Titlef"],["Tags"]]}}' ./...
+testolint -enable=TESTO030 -phase-order-strict=false ./...
+```
+
+The explicit `-phase-order-strict` flag overrides JSON regardless of argument
+order. Both style flags may appear only once. Unknown JSON fields, wrong types,
+invalid symbol identities and invalid required groups are rejected. The phase
+flag affects only TESTO030; it does not enable it or change other rules.

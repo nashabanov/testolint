@@ -123,3 +123,37 @@ func TestCLIInvalidConfiguration(t *testing.T) {
 		})
 	}
 }
+
+func TestPhaseCLI(t *testing.T) {
+	binary := filepath.Join(t.TempDir(), "testolint")
+	if out, err := exec.Command("go", "build", "-o", binary, ".").CombinedOutput(); err != nil {
+		t.Fatalf("build: %v\n%s", err, out)
+	}
+	style := `{"actions":[{"package":"testolint-style-integration/phases","function":"action"}],"assertions":[{"package":"testolint-style-integration/phases","function":"verify"}]}`
+	for _, tc := range []struct {
+		name  string
+		flags []string
+		count int
+	}{
+		{"default", nil, 2},
+		{"strict", []string{"-phase-order-strict=true"}, 2},
+		{"relaxed", []string{"-phase-order-strict=false"}, 1},
+		{"json-relaxed", []string{"-style-config=" + strings.TrimSuffix(style, "}") + `,"phases":{"strict":false}}`}, 1},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			args := []string{"-disable-all", "-enable=TESTO030"}
+			if tc.name != "json-relaxed" {
+				args = append(args, "-style-config="+style)
+			}
+			args = append(args, tc.flags...)
+			args = append(args, "./phases")
+			cmd := exec.Command(binary, args...)
+			cmd.Dir = "../../plugin/golangci/testdata/integration/testdata/style"
+			out, err := cmd.CombinedOutput()
+			exit, ok := errors.AsType[*exec.ExitError](err)
+			if !ok || exit.ExitCode() != 3 || strings.Count(string(out), "TESTO030:") != tc.count {
+				t.Fatalf("err=%v output=%s", err, out)
+			}
+		})
+	}
+}
