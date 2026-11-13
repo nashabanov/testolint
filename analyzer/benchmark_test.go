@@ -57,6 +57,13 @@ func benchmarkPass(b *testing.B, source string) *analysis.Pass {
 		b.Fatal(err)
 	}
 	module := fmt.Sprintf("module benchmarkfixture\n\ngo 1.27.1\n\nrequire github.com/ozontech/testo v0.0.0\nreplace github.com/ozontech/testo => %q\n", stub)
+	if strings.Contains(source, "github.com/ozontech/testo-allure") {
+		allure, err := filepath.Abs("testdata/src/github.com/ozontech/testo-allure")
+		if err != nil {
+			b.Fatal(err)
+		}
+		module += fmt.Sprintf("require github.com/ozontech/testo-allure v0.0.0\nreplace github.com/ozontech/testo-allure => %q\n", allure)
+	}
 	for name, content := range map[string]string{"go.mod": module, "suite.go": source} {
 		if err := os.WriteFile(filepath.Join(dir, name), []byte(content), 0o600); err != nil {
 			b.Fatal(err)
@@ -151,5 +158,57 @@ func BenchmarkPipelinePrerequisites(b *testing.B) {
 				tc.run()
 			}
 		})
+	}
+}
+
+// BenchmarkStructureSharedHelper excludes loading and type checking. Every test
+// calls the same helper, making repeated helper analysis visible in scaling.
+func BenchmarkStructureSharedHelper(b *testing.B) {
+	for _, size := range []int{1, 10, 100} {
+		for _, enabled := range []bool{false, true} {
+			b.Run(fmt.Sprintf("tests=%d/enabled=%t", size, enabled), func(b *testing.B) {
+				b.StopTimer()
+				source := `package benchmarkfixture
+import (
+ "github.com/ozontech/testo"
+ a "github.com/ozontech/testo-allure"
+)
+type Context struct{*a.PluginAllure}
+type T = *Context
+type Suite struct{testo.Suite[T]}
+func action(){}
+func verify(){}
+func helper(t T){a.Step(t,"act",func(t T){action()});a.Step(t,"assert",func(t T){verify()})}
+`
+				for i := 0; i < size; i++ {
+					source += fmt.Sprintf("func (*Suite) TestCase%d(t T){helper(t)}\n", i)
+				}
+				pass := benchmarkPass(b, source)
+				count := 0
+				pass.Report = func(analysis.Diagnostic) { count++ }
+				config := Config{Style: StyleConfig{Actions: []Symbol{{Package: "benchmarkfixture", Function: "action"}}, Assertions: []Symbol{{Package: "benchmarkfixture", Function: "verify"}}}}
+				if enabled {
+					config.Enable = []string{"TESTO029", "TESTO030", "TESTO031"}
+				}
+				analyzer, err := New(config)
+				if err != nil {
+					b.Fatal(err)
+				}
+				if _, err := analyzer.Run(pass); err != nil {
+					b.Fatal(err)
+				}
+				if count != 0 {
+					b.Fatalf("unexpected diagnostics: %d", count)
+				}
+				b.ReportAllocs()
+				b.ResetTimer()
+				b.StartTimer()
+				for i := 0; i < b.N; i++ {
+					if _, err := analyzer.Run(pass); err != nil {
+						b.Fatal(err)
+					}
+				}
+			})
+		}
 	}
 }

@@ -63,6 +63,7 @@ type operationWalker struct {
 	operations     []operation
 	events         []phaseEvent
 	suppressPhases bool
+	helpers        map[*types.Func]helperFacts
 }
 
 func checkStepCoverage(p *analysis.Pass, s *suite) { checkStepCoverageWithConfig(p, s, StyleConfig{}) }
@@ -71,7 +72,11 @@ func checkStepCoverageWithConfig(p *analysis.Pass, s *suite, config StyleConfig)
 	if !allureContext(s.tType) {
 		return
 	}
-	w := operationWalker{pass: p, facts: collectCallFacts(p), declarations: map[*types.Func]*ast.FuncDecl{}, kinds: builtinAssertions()}
+	newOperationWalker(p, config).checkSuite(s, config)
+}
+
+func newOperationWalker(p *analysis.Pass, config StyleConfig) *operationWalker {
+	w := &operationWalker{pass: p, facts: collectCallFacts(p), declarations: map[*types.Func]*ast.FuncDecl{}, kinds: builtinAssertions(), helpers: map[*types.Func]helperFacts{}}
 	for _, symbol := range config.Assertions {
 		w.kinds[symbol] = "TESTO031"
 	}
@@ -87,6 +92,11 @@ func checkStepCoverageWithConfig(p *analysis.Pass, s *suite, config StyleConfig)
 			}
 		}
 	}
+	return w
+}
+
+func (w *operationWalker) checkSuite(s *suite, config StyleConfig) {
+	p := w.pass
 	for _, test := range s.tests {
 		if !validStyleTest(s, test) {
 			continue
@@ -150,7 +160,12 @@ func (w *operationWalker) walk(node ast.Node, covered bool, site *ast.CallExpr, 
 			})
 			w.suppressPhases = saved
 			return false
-		case *ast.ReturnStmt, *ast.BranchStmt:
+		case *ast.ReturnStmt:
+			for _, result := range n.Results {
+				w.walk(result, covered, site, depth)
+			}
+			return false
+		case *ast.BranchStmt:
 			w.event(phaseEvent{})
 			return false
 		case *ast.FuncLit:
@@ -195,11 +210,42 @@ func (w *operationWalker) walk(node ast.Node, covered bool, site *ast.CallExpr, 
 				w.event(phaseEvent{call: n, site: site, phase: phase})
 			} else if fn != nil && depth == 0 {
 				if decl := w.declarations[fn.Origin()]; decl != nil && decl.Body != nil {
-					w.walk(decl.Body, covered, n, 1)
+					w.helper(fn.Origin(), decl.Body, covered, n)
 				}
 			}
 			return false
 		}
 		return true
 	})
+}
+
+// Helper summaries are context-independent: coverage is relative to the helper,
+// and phase events retain their operation positions. Callsite rebasing happens
+// when consumed. No summary follows another helper.
+type helperFacts struct {
+	operations []operation
+	events     []phaseEvent
+}
+
+func (w *operationWalker) helper(fn *types.Func, body *ast.BlockStmt, covered bool, site *ast.CallExpr) {
+	facts, ok := w.helpers[fn]
+	if !ok {
+		operations, events, suppressed := w.operations, w.events, w.suppressPhases
+		w.operations = nil
+		w.events = nil
+		w.suppressPhases = false
+		w.walk(body, false, nil, 1)
+		facts = helperFacts{w.operations, w.events}
+		w.helpers[fn] = facts
+		w.operations, w.events, w.suppressPhases = operations, events, suppressed
+	}
+	for _, op := range facts.operations {
+		op.site = site
+		op.covered = op.covered || covered
+		w.operations = append(w.operations, op)
+	}
+	for _, event := range facts.events {
+		event.site = site
+		w.event(event)
+	}
 }

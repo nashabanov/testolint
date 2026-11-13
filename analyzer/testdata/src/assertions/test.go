@@ -21,3 +21,8 @@ func (*Suite) TestAssertions(t T) {
 	a.Step(t, "check", func(t T) { check.Equal(t, 1, 1) })
 	a.Setup(t, "precondition", func(t T) { require.Equal(t, 1, 1) })
 }
+
+func returning(t T) bool { return check.Equal(t, 1, 1) }
+func (*Suite) TestReturningHelper(t T) {
+	_ = returning(t) // want "TESTO031"
+}

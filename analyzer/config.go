@@ -187,7 +187,16 @@ func selectedRulesWithStyle(selected map[ruleID]bool, style StyleConfig) ruleSet
 			case "TESTO025":
 				checker = func(p *analysis.Pass, s *suite) { checkStyleWithHeader(p, s, style.Header) }
 			case "TESTO029":
-				checker = func(p *analysis.Pass, s *suite) { checkStepCoverageWithConfig(p, s, style) }
+				var walker *operationWalker
+				checker = func(p *analysis.Pass, s *suite) {
+					if !allureContext(s.tType) {
+						return
+					}
+					if walker == nil || walker.pass != p {
+						walker = newOperationWalker(p, style)
+					}
+					walker.checkSuite(s, style)
+				}
 			case "TESTO028":
 				checker = func(p *analysis.Pass, s *suite) { checkRequiredHeaderWithConfig(p, s, style.Header) }
 			}

@@ -4,6 +4,14 @@
 
 ### In progress
 
+- Reuse structure-rule package facts across suites and cache one-level helper
+  summaries per analyzer invocation, rebasing diagnostics at each callsite.
+
+- Check configured/assertion calls in helper return expressions; add an e2e
+  regression for TESTO031 callsite reporting.
+- Add a preloaded-package benchmark comparing defaults with enabled structure
+  rules when 1, 10 or 100 tests share a helper.
+
 - Add external custom-plugin checks for all four new style rules, including
   strict and relaxed phase settings against real Testo/Allure fixtures.
 

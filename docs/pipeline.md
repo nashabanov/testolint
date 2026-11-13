@@ -49,3 +49,16 @@ on it do not establish performance on call-heavy packages. Record the checkout
 revisions, Go version, hardware and sampling parameters when comparing results.
 
 See [Contributing](../CONTRIBUTING.md#benchmarks) for full analyzer benchmarks.
+
+## Structure-rule benchmark
+
+```sh
+go test ./analyzer -run '^$' -bench '^BenchmarkStructureSharedHelper$' -benchmem -benchtime=100ms -count=2
+```
+
+This compares registry defaults with TESTO029–031 enabled, using the same helper
+from 1, 10 and 100 tests. Loading and type checking are excluded. Structure checks share one lazy walker across Allure suites in an analyzer
+invocation. The walker collects call facts and local declarations once, then
+caches context-independent helper operations and phase events. Each use rebases
+the callsite and outer coverage without mutating the cached summary. No helper
+summary follows another helper. State is not shared between analyzer runs.
