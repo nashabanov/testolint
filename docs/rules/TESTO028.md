@@ -14,6 +14,7 @@ A test calling `t.Title("title")` and `t.Tags("smoke")` meets those groups.
 Tags may instead come from the effective local BeforeEach hook.
 
 Only valid local Testo tests with the typed Allure marker are checked.
-Promoted and shadowed hooks follow discovery. Unavailable hooks, control flow,
-and opaque calls receiving the context suppress unproven absence diagnostics.
+Promoted and shadowed hooks follow discovery. Unavailable hooks and opaque calls receiving the context suppress unproven
+absence diagnostics. Conditional known metadata makes only those methods
+uncertain, preserving independently proven missing groups.
 Uninvoked function literals contribute no metadata. No automatic fix is offered.

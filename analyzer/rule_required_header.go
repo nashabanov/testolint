@@ -37,6 +37,7 @@ func checkRequiredHeaderWithConfig(p *analysis.Pass, s *suite, config HeaderConf
 		return
 	}
 	inherited := map[string]bool{}
+	possible := map[string]bool{}
 	unknown := false
 	if config.IncludeBeforeEach == nil || *config.IncludeBeforeEach {
 		for _, hook := range s.hooks {
@@ -51,7 +52,7 @@ func checkRequiredHeaderWithConfig(p *analysis.Pass, s *suite, config HeaderConf
 				unknown = true
 				break
 			}
-			unknown = collectHeader(p, hook.decl.Body, sig.Params().At(0), config, inherited)
+			unknown = collectHeader(p, hook.decl.Body, sig.Params().At(0), config, inherited, possible)
 		}
 	}
 	for _, test := range s.tests {
@@ -59,11 +60,15 @@ func checkRequiredHeaderWithConfig(p *analysis.Pass, s *suite, config HeaderConf
 			continue
 		}
 		found := map[string]bool{}
+		uncertain := map[string]bool{}
+		for name := range possible {
+			uncertain[name] = true
+		}
 		for name := range inherited {
 			found[name] = true
 		}
 		sig := test.fn().Type().(*types.Signature)
-		localUnknown := collectHeader(p, test.method.decl.Body, sig.Params().At(0), config, found)
+		localUnknown := collectHeader(p, test.method.decl.Body, sig.Params().At(0), config, found, uncertain)
 		if unknown || localUnknown {
 			continue
 		}
@@ -71,7 +76,7 @@ func checkRequiredHeaderWithConfig(p *analysis.Pass, s *suite, config HeaderConf
 		for _, group := range config.Required {
 			present := false
 			for _, name := range group {
-				present = present || found[name]
+				present = present || found[name] || uncertain[name]
 			}
 			if !present {
 				missing = append(missing, strings.Join(group, " or "))
@@ -86,7 +91,7 @@ func checkRequiredHeaderWithConfig(p *analysis.Pass, s *suite, config HeaderConf
 // Only unconditional direct metadata calls prove presence. Control flow and
 // calls receiving the context may contribute metadata, but are unknown here.
 // Merely creating a function literal does not execute its body.
-func collectHeader(p *analysis.Pass, body *ast.BlockStmt, context types.Object, config HeaderConfig, found map[string]bool) bool {
+func collectHeader(p *analysis.Pass, body *ast.BlockStmt, context types.Object, config HeaderConfig, found, uncertain map[string]bool) bool {
 	unknown := false
 	for _, stmt := range body.List {
 		if metadataStatementWithHeader(p, stmt, context, config) {
@@ -99,7 +104,31 @@ func collectHeader(p *analysis.Pass, body *ast.BlockStmt, context types.Object, 
 			continue
 		}
 		switch stmt.(type) {
-		case *ast.IfStmt, *ast.SwitchStmt, *ast.TypeSwitchStmt, *ast.ForStmt, *ast.RangeStmt, *ast.SelectStmt, *ast.BranchStmt, *ast.ReturnStmt, *ast.LabeledStmt:
+		case *ast.IfStmt, *ast.SwitchStmt, *ast.TypeSwitchStmt, *ast.ForStmt, *ast.RangeStmt, *ast.SelectStmt:
+			// Traverse lexical blocks only to learn possible metadata, never
+			// to establish that any branch executes. Opaque context use keeps
+			// the entire contribution unknown.
+			ast.Inspect(stmt, func(n ast.Node) bool {
+				if _, ok := n.(*ast.FuncLit); ok {
+					return false
+				}
+				if call, ok := n.(*ast.CallExpr); ok {
+					for _, arg := range call.Args {
+						if sameObject(p.TypesInfo, arg, context) {
+							unknown = true
+						}
+					}
+				}
+				if block, ok := n.(*ast.BlockStmt); ok {
+					if collectHeader(p, block, context, config, uncertain, uncertain) {
+						unknown = true
+					}
+					return false
+				}
+				return true
+			})
+			continue
+		case *ast.BranchStmt, *ast.ReturnStmt, *ast.LabeledStmt:
 			return true
 		}
 		ast.Inspect(stmt, func(n ast.Node) bool {

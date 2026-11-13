@@ -4,6 +4,14 @@
 
 ### In progress
 
+- Recognize literal input preparation passed directly to configured actions as
+  Data; preserve neutral result computations.
+- Track conditional header methods separately so uncertainty in one group does
+  not suppress independently proven missing groups.
+
+- Stop phase inference across short-circuit boolean expressions, avoiding
+  false TESTO030 reports while preserving later proven order violations.
+
 - Reuse structure-rule package facts across suites and cache one-level helper
   summaries per analyzer invocation, rebasing diagnostics at each callsite.
 

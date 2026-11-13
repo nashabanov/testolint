@@ -73,3 +73,18 @@ suppression is not implemented.
 suite initializations. It does not update an existing context's option snapshot.
 Registration from a running test can deliberately configure a later RunSubSuite
 or RunTest; it is not diagnosed.
+
+## Optional test structure checks
+
+TESTO028–031 require the typed Allure marker on valid local Testo test contexts,
+including locally available promoted methods. Import presence and existing Step
+calls do not determine applicability. Hooks are not standalone coverage/phase
+targets; the effective BeforeEach supplies TESTO028 metadata.
+
+TESTO029/031 follow exactly one local helper transition and direct Step/Setup
+callbacks. Configured symbols are classified even without source bodies.
+Unknown operations are neither violations nor evidence of purity. Coverage is
+lexical; arbitrary closures, async/deferred calls and TearDown bodies are outside
+this synchronous scope. TESTO030 retains ordered events in supported linear
+segments; branches, loops and short-circuit expressions interrupt inference.
+These checks do not prove the absence of all unreported side effects.

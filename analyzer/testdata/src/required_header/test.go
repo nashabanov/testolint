@@ -43,3 +43,14 @@ func (*Closure) TestMissing(t T) { t.Title("title") } // want "TESTO028"
 type Plain struct{ testo.Suite[*testo.T] }
 
 func (*Plain) TestIgnored(t *testo.T) {}
+
+func (*Conditional) TestProvenMissingTitle(t T) {} // want "TESTO028.*Title"
+
+type ConditionCall struct{ testo.Suite[T] }
+
+func unknownMetadata(t T) bool { t.Title("title"); t.Tags("tag"); return true }
+func (*ConditionCall) BeforeEach(t T) {
+	if unknownMetadata(t) {
+	}
+}
+func (*ConditionCall) TestUnknown(t T) {}

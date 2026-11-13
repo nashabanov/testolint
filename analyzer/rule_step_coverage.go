@@ -143,6 +143,29 @@ func (w *operationWalker) walk(node ast.Node, covered bool, site *ast.CallExpr, 
 	}
 	ast.Inspect(node, func(n ast.Node) bool {
 		switch n := n.(type) {
+		case *ast.BlockStmt:
+			data := w.requestData(n)
+			for _, stmt := range n.List {
+				if data[stmt] {
+					w.event(phaseEvent{call: stmt, site: site, phase: arrangePhase})
+				}
+				w.walk(stmt, covered, site, depth)
+				if _, ok := stmt.(*ast.ReturnStmt); ok {
+					break
+				}
+			}
+			return false
+		case *ast.BinaryExpr:
+			if n.Op != token.LAND && n.Op != token.LOR {
+				return true
+			}
+			w.walk(n.X, covered, site, depth)
+			saved := w.suppressPhases
+			w.suppressPhases = true
+			w.walk(n.Y, covered, site, depth)
+			w.suppressPhases = saved
+			w.event(phaseEvent{})
+			return false
 		case *ast.IfStmt, *ast.SwitchStmt, *ast.TypeSwitchStmt, *ast.ForStmt, *ast.RangeStmt, *ast.SelectStmt, *ast.LabeledStmt:
 			// Coverage remains lexical; unsupported control flow interrupts
 			// phase inference rather than concatenating mutually exclusive paths.

@@ -16,7 +16,7 @@ const (
 )
 
 type phaseEvent struct {
-	call  *ast.CallExpr
+	call  ast.Node
 	site  *ast.CallExpr
 	phase testPhase
 }

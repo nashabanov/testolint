@@ -9,8 +9,8 @@ type Context struct{ *a.PluginAllure }
 type T = *Context
 type Suite struct{ testo.Suite[T] }
 
-func action() {}
-func verify() {}
+func action(...any) {}
+func verify()       {}
 func (*Suite) TestGood(t T) {
 	a.Setup(t, "setup", func(t T) { action(); verify() })
 	action()
@@ -55,3 +55,26 @@ var condition bool
 
 func (*Suite) TestOnlyAssert(t T) { verify() }
 func (*Suite) TestNeutral(t T)    { action(); verify(); x := 1; _ = x + 1 }
+
+func maybeVerify() bool { verify(); return true }
+func (*Suite) TestShortCircuit(t T) {
+	_ = condition && maybeVerify()
+	action()
+	verify()
+	action() // want "TESTO030"
+}
+func (*Suite) TestShortCircuitOr(t T) {
+	_ = condition || maybeVerify()
+	action()
+}
+
+func (*Suite) TestLateRequestData(t T) {
+	action()
+	request := struct{ ID int }{ID: 42} // want "TESTO030"
+	action(request)
+}
+func (*Suite) TestRequestData(t T) {
+	request := struct{ ID int }{ID: 42}
+	action(request)
+	verify()
+}

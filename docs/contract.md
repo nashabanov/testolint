@@ -6,7 +6,7 @@ Diagnostic IDs are stable and are never recycled for another meaning. Rule names
 are the human-readable registry names; configuration selects exact, case-sensitive
 IDs, not names or classes. Renaming or reclassifying a rule must be documented.
 `correctness` describes a supported Testo contract or execution hazard; `policy`
-can reject intentional code; `style` concerns formatting. Classification does not
+can reject intentional code; `style` concerns optional formatting and test structure. Classification does not
 implicitly enable or disable a rule.
 
 In 0.9.0, TESTO001–TESTO024 and TESTO027 are enabled by default. TESTO025 and
@@ -54,3 +54,7 @@ exit 1. Invalid flags/configuration exit 2; help exits 0. Fix and JSON modes fol
 the underlying driver behavior and should not be interpreted as normal text mode.
 The plugin uses golangci-lint's exit policy (normally 1 for findings, configurable
 by that driver); it does not promise the standalone CLI's exit codes.
+
+In unreleased 0.10.0, TESTO028–031 are also disabled by default and offer no
+automatic fixes. TESTO030 consumes the same operation classification as coverage
+checks without enabling their diagnostics.

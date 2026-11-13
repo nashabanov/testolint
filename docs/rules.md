@@ -2,12 +2,12 @@
 
 <a id="rule-examples-and-remedies"></a>
 
-Both the CLI and golangci-lint run the same 27 rules. All 25 correctness/policy
-rules are enabled by default; the two style rules are opt-in.
+Both the CLI and golangci-lint run the same 31 rules. All 25 correctness/policy
+rules are enabled by default; the six style rules are opt-in.
 
 - **Correctness:** Testo contract violations, missing execution and concrete lifecycle hazards.
 - **Policy:** checks that can flag intentional code, including unused providers and shared-field ownership.
-- **Style:** source formatting, with automatic fixes where safe.
+- **Style:** optional formatting and test structure checks; only TESTO025/026 offer safe whitespace fixes.
 
 See [configuration](configuration.md) to select rules and [shared analysis scope](analysis-scope.md)
 for common limitations. Rule pages explain each diagnostic, its remedy and boundaries.
@@ -47,5 +47,5 @@ The table's names, classes and defaults are checked against the rule registry.
 | <a id="testo027"></a>[`TESTO027`](rules/TESTO027.md) | `no-sleep` | policy | enabled | No | Avoid time.Sleep in Testo tests and hooks; use polling or condition-based waiting. |
 | <a id="testo028"></a>[`TESTO028`](rules/TESTO028.md) | `required-test-header` | style | disabled | No | Required configured metadata, including effective BeforeEach. |
 | <a id="testo029"></a>[`TESTO029`](rules/TESTO029.md) | `unreported-action` | style | disabled | No | Coverage of configured actions by Step/Setup. |
-| <a id="testo031"></a>[`TESTO031`](rules/TESTO031.md) | `assert-inside-step` | style | disabled | No | Coverage of configured assertions by Step/Setup. |
 | <a id="testo030"></a>[`TESTO030`](rules/TESTO030.md) | `test-phase-order` | style | disabled | No | Ordered Setup, configured actions and assertions. |
+| <a id="testo031"></a>[`TESTO031`](rules/TESTO031.md) | `assert-inside-step` | style | disabled | No | Coverage of configured assertions by Step/Setup. |

@@ -7,7 +7,7 @@
 
 A Go linter for tests written with [Testo](https://github.com/ozontech/testo).
 It finds incorrect suite signatures, parameter providers and lifecycle usage
-without running tests, with optional formatting checks for Testo Allure.
+without running tests, with optional formatting and test structure checks for Testo Allure.
 
 ## Installation
 
