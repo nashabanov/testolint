@@ -20,6 +20,7 @@ type ruleMeta struct {
 // Existing correctness and policy rules are enabled by default. Class does not
 // determine enablement. Each rule links to its own documentation page.
 var registry = map[ruleID]ruleMeta{
+	"TESTO030": {Name: "test-phase-order", Class: style, DocURL: ruleDocURL + "/TESTO030.md"},
 	"TESTO029": {Name: "unreported-action", Class: style, DocURL: ruleDocURL + "/TESTO029.md"},
 	"TESTO031": {Name: "assert-inside-step", Class: style, DocURL: ruleDocURL + "/TESTO031.md"},
 	"TESTO028": {Name: "required-test-header", Class: style, DocURL: ruleDocURL + "/TESTO028.md"},
@@ -66,7 +67,7 @@ type ruleRegistration struct {
 }
 
 var registrations = []ruleRegistration{
-	{ids: []ruleID{"TESTO029", "TESTO031"}, suite: checkStepCoverage},
+	{ids: []ruleID{"TESTO029", "TESTO030", "TESTO031"}, suite: checkStepCoverage},
 	{ids: []ruleID{"TESTO028"}, suite: checkRequiredHeader},
 	{ids: []ruleID{"TESTO001"}, suite: checkTestSignature},
 	{ids: []ruleID{"TESTO002"}, suite: checkHookSignature},

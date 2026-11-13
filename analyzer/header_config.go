@@ -7,6 +7,7 @@ import (
 
 // StyleConfig configures optional style rules without enabling them.
 type StyleConfig struct {
+	Phases     PhaseConfig  `json:"phases"`
 	Header     HeaderConfig `json:"header"`
 	Actions    []Symbol     `json:"actions"`
 	Assertions []Symbol     `json:"assertions"`
@@ -70,4 +71,9 @@ func (h HeaderConfig) clone() HeaderConfig {
 		h.IncludeBeforeEach = &value
 	}
 	return h
+}
+
+// PhaseConfig controls TESTO030; nil Strict means true.
+type PhaseConfig struct {
+	Strict *bool `json:"strict"`
 }

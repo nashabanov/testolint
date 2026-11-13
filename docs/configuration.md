@@ -119,3 +119,6 @@ type name, without a pointer prefix. Import aliases do not change identity.
 Duplicate/conflicting classifications and malformed identifiers are rejected.
 These matchers currently have no built-in defaults; testify defaults and CLI
 transport are pending. Rules remain independently opt-in.
+
+`style.phases.strict` defaults to true; false permits Assert → Action for
+TESTO030. Returning to Setup remains invalid. CLI flag support is pending.

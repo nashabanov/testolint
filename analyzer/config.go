@@ -21,6 +21,10 @@ type Config struct {
 // Neither config slices nor mutable flags are shared with another instance or
 // the default Analyzer. Flags must be configured before analysis starts.
 func New(config Config) (*analysis.Analyzer, error) {
+	if config.Style.Phases.Strict != nil {
+		value := *config.Style.Phases.Strict
+		config.Style.Phases.Strict = &value
+	}
 	config.Style.Header = config.Style.Header.clone()
 	config.Style.Actions = append([]Symbol(nil), config.Style.Actions...)
 	config.Style.Assertions = append([]Symbol(nil), config.Style.Assertions...)

@@ -48,3 +48,4 @@ The table's names, classes and defaults are checked against the rule registry.
 | <a id="testo028"></a>[`TESTO028`](rules/TESTO028.md) | `required-test-header` | style | disabled | No | Required configured metadata, including effective BeforeEach. |
 | <a id="testo029"></a>[`TESTO029`](rules/TESTO029.md) | `unreported-action` | style | disabled | No | Coverage of configured actions by Step/Setup. |
 | <a id="testo031"></a>[`TESTO031`](rules/TESTO031.md) | `assert-inside-step` | style | disabled | No | Coverage of configured assertions by Step/Setup. |
+| <a id="testo030"></a>[`TESTO030`](rules/TESTO030.md) | `test-phase-order` | style | disabled | No | Ordered Setup, configured actions and assertions. |

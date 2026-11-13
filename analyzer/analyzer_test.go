@@ -12,7 +12,7 @@ import (
 
 func TestAnalyzer(t *testing.T) {
 	tests := []string{
-		"step_coverage", "required_header", "header_config", "style", "no_sleep", "message_links",
+		"phases_strict", "phases_relaxed", "step_coverage", "required_header", "header_config", "style", "no_sleep", "message_links",
 		"config_selection", "config_reverse", "config_none",
 		"plugin_parent_nil",
 		"provider_before_each",
@@ -45,6 +45,14 @@ func TestAnalyzer(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt, func(t *testing.T) {
 			analyzer := Analyzer
+			if strings.HasPrefix(tt, "phases_") {
+				config := Config{DisableAll: true, Enable: []string{"TESTO030"}, Style: StyleConfig{Actions: []Symbol{{Package: tt, Function: "action"}}, Assertions: []Symbol{{Package: tt, Function: "verify"}}}}
+				if tt == "phases_relaxed" {
+					value := false
+					config.Style.Phases.Strict = &value
+				}
+				analyzer, _ = New(config)
+			}
 			if tt == "step_coverage" {
 				analyzer, _ = New(Config{DisableAll: true, Enable: []string{"TESTO029", "TESTO031"}, Style: StyleConfig{Actions: []Symbol{{Package: "step_coverage", Function: "action"}}, Assertions: []Symbol{{Package: "step_coverage", Function: "verify"}}}})
 			}

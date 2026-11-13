@@ -56,11 +56,13 @@ type operation struct {
 }
 
 type operationWalker struct {
-	pass         *analysis.Pass
-	facts        *callFacts
-	declarations map[*types.Func]*ast.FuncDecl
-	kinds        map[Symbol]ruleID
-	operations   []operation
+	pass           *analysis.Pass
+	facts          *callFacts
+	declarations   map[*types.Func]*ast.FuncDecl
+	kinds          map[Symbol]ruleID
+	operations     []operation
+	events         []phaseEvent
+	suppressPhases bool
 }
 
 func checkStepCoverage(p *analysis.Pass, s *suite) { checkStepCoverageWithConfig(p, s, StyleConfig{}) }
@@ -90,7 +92,9 @@ func checkStepCoverageWithConfig(p *analysis.Pass, s *suite, config StyleConfig)
 			continue
 		}
 		w.operations = nil
+		w.events = nil
 		w.walk(test.method.decl.Body, false, nil, 0)
+		reportPhases(p, w.events, config.Phases)
 		reported := map[struct {
 			pos token.Pos
 			id  ruleID
@@ -129,12 +133,36 @@ func (w *operationWalker) walk(node ast.Node, covered bool, site *ast.CallExpr, 
 	}
 	ast.Inspect(node, func(n ast.Node) bool {
 		switch n := n.(type) {
+		case *ast.IfStmt, *ast.SwitchStmt, *ast.TypeSwitchStmt, *ast.ForStmt, *ast.RangeStmt, *ast.SelectStmt, *ast.LabeledStmt:
+			// Coverage remains lexical; unsupported control flow interrupts
+			// phase inference rather than concatenating mutually exclusive paths.
+			w.event(phaseEvent{})
+			saved := w.suppressPhases
+			w.suppressPhases = true
+			ast.Inspect(n, func(child ast.Node) bool {
+				if child == n {
+					return true
+				}
+				if child != nil {
+					w.walk(child, covered, site, depth)
+				}
+				return false
+			})
+			w.suppressPhases = saved
+			return false
+		case *ast.ReturnStmt, *ast.BranchStmt:
+			w.event(phaseEvent{})
+			return false
 		case *ast.FuncLit:
 			return false
 		case *ast.GoStmt, *ast.DeferStmt:
 			// Asynchronous and deferred bodies are not synchronous report containers.
 			return false
 		case *ast.CallExpr:
+			// Arguments execute before the call; function literal bodies do not.
+			for _, arg := range n.Args {
+				w.walk(arg, covered, site, depth)
+			}
 			fn := w.facts.function(w.pass.TypesInfo, n.Fun)
 			symbol := symbolOf(fn)
 			if symbol.Package == allureImportPath && symbol.Function != "" {
@@ -142,21 +170,35 @@ func (w *operationWalker) walk(node ast.Node, covered bool, site *ast.CallExpr, 
 				case "TearDown":
 					return false
 				case "Step", "Setup":
+					saved := w.suppressPhases
+					if symbol.Function == "Setup" {
+						w.event(phaseEvent{call: n, site: site, phase: arrangePhase})
+						w.suppressPhases = true
+					}
 					if len(n.Args) >= 3 {
 						if callback, ok := ast.Unparen(n.Args[2]).(*ast.FuncLit); ok {
 							w.walk(callback.Body, true, site, depth)
+						} else {
+							w.event(phaseEvent{})
 						}
 					}
+					w.suppressPhases = saved
 					return false
 				}
 			}
 			if id := w.kinds[symbol]; id != "" {
 				w.operations = append(w.operations, operation{n, site, id, covered})
+				phase := actionPhase
+				if id == "TESTO031" {
+					phase = assertPhase
+				}
+				w.event(phaseEvent{call: n, site: site, phase: phase})
 			} else if fn != nil && depth == 0 {
 				if decl := w.declarations[fn.Origin()]; decl != nil && decl.Body != nil {
 					w.walk(decl.Body, covered, n, 1)
 				}
 			}
+			return false
 		}
 		return true
 	})

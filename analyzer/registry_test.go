@@ -82,7 +82,7 @@ func TestRegistry(t *testing.T) {
 		if meta.Class != correctness && meta.Class != policy && meta.Class != style {
 			t.Errorf("invalid class: %s", id)
 		}
-		if meta.EnableByDefault != (id != "TESTO025" && id != "TESTO026" && id != "TESTO028" && id != "TESTO029" && id != "TESTO031") {
+		if meta.EnableByDefault != (id != "TESTO025" && id != "TESTO026" && id != "TESTO028" && id != "TESTO029" && id != "TESTO031" && id != "TESTO030") {
 			t.Errorf("unexpected default enablement: %s", id)
 		}
 		if meta.DocURL != "https://github.com/nashabanov/testolint/blob/main/docs/rules/"+string(id)+".md" {

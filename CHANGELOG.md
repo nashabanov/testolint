@@ -4,6 +4,9 @@
 
 ### In progress
 
+- Add initial TESTO030 phase events to the shared coverage traversal, with
+  strict and relaxed modes, Setup semantics and conservative control-flow gaps.
+
 - Add the initial shared TESTO029/031 coverage walker with explicit typed symbol
   matchers, Step/Setup containers, one local helper and callsite diagnostics.
 
@@ -14,7 +17,7 @@
 - Introduce shared header configuration and typed method recognition for
   TESTO025, preserving default metadata, Parallel handling and safe fixes.
 - Add configurable-header analyzer regression coverage. Required metadata
-  groups are now checked by opt-in TESTO028; TESTO030 and full assertion defaults remain pending.
+  groups are now checked by opt-in TESTO028; full assertion defaults and integration work remain pending.
 
 ## 0.9.0
 
