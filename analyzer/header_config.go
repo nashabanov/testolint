@@ -7,7 +7,9 @@ import (
 
 // StyleConfig configures optional style rules without enabling them.
 type StyleConfig struct {
-	Header HeaderConfig `json:"header"`
+	Header     HeaderConfig `json:"header"`
+	Actions    []Symbol     `json:"actions"`
+	Assertions []Symbol     `json:"assertions"`
 }
 
 // HeaderConfig is shared by header formatting and required metadata checks.

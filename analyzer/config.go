@@ -22,6 +22,8 @@ type Config struct {
 // the default Analyzer. Flags must be configured before analysis starts.
 func New(config Config) (*analysis.Analyzer, error) {
 	config.Style.Header = config.Style.Header.clone()
+	config.Style.Actions = append([]Symbol(nil), config.Style.Actions...)
+	config.Style.Assertions = append([]Symbol(nil), config.Style.Assertions...)
 	config.Enable = append([]string(nil), config.Enable...)
 	config.Disable = append([]string(nil), config.Disable...)
 	if _, err := resolveConfig(config); err != nil {
@@ -44,6 +46,18 @@ func New(config Config) (*analysis.Analyzer, error) {
 func resolveConfig(config Config) (map[ruleID]bool, error) {
 	if err := config.Style.Header.validate(); err != nil {
 		return nil, err
+	}
+	seen := map[Symbol]bool{}
+	for _, symbols := range [][]Symbol{config.Style.Actions, config.Style.Assertions} {
+		for _, symbol := range symbols {
+			if err := symbol.validate(); err != nil {
+				return nil, err
+			}
+			if seen[symbol] {
+				return nil, fmt.Errorf("testolint: duplicate or conflicting operation: %+v", symbol)
+			}
+			seen[symbol] = true
+		}
 	}
 	enable, err := validateIDs("enable", config.Enable)
 	if err != nil {
@@ -165,6 +179,8 @@ func selectedRulesWithStyle(selected map[ruleID]bool, style StyleConfig) ruleSet
 			switch registration.ids[0] {
 			case "TESTO025":
 				checker = func(p *analysis.Pass, s *suite) { checkStyleWithHeader(p, s, style.Header) }
+			case "TESTO029":
+				checker = func(p *analysis.Pass, s *suite) { checkStepCoverageWithConfig(p, s, style) }
 			case "TESTO028":
 				checker = func(p *analysis.Pass, s *suite) { checkRequiredHeaderWithConfig(p, s, style.Header) }
 			}

@@ -46,3 +46,5 @@ The table's names, classes and defaults are checked against the rule registry.
 | <a id="testo026"></a>[`TESTO026`](rules/TESTO026.md) | `blank-between-steps` | style | disabled | Yes, where safe | Separate adjacent Allure Step statements with a blank line. |
 | <a id="testo027"></a>[`TESTO027`](rules/TESTO027.md) | `no-sleep` | policy | enabled | No | Avoid time.Sleep in Testo tests and hooks; use polling or condition-based waiting. |
 | <a id="testo028"></a>[`TESTO028`](rules/TESTO028.md) | `required-test-header` | style | disabled | No | Required configured metadata, including effective BeforeEach. |
+| <a id="testo029"></a>[`TESTO029`](rules/TESTO029.md) | `unreported-action` | style | disabled | No | Coverage of configured actions by Step/Setup. |
+| <a id="testo031"></a>[`TESTO031`](rules/TESTO031.md) | `assert-inside-step` | style | disabled | No | Coverage of configured assertions by Step/Setup. |

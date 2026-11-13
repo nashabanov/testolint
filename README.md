@@ -77,8 +77,8 @@ and the [changelog](CHANGELOG.md).
 
 ## Rules
 
-The [rule catalog](docs/rules.md) lists all 28 checks, examples and remedies.
-The 25 correctness/policy checks are enabled by default; three style checks are opt-in.
+The [rule catalog](docs/rules.md) lists all 30 checks, examples and remedies.
+The 25 correctness/policy checks are enabled by default; five style checks are opt-in.
 Policy findings can flag intentional code and do not necessarily indicate a runtime failure.
 
 <a id="parallel-lifecycle-checks"></a>

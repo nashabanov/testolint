@@ -98,3 +98,24 @@ Unknown methods, duplicates and empty groups are errors. Required methods must
 be recognized. Include-before-each defaults true. These settings do not enable
 rules: select TESTO025 and/or TESTO028 independently. CLI transport of structured
 header configuration is still pending in the 0.10.0 implementation.
+
+### Operation symbols (implementation in progress)
+
+`style.actions` and `style.assertions` are lists of exact symbols:
+
+```yaml
+style:
+  actions:
+    - package: example.org/client
+      receiver: Client
+      method: Send
+  assertions:
+    - package: example.org/check
+      function: Equal
+```
+
+Choose package/function or package/receiver/method. Receiver is the declared
+type name, without a pointer prefix. Import aliases do not change identity.
+Duplicate/conflicting classifications and malformed identifiers are rejected.
+These matchers currently have no built-in defaults; testify defaults and CLI
+transport are pending. Rules remain independently opt-in.
