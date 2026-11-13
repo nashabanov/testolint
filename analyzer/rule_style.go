@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"go/ast"
 	"go/types"
+	"slices"
 
 	"golang.org/x/tools/go/analysis"
 )
@@ -13,6 +14,10 @@ const allureImportPath = "github.com/ozontech/testo-allure"
 // Style checks only local, runnable test declarations. Imported bodies and
 // helper functions are deliberately outside their scope.
 func checkStyle(p *analysis.Pass, s *suite) {
+	checkStyleWithHeader(p, s, HeaderConfig{})
+}
+
+func checkStyleWithHeader(p *analysis.Pass, s *suite, headerConfig HeaderConfig) {
 	for _, test := range s.tests {
 		decl := test.method.decl
 		sig := test.fn().Type().(*types.Signature)
@@ -24,7 +29,7 @@ func checkStyle(p *analysis.Pass, s *suite) {
 		}
 		body := decl.Body.List
 		header := 0
-		for header < len(body) && metadataStatement(p, body[header], sig.Params().At(0)) {
+		for header < len(body) && metadataStatementWithHeader(p, body[header], sig.Params().At(0), headerConfig) {
 			header++
 		}
 		if header > 0 && header < len(body) {
@@ -55,7 +60,7 @@ func statementCall(stmt ast.Stmt) *ast.CallExpr {
 	return call
 }
 
-func metadataStatement(p *analysis.Pass, stmt ast.Stmt, context types.Object) bool {
+func metadataStatementWithHeader(p *analysis.Pass, stmt ast.Stmt, context types.Object, config HeaderConfig) bool {
 	call := statementCall(stmt)
 	if call == nil {
 		return false
@@ -75,11 +80,7 @@ func metadataStatement(p *analysis.Pass, stmt ast.Stmt, context types.Object) bo
 	if fn.Pkg() == nil || fn.Pkg().Path() != allureImportPath {
 		return false
 	}
-	switch fn.Name() {
-	case "Title", "Titlef", "Tags", "Description", "Descriptionf", "ID", "Labels", "Links", "Owner", "Severity", "Epic", "Feature", "Story", "Parameters", "Flaky", "Muted", "Known":
-		return true
-	}
-	return false
+	return slices.Contains(config.methods(), fn.Name())
 }
 
 func stepStatement(p *analysis.Pass, stmt ast.Stmt) bool {

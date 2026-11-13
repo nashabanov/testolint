@@ -45,3 +45,11 @@ context is recognized; see the analysis boundaries below for supported methods a
 Direct `t.Parallel()` on the original context also counts as header metadata.
 
 [Rule index](../rules.md) · [Configuration](../configuration.md) · [Shared scope](../analysis-scope.md)
+
+## Header configuration
+
+`style.header.methods` selects recognized built-in Allure metadata methods.
+Omitting it preserves the existing set; an empty list recognizes no Allure
+metadata. Direct Testo `Parallel` remains a formatting header element.
+Names resolve only to typed Allure methods, not arbitrary methods with the
+same spelling. This setting does not enable TESTO025.

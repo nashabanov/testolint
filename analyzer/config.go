@@ -11,15 +11,17 @@ import (
 // uses registry defaults. DisableAll starts with no enabled rules; Enable and
 // Disable then apply explicit selections. Overlapping or duplicate IDs are errors.
 type Config struct {
-	DisableAll bool     `json:"disable-all"`
-	Enable     []string `json:"enable"`
-	Disable    []string `json:"disable"`
+	Style      StyleConfig `json:"style"`
+	DisableAll bool        `json:"disable-all"`
+	Enable     []string    `json:"enable"`
+	Disable    []string    `json:"disable"`
 }
 
 // New creates an independent analyzer with validated configuration and CLI flags.
 // Neither config slices nor mutable flags are shared with another instance or
 // the default Analyzer. Flags must be configured before analysis starts.
 func New(config Config) (*analysis.Analyzer, error) {
+	config.Style.Header = config.Style.Header.clone()
 	config.Enable = append([]string(nil), config.Enable...)
 	config.Disable = append([]string(nil), config.Disable...)
 	if _, err := resolveConfig(config); err != nil {
@@ -34,12 +36,15 @@ func New(config Config) (*analysis.Analyzer, error) {
 		if err != nil {
 			return nil, err
 		}
-		return runSelected(p, selected)
+		return runSelectedWithStyle(p, selected, config.Style)
 	}
 	return a, nil
 }
 
 func resolveConfig(config Config) (map[ruleID]bool, error) {
+	if err := config.Style.Header.validate(); err != nil {
+		return nil, err
+	}
 	enable, err := validateIDs("enable", config.Enable)
 	if err != nil {
 		return nil, err
@@ -127,13 +132,22 @@ func (f *selectionFlag) Set(value string) error {
 }
 
 func runSelected(p *analysis.Pass, selected map[ruleID]bool) (any, error) {
+	return runSelectedWithStyle(p, selected, StyleConfig{})
+}
+
+func runSelectedWithStyle(p *analysis.Pass, selected map[ruleID]bool, style StyleConfig) (any, error) {
 	pass := *p
 	pass.Report = func(d analysis.Diagnostic) {
 		if selected[ruleID(d.Category)] {
 			p.Report(d)
 		}
 	}
-	return runWithRules(&pass, selectedRules(selected))
+	rules := selectedRules(selected)
+	if selected["TESTO025"] || selected["TESTO026"] {
+		// Style is the last registered suite checker; preserve its reporting order.
+		rules.suites[len(rules.suites)-1] = func(p *analysis.Pass, s *suite) { checkStyleWithHeader(p, s, style.Header) }
+	}
+	return runWithRules(&pass, rules)
 }
 
 func selectedRules(selected map[ruleID]bool) ruleSet {

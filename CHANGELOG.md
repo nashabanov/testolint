@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.10.0 (Unreleased)
+
+### In progress
+
+- Introduce shared header configuration and typed method recognition for
+  TESTO025, preserving default metadata, Parallel handling and safe fixes.
+- Add configurable-header analyzer regression coverage. Required metadata
+  checks and TESTO028–031 are not implemented yet.
+
 ## 0.9.0
 
 ### Fixed
