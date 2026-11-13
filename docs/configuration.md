@@ -116,7 +116,8 @@ style:
 Choose package/function or package/receiver/method. Receiver is the declared
 type name, without a pointer prefix. Import aliases do not change identity.
 Duplicate/conflicting classifications and malformed identifiers are rejected.
-These matchers currently have no built-in defaults; testify defaults are pending. Rules remain independently opt-in.
+Actions have no built-in defaults. Assertions include the explicit testify
+v1.11.1 assert/require assertion API; configured assertions extend that set. Rules remain independently opt-in.
 
 `style.phases.strict` defaults to true; false permits Assert → Action for
 TESTO030. Returning to Setup remains invalid.

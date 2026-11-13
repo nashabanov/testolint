@@ -71,7 +71,7 @@ func checkStepCoverageWithConfig(p *analysis.Pass, s *suite, config StyleConfig)
 	if !allureContext(s.tType) {
 		return
 	}
-	w := operationWalker{pass: p, facts: collectCallFacts(p), declarations: map[*types.Func]*ast.FuncDecl{}, kinds: map[Symbol]ruleID{}}
+	w := operationWalker{pass: p, facts: collectCallFacts(p), declarations: map[*types.Func]*ast.FuncDecl{}, kinds: builtinAssertions()}
 	for _, symbol := range config.Assertions {
 		w.kinds[symbol] = "TESTO031"
 	}

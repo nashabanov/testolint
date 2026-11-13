@@ -4,6 +4,10 @@
 
 ### In progress
 
+- Recognize testify v1.11.1 assert/require assertion functions and Assertions
+  methods by explicit typed identities, excluding constructors and utilities.
+  Add analyzer and real-Testo/Allure CLI regressions.
+
 - Add CLI style JSON configuration and the independent phase-order-strict flag,
   preserving explicit false with order-independent flag precedence. Add real
   Testo/Allure CLI phase fixtures and plugin settings validation tests.
@@ -21,7 +25,7 @@
 - Introduce shared header configuration and typed method recognition for
   TESTO025, preserving default metadata, Parallel handling and safe fixes.
 - Add configurable-header analyzer regression coverage. Required metadata
-  groups are now checked by opt-in TESTO028; full assertion defaults and integration work remain pending.
+  groups are now checked by opt-in TESTO028; extended integration and analysis-boundary work remain pending.
 
 ## 0.9.0
 

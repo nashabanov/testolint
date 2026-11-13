@@ -16,4 +16,5 @@ operations inside the helper. Data-only helpers need no reporting container.
 Only one local helper transition is followed. Nested Step callbacks do not add
 helper depth. Arbitrary function literals, asynchronous/deferred calls and
 TearDown bodies are excluded. Unknown operations are not classified as pure.
-No automatic fix is offered. Built-in assertion defaults are still pending.
+No automatic fix is offered. Testify v1.11.1 assert/require assertion functions and Assertions methods
+are recognized by default; constructors and comparison utilities are excluded.

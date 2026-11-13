@@ -21,3 +21,6 @@ replace promotionlib => ./promotionlib
 
 require github.com/ozontech/testo-allure v0.0.0
 replace github.com/ozontech/testo-allure => ./github.com/ozontech/testo-allure
+
+require github.com/stretchr/testify v0.0.0
+replace github.com/stretchr/testify => ./github.com/stretchr/testify

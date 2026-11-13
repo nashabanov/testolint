@@ -157,3 +157,17 @@ func TestPhaseCLI(t *testing.T) {
 		})
 	}
 }
+
+func TestAssertionCLI(t *testing.T) {
+	binary := filepath.Join(t.TempDir(), "testolint")
+	if out, err := exec.Command("go", "build", "-o", binary, ".").CombinedOutput(); err != nil {
+		t.Fatalf("%v: %s", err, out)
+	}
+	cmd := exec.Command(binary, "-disable-all", "-enable=TESTO031", "./assertions")
+	cmd.Dir = "../../plugin/golangci/testdata/integration/testdata/style"
+	out, err := cmd.CombinedOutput()
+	exit, ok := errors.AsType[*exec.ExitError](err)
+	if !ok || exit.ExitCode() != 3 || strings.Count(string(out), "TESTO031:") != 2 {
+		t.Fatalf("%v: %s", err, out)
+	}
+}
