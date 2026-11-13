@@ -296,3 +296,56 @@ func TestIntegrationSleep(t *testing.T) {
 		}
 	}
 }
+
+func TestIntegrationStructure(t *testing.T) {
+	binary := os.Getenv("TESTOLINT_GOLANGCI_BINARY")
+	if binary == "" {
+		t.Skip("set TESTOLINT_GOLANGCI_BINARY to verify the external plugin")
+	}
+	binary, err := filepath.Abs(binary)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, tc := range []struct {
+		name, target, settings, id string
+		count                      int
+	}{
+		{"strict", "./phases", "phases: {strict: true}", "TESTO030", 2},
+		{"relaxed", "./phases", "phases: {strict: false}", "TESTO030", 1},
+		{"assertions", "./assertions", "phases: {strict: true}", "TESTO031", 2},
+		{"actions", "./phases", "phases: {strict: true}", "TESTO029", 2},
+		{"header", "./header", "header: {required: [[Title, Titlef]]}", "TESTO028", 1},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			config := `version: "2"
+linters:
+  default: none
+  enable: [testolint]
+  settings:
+    custom:
+      testolint:
+        type: module
+        settings:
+          disable-all: true
+          enable: [` + tc.id + `]
+          style:
+            ` + tc.settings + `
+            actions:
+              - {package: testolint-style-integration/phases, function: action}
+            assertions:
+              - {package: testolint-style-integration/phases, function: verify}
+`
+			path := filepath.Join(t.TempDir(), "config.yml")
+			if err := os.WriteFile(path, []byte(config), 0600); err != nil {
+				t.Fatal(err)
+			}
+			cmd := exec.Command(binary, "run", "--max-same-issues=0", "--config", path, tc.target)
+			cmd.Dir = "testdata/integration/testdata/style"
+			out, err := cmd.CombinedOutput()
+			exit, ok := errors.AsType[*exec.ExitError](err)
+			if !ok || exit.ExitCode() != 1 || strings.Count(string(out), tc.id+":") != tc.count {
+				t.Fatalf("%v: %s", err, out)
+			}
+		})
+	}
+}

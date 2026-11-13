@@ -4,6 +4,9 @@
 
 ### In progress
 
+- Add external custom-plugin checks for all four new style rules, including
+  strict and relaxed phase settings against real Testo/Allure fixtures.
+
 - Recognize testify v1.11.1 assert/require assertion functions and Assertions
   methods by explicit typed identities, excluding constructors and utilities.
   Add analyzer and real-Testo/Allure CLI regressions.
