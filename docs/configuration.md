@@ -79,3 +79,22 @@ Update exact-message snapshots; the ID prefix remains unchanged and `Category`
 remains the ID. The structured `URL` now points to the same rule page.
 TESTO027 skips malformed test names: TESTO007 owns those diagnostics, even when
 TESTO007 is disabled. Valid tests and lifecycle hooks remain checked for sleep.
+
+## Unreleased header configuration
+
+The shared Go/plugin `style.header` settings are:
+
+```yaml
+style:
+  header:
+    methods: [Title, Titlef, Tags, Owner]
+    required: [[Title, Titlef], [Tags]]
+    include-before-each: true
+```
+
+`methods` defaults to the existing TESTO025 metadata set. `required` defaults
+empty; groups combine with AND, alternatives within a group with OR.
+Unknown methods, duplicates and empty groups are errors. Required methods must
+be recognized. Include-before-each defaults true. These settings do not enable
+rules: select TESTO025 and/or TESTO028 independently. CLI transport of structured
+header configuration is still pending in the 0.10.0 implementation.

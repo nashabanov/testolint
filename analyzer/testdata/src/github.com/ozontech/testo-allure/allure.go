@@ -8,3 +8,7 @@ func (*PluginAllure) Title(string)                            {}
 func (*PluginAllure) Tags(...string)                          {}
 func (*PluginAllure) Description(string)                      {}
 func Step[T any](t T, name string, f func(T), options ...any) {}
+
+func (a *PluginAllure) unwrapAllure() *PluginAllure { return a }
+func (*PluginAllure) Titlef(string, ...any)         {}
+func (*PluginAllure) Owner(string)                  {}

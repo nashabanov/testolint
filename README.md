@@ -77,8 +77,8 @@ and the [changelog](CHANGELOG.md).
 
 ## Rules
 
-The [rule catalog](docs/rules.md) lists all 27 checks, examples and remedies.
-The 25 correctness/policy checks are enabled by default; two style checks are opt-in.
+The [rule catalog](docs/rules.md) lists all 28 checks, examples and remedies.
+The 25 correctness/policy checks are enabled by default; three style checks are opt-in.
 Policy findings can flag intentional code and do not necessarily indicate a runtime failure.
 
 <a id="parallel-lifecycle-checks"></a>
@@ -116,3 +116,7 @@ and the [analyzer pipeline](docs/pipeline.md) for implementation details.
 ## License
 
 [MIT](LICENSE).
+
+In the unreleased 0.10.0 work, [TESTO028](docs/rules/TESTO028.md) checks configured
+required Allure metadata in valid local tests and their effective BeforeEach.
+Unknown sources suppress unproven absence; this is not a proof of runtime metadata.

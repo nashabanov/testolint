@@ -4,10 +4,14 @@
 
 ### In progress
 
+- Add opt-in TESTO028 for configured required Allure metadata, sharing the
+  TESTO025 recognizer and accounting for effective local BeforeEach hooks.
+  Unknown sources conservatively suppress missing-header reports.
+
 - Introduce shared header configuration and typed method recognition for
   TESTO025, preserving default metadata, Parallel handling and safe fixes.
 - Add configurable-header analyzer regression coverage. Required metadata
-  checks and TESTO028–031 are not implemented yet.
+  groups are now checked by opt-in TESTO028; TESTO029–031 remain pending.
 
 ## 0.9.0
 

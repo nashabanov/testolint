@@ -142,15 +142,15 @@ func runSelectedWithStyle(p *analysis.Pass, selected map[ruleID]bool, style Styl
 			p.Report(d)
 		}
 	}
-	rules := selectedRules(selected)
-	if selected["TESTO025"] || selected["TESTO026"] {
-		// Style is the last registered suite checker; preserve its reporting order.
-		rules.suites[len(rules.suites)-1] = func(p *analysis.Pass, s *suite) { checkStyleWithHeader(p, s, style.Header) }
-	}
+	rules := selectedRulesWithStyle(selected, style)
 	return runWithRules(&pass, rules)
 }
 
 func selectedRules(selected map[ruleID]bool) ruleSet {
+	return selectedRulesWithStyle(selected, StyleConfig{})
+}
+
+func selectedRulesWithStyle(selected map[ruleID]bool, style StyleConfig) ruleSet {
 	var rules ruleSet
 	for _, registration := range registrations {
 		enabled := false
@@ -161,7 +161,14 @@ func selectedRules(selected map[ruleID]bool) ruleSet {
 			continue
 		}
 		if registration.suite != nil {
-			rules.suites = append(rules.suites, registration.suite)
+			checker := registration.suite
+			switch registration.ids[0] {
+			case "TESTO025":
+				checker = func(p *analysis.Pass, s *suite) { checkStyleWithHeader(p, s, style.Header) }
+			case "TESTO028":
+				checker = func(p *analysis.Pass, s *suite) { checkRequiredHeaderWithConfig(p, s, style.Header) }
+			}
+			rules.suites = append(rules.suites, checker)
 		}
 		if registration.parallel != nil {
 			rules.parallel = append(rules.parallel, registration.parallel)

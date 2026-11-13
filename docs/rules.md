@@ -45,3 +45,4 @@ The table's names, classes and defaults are checked against the rule registry.
 | <a id="testo025"></a>[`TESTO025`](rules/TESTO025.md) | `blank-after-header` | style | disabled | Yes, where safe | Separate initial Allure metadata from the test body with a blank line. |
 | <a id="testo026"></a>[`TESTO026`](rules/TESTO026.md) | `blank-between-steps` | style | disabled | Yes, where safe | Separate adjacent Allure Step statements with a blank line. |
 | <a id="testo027"></a>[`TESTO027`](rules/TESTO027.md) | `no-sleep` | policy | enabled | No | Avoid time.Sleep in Testo tests and hooks; use polling or condition-based waiting. |
+| <a id="testo028"></a>[`TESTO028`](rules/TESTO028.md) | `required-test-header` | style | disabled | No | Required configured metadata, including effective BeforeEach. |

@@ -12,7 +12,7 @@ import (
 
 func TestAnalyzer(t *testing.T) {
 	tests := []string{
-		"header_config", "style", "no_sleep", "message_links",
+		"required_header", "header_config", "style", "no_sleep", "message_links",
 		"config_selection", "config_reverse", "config_none",
 		"plugin_parent_nil",
 		"provider_before_each",
@@ -45,6 +45,9 @@ func TestAnalyzer(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt, func(t *testing.T) {
 			analyzer := Analyzer
+			if tt == "required_header" {
+				analyzer, _ = New(Config{DisableAll: true, Enable: []string{"TESTO028"}, Style: StyleConfig{Header: HeaderConfig{Required: [][]string{{"Title", "Titlef"}, {"Tags"}}}}})
+			}
 			if tt == "header_config" {
 				analyzer, _ = New(Config{Enable: []string{"TESTO025"}, Style: StyleConfig{Header: HeaderConfig{Methods: []string{"Title"}}}})
 			}
