@@ -1,117 +1,46 @@
-# TESTO029 — unreported-action
+# TESTO029: unreported-action
 
-Opt-in style check for explicitly configured actions in valid local Allure tests.
+style; disabled by default.
 
-Examples assume `Suite` embeds `testo.Suite[T]` and `T` contains the Testo and
-Allure plugins. `allure` denotes `github.com/ozontech/testo-allure`; native assertions use `t.Require()` and `t.Assert()`. Domain fields and methods are
-illustrative. Each Valid example is an alternative to its Violation example.
+Wrap configured actions in an Allure Step or Setup. Enable TESTO029 and declare
+actions in `style.actions`; no actions are classified by default.
 
-## Violation
-
-Assume `CreateOrder` is configured as an action:
+Examples use `Suite` embedding `testo.Suite[T]`, a custom context `T` embedding
+`*testo.T` and `*allure.PluginAllure`, and import `allure "github.com/ozontech/testo-allure"`.
+Local `action() Client` is configured as an action; `Client.Read()` is unclassified:
 
 ```yaml
 style:
   actions:
-    - package: example.org/orders
-      receiver: Client
-      method: CreateOrder
+    - {package: example.org/orders, function: action}
 ```
 
-```go
-func (s *Suite) TestCreate(t T) {
-    s.createOrder(t) // TESTO029: uncovered action inside helper
-}
-
-func (s *Suite) createOrder(t T) {
-    s.client.CreateOrder()
-}
-```
-
-A configured operation called directly outside Step or Setup is diagnosed.
-A local helper with an uncovered operation is diagnosed at its callsite, with
-related information pointing to that operation.
-
-## Valid
-
-Either wrap the helper call in the test, or cover its actions internally:
+Violation (in package `example.org/orders`):
 
 ```go
-func (s *Suite) TestCreate(t T) {
-    allure.Step(t, "Create order", func(t T) {
-        s.createOrder(t)
-    })
-}
-```
-
-Alternatively, the test can call this helper directly:
-
-```go
-func (s *Suite) createOrder(t T) {
-    allure.Step(t, "Create order", func(t T) {
-        s.client.CreateOrder()
-    })
-}
-```
-
-A helper containing both a Step and another uncovered action still violates
-the rule. Setup also covers preparation actions.
-
-Wrap the operation or helper call in Step/Setup, or cover all configured
-operations inside the helper. Data-only helpers need no reporting container.
-
-Only one local helper transition is followed. Nested Step callbacks do not add
-helper depth. Arbitrary function literals, asynchronous/deferred calls and
-TearDown bodies are excluded. Unknown operations are not classified as pure.
-No automatic fix is offered.
-
-## Classifying a client
-
-With `actions: [{package: example.org/orders, receiver: Client, method: "*"}]`
-and `ignore: [{package: example.org/orders, receiver: Client, method: Close}]`,
-all Client methods are actions except Close. Imports and suite assumptions are
-the same as above.
-
-Violation:
-```go
-func (s *Suite) TestCreate(t T) {
-    s.client.CreateOrder() // TESTO029
+func (*Suite) TestOrder(t T) {
+    action().Read() // TESTO029: action executes while evaluating the receiver
 }
 ```
 
 Valid:
+
 ```go
-func (s *Suite) TestCreate(t T) {
-    allure.Step(t, "Create order", func(t T) { s.client.CreateOrder() })
-    s.client.Close() // explicitly excluded
+func (*Suite) TestOrder(t T) {
+    allure.Step(t, "Order", func(t T) { action().Read() })
 }
 ```
 
-Use groups for domain clients or dedicated action packages. A classified helper
-is treated as an operation even if its implementation already creates a Step.
+## Analysis boundaries
 
-## Ignored helpers and arguments
+Valid local Allure tests are checked. One local helper transition is followed;
+helper violations point to the test's callsite with the operation as a related
+location. Cover the call in the test or the operation inside the helper.
+Computed callees and receivers are inspected before arguments.
 
-Assume local `action` is configured as an action, returns an integer, and
-`ignored` is configured in `style.ignore` for this package. The suite/context
-and `allure` import assumptions above apply.
+Configured symbols work without source bodies. `style.ignore` excludes the
+matched operation and its helper body, but evaluated receivers and arguments
+are still checked. Unknown operations are not assumed pure. Arbitrary closures,
+async/deferred calls and TearDown bodies are excluded. No automatic fix is offered.
 
-Violation:
-```go
-func (s *Suite) TestArgument(t T) {
-    ignored(action()) // TESTO029: the argument executes before ignored
-}
-```
-
-Valid:
-```go
-func ignored(int) { action() }
-
-func (s *Suite) TestIgnored(t T) {
-    ignored(0) // explicit ignore also excludes the helper body
-    allure.Step(t, "Prepare argument", func(t T) { ignored(action()) })
-}
-```
-
-Ignore is a trusted exclusion, not verification that the helper produces a
-report. Unclassified local helpers still have their bodies inspected.
+[Rule index](../rules.md) · [Configuration](../configuration.md#operation-symbols) · [Shared scope](../analysis-scope.md#optional-test-structure-checks)

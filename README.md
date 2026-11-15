@@ -92,13 +92,15 @@ Browse [parallel lifecycle](docs/rules/TESTO014.md),
 
 In the unreleased 0.10.0 work, [TESTO028](docs/rules/TESTO028.md) checks configured
 required Allure metadata in valid local tests and their effective BeforeEach.
-Unknown sources suppress unproven absence; this is not a proof of runtime metadata.
+Unknown sources, context aliases and stored method values suppress unproven
+absence. Passing the context to `allure.Step` currently also suppresses this
+check; see [analysis boundaries](docs/rules/TESTO028.md#analysis-boundaries).
 
 ### Allure operation configuration
 
 Optional TESTO029/031 checks support groups of typed client methods and package
 functions, with exact exceptions that exclude local helper bodies but still
-analyze evaluated arguments; see [configuration](docs/configuration.md#grouped-operations).
+analyze evaluated receivers and arguments; see [configuration](docs/configuration.md#grouped-operations).
 TESTO030 defaults to relaxed Action/Assert sequences; strict AAA is opt-in.
 Only explicit Setup establishes preparation order; literal and factory-based
 input construction is neutral. Coverage follows one local helper transition,

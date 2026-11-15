@@ -1,93 +1,50 @@
-# TESTO030 — test-phase-order
+# TESTO030: test-phase-order
 
-Opt-in style check using the same configured operation identities and traversal
-as TESTO029/031. `style.phases.strict` defaults to false; explicit false allows
-Assert → Action. Setup after Action or Assert is invalid in either mode.
+style; disabled by default.
 
-Examples assume `Suite` embeds `testo.Suite[T]` and `T` contains the Testo and
-Allure plugins. `allure` denotes `github.com/ozontech/testo-allure`; native assertions use `t.Require()` and `t.Assert()`. Domain fields and methods are
-illustrative. Each Valid example is an alternative to its Violation example.
+Keep Setup before actions and assertions. Enable TESTO030; set
+`style.phases.strict: true` to also reject Action after Assert. The default
+`false` allows repeated Action/Assert sequences. Phases are optional.
 
-## Violation
+Examples use `Suite` embedding `testo.Suite[T]`, a custom context `T` embedding
+`*testo.T` and `*allure.PluginAllure`, and import `allure "github.com/ozontech/testo-allure"`.
+Local `action() Client` is configured in `style.actions` by package/function;
+`Client.Read()` is unclassified. These examples isolate TESTO030.
 
-Assume `CreateOrder` is configured as an action as in TESTO029.
-With explicit `strict: true`:
-
-```go
-func (s *Suite) TestCreate(t T) {
-    s.client.CreateOrder()
-    t.Require().Equal(1, s.orderCount())
-    s.client.CreateOrder() // TESTO030: Action after Assert
-}
-```
-
-A late Setup is invalid in both modes:
+Violation with `strict: true`:
 
 ```go
-func (s *Suite) TestCreate(t T) {
-    s.client.CreateOrder()
-    allure.Setup(t, "Prepare environment", func(t T) {}) // TESTO030
-}
-```
-
-Action → Assert → Setup violates either mode. Assert → Action violates strict.
-
-## Valid
-
-Multiple actions and assertions in a phase are allowed:
-
-```go
-func (s *Suite) TestCreate(t T) {
-    allure.Setup(t, "Prepare environment", func(t T) {
-        t.Require().NotNil(s.client) // precondition remains Arrange
-    })
-    s.client.CreateOrder()
-    s.client.CreateOrder()
-    t.Require().Equal(2, s.orderCount())
-    t.Require().NotNil(s.client)
-}
-```
-
-The first violation example is valid with `style.phases.strict: false` (or
-`-phase-order-strict=false`). These examples isolate TESTO030; when coverage
-rules are also enabled, put actions and assertions in Step/Setup containers.
-
-Setup → Action → Action → Assert → Assert is valid. No phase is mandatory.
-Action → Assert → Action → Assert is valid with strict false.
-
-Setup is one Arrange event, including any precondition assertions inside it.
-Step retains the order of operations inside its direct callback. Local helpers
-are followed once; their event order is retained and diagnostics point to the
-callsite with related information. No automatic reorder fix is offered.
-
-Branches, loops and short-circuit boolean expressions interrupt phase inference; their paths are not concatenated.
-TearDown, deferred/async bodies and uninvoked closures are excluded. Ordinary
-assignments and result calculations are neutral. Input preparation, including literals and factory calls, remains neutral;
-only explicit Setup calls establish Arrange events. Unknown operations receive no assumed phase.
-
-## Ignored helpers
-
-With `strict: true`, local integer-returning `action` configured as an action
-and `ignored` configured in `style.ignore`, the following is a violation.
-Suite/context assumptions and the native assertion API are as above; these
-examples isolate TESTO030.
-
-```go
-func (s *Suite) TestArgument(t T) {
+func (*Suite) TestOrder(t T) {
     t.Require().Equal(1, 1)
-    ignored(action()) // TESTO030: argument Action follows Assert
+    action().Read() // TESTO030: Action after Assert
 }
 ```
 
-Valid:
+Valid in both modes:
+
 ```go
-func ignored(int) { action() }
-
-func (s *Suite) TestIgnored(t T) {
+func (*Suite) TestOrder(t T) {
+    allure.Setup(t, "Prepare", func(t T) { t.Require().Equal(1, 1) })
+    action().Read()
     t.Require().Equal(1, 1)
-    ignored(0) // the excluded helper body contributes no phase
 }
 ```
 
-With `strict: false`, the first example is also valid for TESTO030.
-Explicit ignore excludes local bodies just as it excludes imported helpers.
+The first example is also valid with `strict: false`. Setup after either Action
+or Assert is invalid in both modes. If TESTO029/031 are enabled, also wrap the
+operations in Step/Setup.
+
+## Analysis boundaries
+
+Uses the operation identities and traversal of TESTO029/031, including one local
+helper transition and computed receivers before arguments. Step preserves phase
+order; Setup is a single preparation event, including its assertions.
+Only explicit Setup establishes preparation: literals, assignments and
+unclassified factories are neutral. Ignored operations and helper bodies add no
+phase, but their evaluated receivers and arguments remain checked.
+
+Branches, loops and short-circuit expressions interrupt inference. Arbitrary
+closures, async/deferred calls and TearDown bodies are excluded. Unknown calls
+receive no assumed phase. No automatic reorder fix is offered.
+
+[Rule index](../rules.md) · [Configuration](../configuration.md#operation-symbols) · [Shared scope](../analysis-scope.md#optional-test-structure-checks)

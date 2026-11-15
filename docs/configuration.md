@@ -155,7 +155,7 @@ Exact symbols override patterns. Among patterns, specificity is scored by exact
 package (4), exact receiver (2), and exact function/method (1). Overlapping
 patterns with equal specificity and different classifications are rejected.
 Ignore removes both coverage checks and phase events for the matched operation,
-including its local helper body. Arguments are still analyzed because they
+including its local helper body. Computed callees, receivers and arguments are still analyzed because they
 execute before the call. This applies equally to local and imported helpers.
 Overlapping subtree patterns are checked in both directions: an action matching
 `example.org/x/sub/...` conflicts with an assertion matching `example.org/x/...`

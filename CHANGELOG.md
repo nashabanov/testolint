@@ -4,52 +4,19 @@
 
 ### Added
 
-- Support grouped action/assertion symbols by receiver and package subtree,
-  exact ignore exceptions, and deterministic classification precedence.
-- Default TESTO030 to relaxed ordering and remove literal-input Data inference.
-  Update configuration, migration guidance and valid/invalid rule examples.
+- Four opt-in Allure style rules:
+  - TESTO028: require configured metadata in tests or BeforeEach.
+  - TESTO029: require Step/Setup coverage for configured actions.
+  - TESTO030: check phase order, with optional strict Action-before-Assert ordering.
+  - TESTO031: require Step/Setup coverage for native Allure, testify and custom assertions.
+- Shared CLI/plugin style settings: required metadata groups, action/assertion
+  patterns and ignore exceptions. CLI supports `-style-config` and `-phase-order-strict`.
+- Configurable metadata methods for TESTO025 header formatting.
 
-- Add four independently opt-in style rules: TESTO028 required-test-header,
-  TESTO029 unreported-action, TESTO030 test-phase-order, and TESTO031
-  assert-inside-step. The catalog now contains 31 rules, including six style rules.
-- Share configurable header recognition between TESTO025/028, preserving existing
-  defaults, Parallel handling and safe fixes. Required metadata uses AND between
-  groups and OR within a group, with effective BeforeEach support.
-- Share typed action/assertion classification, Step/Setup traversal and one local
-  helper transition. Report helper violations at callsites with related locations.
-- Recognize native testo-allure t.Require()/t.Assert() checks first, plus direct
-  testify assertions and configurable user APIs. TESTO031 requires an outer
-  Step/Setup even for native assertions that already produce report entries.
-- Add strict and relaxed phase ordering, Setup preconditions,
-  explicit preparation phases, and conservative control-flow boundaries. No unsafe fixes.
-- Add shared CLI/plugin settings, CLI JSON style configuration and the independent
-  phase-order-strict flag, preserving explicit false and flag-order precedence.
+### Changed
 
-### Fixed
-
-- Reject equal-priority overlapping operation patterns in either subtree
-  direction, preventing nondeterministic Action/Assert/ignore classification.
-- Stop inspecting explicitly ignored local helper bodies while preserving
-  coverage and phase checks for evaluated arguments.
-- Add analyzer, real-Testo CLI and custom-plugin regression coverage for
-  exclusions and conflicting patterns; clarify rule examples and update
-  candidate compatibility documentation.
-
-- Preserve independently proven missing header groups when other metadata is
-  conditional; treat unavailable hooks and opaque sources conservatively.
-- Inspect helper return expressions and avoid false phase ordering across
-  short-circuit expressions. Preserve native assertion accessor/modifier semantics.
-
-### Performance, verification and documentation
-
-- Share structure-analysis package facts and cache one-level helper summaries
-  per invocation. Skip phase collection when TESTO030 is disabled.
-- Add analyzer and real-Testo/Allure CLI/custom-plugin regression coverage,
-  including imported/promoted/generic helpers, opaque APIs, independent selection,
-  explicit BeforeEach opt-out and both phase modes.
-- Add benchmarks for repeated helper use with structure rules enabled/disabled.
-- Document configuration and analysis boundaries; add invalid/valid Go examples
-  for all four new rules and require such examples in AGENTS.md.
+- Reuse analysis results for structure checks and local helpers.
+- Consolidate rule documentation, configuration examples and analysis limitations.
 
 ## 0.9.0
 
