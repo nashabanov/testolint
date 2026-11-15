@@ -25,3 +25,9 @@ func (Assertions) Equal(any, any, ...any) bool { return true }
 func (Requirements) Equal(any, any, ...any)    {}
 func (a Assertions) Masked() Assertions        { return a }
 func (r Requirements) Hidden() Requirements    { return r }
+
+// CommonT exposes metadata methods from the Allure package.
+type CommonT interface {
+	Title(string)
+	Tags(...string)
+}

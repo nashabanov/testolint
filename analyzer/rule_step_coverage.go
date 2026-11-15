@@ -200,7 +200,9 @@ func (w *operationWalker) walk(node ast.Node, covered bool, site *ast.CallExpr, 
 			// Asynchronous and deferred bodies are not synchronous report containers.
 			return false
 		case *ast.CallExpr:
-			// Arguments execute before the call; function literal bodies do not.
+			// The callee (including its receiver) executes before arguments.
+			// Walking a function literal still excludes its body.
+			w.walk(n.Fun, covered, site, depth)
 			for _, arg := range n.Args {
 				w.walk(arg, covered, site, depth)
 			}

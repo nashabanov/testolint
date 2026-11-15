@@ -52,7 +52,7 @@ func checkRequiredHeaderWithConfig(p *analysis.Pass, s *suite, config HeaderConf
 				unknown = true
 				break
 			}
-			unknown = collectHeader(p, hook.decl.Body, sig.Params().At(0), config, inherited, possible)
+			unknown = collectHeader(p, hook.decl.Body, hook.fn.Origin().Type().(*types.Signature).Params().At(0), config, inherited, possible)
 		}
 	}
 	for _, test := range s.tests {
@@ -67,7 +67,7 @@ func checkRequiredHeaderWithConfig(p *analysis.Pass, s *suite, config HeaderConf
 		for name := range inherited {
 			found[name] = true
 		}
-		sig := test.fn().Type().(*types.Signature)
+		sig := test.fn().Origin().Type().(*types.Signature)
 		localUnknown := collectHeader(p, test.method.decl.Body, sig.Params().At(0), config, found, uncertain)
 		if unknown || localUnknown {
 			continue
@@ -92,7 +92,7 @@ func checkRequiredHeaderWithConfig(p *analysis.Pass, s *suite, config HeaderConf
 // calls receiving the context may contribute metadata, but are unknown here.
 // Merely creating a function literal does not execute its body.
 func collectHeader(p *analysis.Pass, body *ast.BlockStmt, context types.Object, config HeaderConfig, found, uncertain map[string]bool) bool {
-	unknown := false
+	unknown := headerContextEscapes(p, body, context)
 	for _, stmt := range body.List {
 		if metadataStatementWithHeader(p, stmt, context, config) {
 			call := statementCall(stmt)
@@ -151,5 +151,31 @@ func collectHeader(p *analysis.Pass, body *ast.BlockStmt, context types.Object, 
 			return true
 		})
 	}
+	return unknown
+}
+
+// A context reference outside a direct known method receiver can escape via
+// aliases, method values or composite expressions. Do not infer absence then.
+// Function literals remain excluded: merely creating one does not execute it.
+func headerContextEscapes(p *analysis.Pass, node ast.Node, context types.Object) bool {
+	allowed := map[ast.Node]bool{}
+	unknown := false
+	ast.Inspect(node, func(n ast.Node) bool {
+		if _, ok := n.(*ast.FuncLit); ok {
+			return false
+		}
+		if call, ok := n.(*ast.CallExpr); ok {
+			if sel, ok := ast.Unparen(call.Fun).(*ast.SelectorExpr); ok && sameObject(p.TypesInfo, sel.X, context) {
+				fn := p.TypesInfo.ObjectOf(sel.Sel)
+				if fn != nil && fn.Pkg() != nil && (fn.Pkg().Path() == allureImportPath || fn.Pkg().Path() == testoImportPath) {
+					allowed[ast.Unparen(sel.X)] = true
+				}
+			}
+		}
+		if ident, ok := n.(*ast.Ident); ok && p.TypesInfo.ObjectOf(ident) == context && !allowed[ident] {
+			unknown = true
+		}
+		return true
+	})
 	return unknown
 }

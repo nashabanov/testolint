@@ -59,3 +59,44 @@ func (*ConditionCall) TestUnknown(t T) {}
 type Imported struct{ lib.Base[T] }
 
 func (*Imported) TestUnknown(t T) {}
+
+func (*Suite) TestAlias(t T) {
+	alias := t
+	alias.Title("alias title")
+	alias.Tags("smoke")
+}
+func (*Suite) TestMethodValue(t T) {
+	title := t.Title
+	title("method value title")
+	t.Tags("smoke")
+}
+func (*Suite) TestConditionalAlias(t T) {
+	if alias := t; condition {
+		alias.Title("title")
+		alias.Tags("smoke")
+	}
+}
+func (*Suite) TestStoredClosure(t T) { // want "TESTO028.*Title or Titlef, Tags"
+	_ = func() { alias := t; alias.Title("unused"); alias.Tags("unused") }
+}
+
+// Known limitation: passing the context to Step suppresses missing metadata.
+func (*Suite) TestMissingWithStep(t T) {
+	a.Step(t, "work", func(t T) { t.Log("nothing") })
+}
+
+type HeaderContext = a.CommonT
+type GenericBase[C HeaderContext] struct{ testo.Suite[C] }
+
+func (*GenericBase[C]) BeforeEach(t C) { t.Tags("smoke") }
+
+type GenericSuite struct{ GenericBase[T] }
+
+func (*GenericSuite) TestGenericHook(t T)  { t.Title("generic hook title") }
+func (*GenericSuite) TestMissingTitle(t T) {} // want "TESTO028.*Title or Titlef"
+
+type GenericTests[C HeaderContext] struct{ testo.Suite[C] }
+
+func (GenericTests[C]) TestGeneric(t C)     { t.Title("generic test"); t.Tags("smoke") }
+func (GenericTests[C]) TestMissingTags(t C) { t.Title("title") } // want "TESTO028.*missing required test metadata: Tags"
+type PromotedTests struct{ GenericTests[T] }

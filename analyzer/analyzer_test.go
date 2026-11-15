@@ -63,7 +63,7 @@ func TestAnalyzer(t *testing.T) {
 				var err error
 				analyzer, err = New(Config{DisableAll: true, Enable: []string{"TESTO029", "TESTO030", "TESTO031"}, Style: StyleConfig{
 					Phases:     PhaseConfig{Strict: &strict},
-					Actions:    []Symbol{{Package: tt, Function: "action"}, {Package: tt + "/remote", Function: "*"}},
+					Actions:    []Symbol{{Package: tt, Function: "action"}, {Package: tt, Function: "receiverAction"}, {Package: tt + "/remote", Function: "*"}},
 					Assertions: []Symbol{{Package: tt, Function: "verify"}},
 					Ignore:     []Symbol{{Package: tt, Function: "ignored"}, {Package: tt + "/remote", Function: "Ignored"}},
 				}})
