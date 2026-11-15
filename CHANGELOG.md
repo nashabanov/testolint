@@ -16,7 +16,8 @@
 ### Changed
 
 - Reuse analysis results for structure checks and local helpers.
-- Consolidate rule documentation, configuration examples and analysis limitations.
+- Consolidate rule documentation, configuration examples and analysis limitations
+  for 0.10.0.
 
 ## 0.9.0
 

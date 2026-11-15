@@ -80,7 +80,9 @@ remains the ID. The structured `URL` now points to the same rule page.
 TESTO027 skips malformed test names: TESTO007 owns those diagnostics, even when
 TESTO007 is disabled. Valid tests and lifecycle hooks remain checked for sleep.
 
-## Unreleased header configuration
+<a id="unreleased-header-configuration"></a>
+
+## Header configuration
 
 The shared Go/plugin `style.header` settings are:
 

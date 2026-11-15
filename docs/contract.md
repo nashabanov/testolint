@@ -55,6 +55,6 @@ the underlying driver behavior and should not be interpreted as normal text mode
 The plugin uses golangci-lint's exit policy (normally 1 for findings, configurable
 by that driver); it does not promise the standalone CLI's exit codes.
 
-In unreleased 0.10.0, TESTO028–031 are also disabled by default and offer no
+In 0.10.0, TESTO028–031 are also disabled by default and offer no
 automatic fixes. TESTO030 consumes the same operation classification as coverage
 checks without enabling their diagnostics.

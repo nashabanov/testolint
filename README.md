@@ -90,7 +90,7 @@ Browse [parallel lifecycle](docs/rules/TESTO014.md),
 [context construction](docs/rules/TESTO021.md) and
 [provider initialization](docs/rules/TESTO023.md) checks in the catalog.
 
-In the unreleased 0.10.0 work, [TESTO028](docs/rules/TESTO028.md) checks configured
+In 0.10.0, [TESTO028](docs/rules/TESTO028.md) checks configured
 required Allure metadata in valid local tests and their effective BeforeEach.
 Unknown sources, context aliases and stored method values suppress unproven
 absence. Passing the context to `allure.Step` currently also suppresses this
@@ -114,7 +114,7 @@ individual rule boundaries and the [diagnostic contract](docs/contract.md).
 
 ### Verified compatibility
 
-The unreleased 0.10.0 candidate is verified with:
+Version 0.10.0 is verified with:
 
 | Go | Testo | Testo Allure | Custom golangci-lint |
 | --- | --- | --- | --- |

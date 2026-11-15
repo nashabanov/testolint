@@ -42,4 +42,4 @@ check, even without the required metadata. Child-step metadata does not satisfy
 the parent header, but callbacks can capture the outer context; the checker does
 not yet distinguish these cases. A clean result is not proof of complete metadata.
 
-[Rule index](../rules.md) · [Configuration](../configuration.md#unreleased-header-configuration) · [Shared scope](../analysis-scope.md#optional-test-structure-checks)
+[Rule index](../rules.md) · [Configuration](../configuration.md#header-configuration) · [Shared scope](../analysis-scope.md#optional-test-structure-checks)
